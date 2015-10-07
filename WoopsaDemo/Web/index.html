@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<title>Woopsa Test Page</title>
+		<style type="text/css">
+		body{
+			font-family: Helvetica, Arial, sans-serif;
+			font-size: 14px;
+		}
+		input, textarea{
+			border: 1px solid #ccc;
+			border-radius: 3px;
+			box-shadow: 0 0 4px rgba(0,0,0,0.1) inset;
+			padding: 5px;
+			margin: 0 2px;
+			font-size: 14px;
+		}
+		
+		textarea{
+			min-width: 500px;
+			min-height: 200px;
+		}
+		
+		pre.result{
+			width: 500px;
+			max-height: 200px;
+			overflow: auto;
+		}
+		
+		input[type="text"]{
+			min-width: 200px;
+		}
+		
+		input[type='submit'], button{
+			background-color: #2e6da4;
+			border-color: #2e6da4;
+			color: #fff;
+			min-width: 80px;
+		}
+		
+		input[type='submit']:disabled, button:disabled{
+			background-color: rgb(235, 235, 228);
+			color: #ccc;
+			border-color: #ccc;
+		}
+		
+		.form-line{
+			margin: 3px 0;
+		}
+		
+		.form-line *{
+			vertical-align: top;
+		}
+		
+		.form-line .result{
+			padding: 7px 0;
+			display: inline-block;
+		}
+		
+		.form-line label{
+			vertical-align: top;
+			min-width: 100px;
+			display: inline-block;
+			padding: 7px 0;	
+		}
+		
+		.log{
+			position: fixed; 
+			top: 0; 
+			right: 0; 
+			width: 500px; 
+			bottom: 0; 
+			margin: 20px;
+			background-color:#eee; 
+			font-family: monospace; 
+			padding: 8px;
+			overflow: auto;
+			border-radius: 3px;
+			border: 1px solid #ccc;
+			box-shadow: 0 0 5px rgba(0,0,0,0.1);
+			font-size: 12px;
+		}
+		
+		.log:before{
+			content: "Error log";
+			display:block;
+			position: fixed;
+			top: 0;
+			right: 15px;
+			font-size: 10px;
+			color: rgba(0,0,0,0.5);
+			font-family: Helvetica, Arial, sans-serif;
+			margin: 5px;
+		}
+		</style>
+	</head>
+	<body>
+		<h2>Server:</h2>
+		<form id="urlForm">
+			<div class="form-line">
+				<label>Url:</label>
+				<input type="text" id="serverUrl" value="http://demo.woopsa.org/woopsa" /> 
+				<input type="submit" value="Connect + Subscribe"/>
+			</div>
+		</form>
+		<h2>Subscription test:</h2>
+		<form id="subscribeForm">
+			<div class="form-line">
+				<label>Path:</label>
+				<input type="text" id="subscribePath" value="/Temperature" /> 
+			</div>
+		</form>
+		<div class="form-line">
+			<label>Value:</label>
+			<span id="variableValue" class="result"></span>
+		</div>
+		<h2>Read a value:</h2>
+		<form id="readForm">
+			<div class="form-line">
+				<label>Path:</label>
+				<input disabled type="text" id="readPath" value="/Sensitivity" /> 
+				<input disabled type="submit" value="Read"/>
+			</div>
+		</form>
+		<div class="form-line">
+			<label>Value: </label>
+			<span id="readValue" class="result"></span>
+		</div>
+		<h2>Write a value:</h2>
+		<form id="writeForm">
+			<div class="form-line">
+				<label>Path:</label>
+				<input disabled type="text" id="writePath" value="/Sensitivity" />
+			</div>
+			<div class="form-line">
+				<label>Value:</label>
+				<input disabled type="text" id="writeValue" value="42"/>
+				<input disabled type="submit" value="Write"/>
+			</div>
+		</form>
+		<h2>Invoke a method:</h2>
+		<form id="invokeForm">
+			<div class="form-line">
+				<label>Path:</label>
+				<input disabled type="text" id="invokePath" value="/MultiRequest"/>
+			</div>
+			<div class="form-line">
+				<label>Arg 1 Name:</label>
+				<input disabled type="text" id="invokeArgumentName" value="Requests" />
+			</div>
+			<div class="form-line">
+				<label style="vertical-align:top">Arg 1 Value:</label>
+				<textarea id="invokeArgumentValue" value="Bill" >[
+  {"Id":0, "Action":"read", "Path":"/Temperature"},
+  {"Id":1, "Action":"write", "Path":"/Sensitivity", "Value":0.5},
+  {"Id":2, "Action":"meta", "Path":"/"},
+  {"Id":3, "Action":"invoke", "Path":"/GetWeatherAtDate", "Arguments":{"date":"2015-10-06T11:15:30.883Z"}}
+]</textarea>
+			</div>
+			<div class="form-line">
+				<label></label>
+				<input disabled type="submit" value="Invoke" />
+			</div>
+		</form>
+		<div class="form-line">
+			<label>Return value:</label>
+			<pre id="invokeValue" class="result" style="display:inline-block"></pre>
+		</div>
+		<h2>Meta:</h2>
+		<form id="metaForm">
+			<div class="form-line">
+				<label>Path:</label>
+				<input disabled type="text" id="metaPath" value="/" />
+				<input disabled type="submit" value="Get Meta"/>
+			</div>
+		</form>
+		<div class="form-line">
+			<label>Result:</label>
+			<pre id="metaValue" style="display: inline-block" class="result"></pre>
+		</div>
+		<div class="log">
+		</div>		
+		<script src="lib/jquery-1.11.3.js"></script>
+		<script src="lib/woopsa.js"></script>
+		<script src="js/tests.js"></script>
+	</body>
+</html>
