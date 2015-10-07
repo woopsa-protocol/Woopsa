@@ -86,6 +86,9 @@ namespace Woopsa
         {
             try
             {
+                // This is the first thing we do, that way even 404 errors have the right headers
+                if (AllowCrossOrigin)
+                    response.SetHeader("Access-Control-Allow-Origin", "*");
                 string result = null;
                 switch (verb)
                 {
@@ -103,8 +106,6 @@ namespace Woopsa
                         break;
                 }
                 response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
-                if ( AllowCrossOrigin )
-                    response.SetHeader("Access-Control-Allow-Origin", "*");
                 response.WriteString(result);
             }
             catch (WoopsaNotFoundException e)
