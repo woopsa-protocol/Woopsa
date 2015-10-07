@@ -1,0 +1,1 @@
+devenv ..\Woopsa.sln /build Release /project WoopsaDemoServer
