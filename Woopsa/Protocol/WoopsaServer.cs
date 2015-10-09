@@ -301,7 +301,14 @@ namespace Woopsa
 
                 IWoopsaValue result = method.Invoke(wArguments);
 
-                return result.Serialise();
+                if (result != null)
+                {
+                    return result.Serialise();
+                }
+                else
+                {
+                    return "";
+                }
             }
             else
             {

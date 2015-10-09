@@ -205,7 +205,15 @@ namespace Woopsa
                 {
                     typedArguments.Add(((WoopsaValue)args.ElementAt(i)).ConvertTo(method.Arguments.ElementAt(i).Type));
                 }
-                return method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()).ToWoopsaValue(method.ReturnType);
+                if (method.MethodInfo.ReturnType == typeof(void))
+                {
+                    method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray());
+                    return null;
+                }
+                else
+                {
+                    return method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()).ToWoopsaValue(method.ReturnType);
+                }
             });
         }
 
