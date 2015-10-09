@@ -70,6 +70,7 @@ namespace Woopsa
         /// </remarks>
         public WebServer(int port, bool multithreaded)
         {
+            Port = port;
             _routeSolver = new RouteSolver();
             _routeSolver.Error += _routeSolver_Error;
             _listener = new TcpListener(IPAddress.Any, port);
@@ -97,6 +98,8 @@ namespace Woopsa
         /// Whether this server is using a thread pool to handle requests
         /// </summary>
         public bool MultiThreaded { get; private set; }
+
+        public int Port { get; private set; }
         #endregion
 
         #region Private Members

@@ -21,38 +21,138 @@ namespace Woopsa
 	public class WoopsaServer : IDisposable
     {
         public const string DefaultServerPrefix = "/woopsa/";
+        public const int DefaultPort = 80;
+
         public WebServer WebServer { get; private set; }
+
+        public string RoutePrefix { get { return _routePrefix; } }
 
         public bool AllowCrossOrigin { get; set; }
 
         /// <summary>
-        /// The simplest constructor, which takes any object as the root object.
-        /// This constructor will create a new Reflector for the object passed to
-        /// it in argument. It will automatically create the required HTTP server
-        /// and all necessary functionalities to enable Subscriptions and Multi
-        /// Requests.
+        /// Creates an instance of the Woopsa server with a new Reflector for the object 
+        /// passed to it. 
+        /// 
+        /// It will automatically create the required HTTP server
+        /// and all necessary native extensions to enable Publish/Subscribe and 
+        /// Multi-Requests.
         /// </summary>
         /// <param name="root">The root object that will be published via Woopsa.</param>
-        public WoopsaServer(object root) : this(root, DefaultServerPrefix) { }
+        public WoopsaServer(object root) 
+            : this(root, DefaultPort, DefaultServerPrefix) { }
 
-        public WoopsaServer(object root, string routePrefix)
+        /// <summary>
+        /// Creates an instance of the Woopsa server with a new Reflector for the object 
+        /// passed to it. 
+        /// 
+        /// It will automatically create the required HTTP server
+        /// on the specified port and all necessary native extensions for Publish/
+        /// Subscribe and Mutli-Requests.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        /// <param name="port">The port on which to run the web server</param>
+        public WoopsaServer(object root, int port) 
+            : this(root, port, DefaultServerPrefix) { }
+
+        /// <summary>
+        /// Creates an instance of the Woopsa server with a new Reflector for the object 
+        /// passed to it. 
+        /// 
+        /// It will automatically create the required HTTP server
+        /// on the specified port and will prefix woopsa verbs with the specified 
+        /// route prefix. It will also add all the necessary native extensions for 
+        /// Publish/Subscribe and Mutli-Requests.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        /// <param name="port">The port on which to run the web server</param>
+        /// <param name="routePrefix">
+        /// The prefix to add to all routes for woopsa verbs. For example, specifying
+        /// "myPrefix" will make the server available on http://server/myPrefix
+        /// </param>
+        public WoopsaServer(object root, int port, string routePrefix)
         {
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(null, root.GetType().Name, root);
             _root = adapter;
             _selfCreatedServer = true;
             _routePrefix = routePrefix;
-            WebServer = new WebServer(80, true);
+            WebServer = new WebServer(port, true);
             AddRoutes(WebServer, routePrefix);
             WoopsaMultiRequestHandler multiHandler = new WoopsaMultiRequestHandler(adapter, this);
             SubscriptionService subscriptionService = new SubscriptionService(adapter);
             WebServer.Start();
         }
 
-        public WoopsaServer(IWoopsaContainer root):this(root, new WebServer(80, true)) 
+        /// <summary>
+        /// Creates an instance of the Woopsa server without using the Reflector. You
+        /// will have to create the object hierarchy yourself, using WoopsaObjects 
+        /// or implementing IWoopsaContainer yourself.
+        /// 
+        /// It will automatically create the required HTTP server
+        /// and all necessary native extensions to enable Publish/Subscribe and 
+        /// Multi-Requests.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        public WoopsaServer(IWoopsaContainer root) 
+            : this(root, new WebServer(80, true)) 
         {
             _selfCreatedServer = true;
         }
 
+        /// <summary>
+        /// Creates an instance of the Woopsa server without using the Reflector. You
+        /// will have to create the object hierarchy yourself, using WoopsaObjects 
+        /// or implementing IWoopsaContainer yourself.
+        /// 
+        /// It will automatically create the required HTTP server
+        /// on the specified port and all necessary native extensions for Publish/
+        /// Subscribe and Mutli-Requests.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        /// <param name="port">The port on which to run the web server</param>
+        public WoopsaServer(IWoopsaContainer root, int port)
+            : this(root, new WebServer(port, true))
+        {
+            _selfCreatedServer = true;
+        }
+
+        /// <summary>
+        /// Creates an instance of the Woopsa server without using the Reflector. You
+        /// will have to create the object hierarchy yourself, using WoopsaObjects 
+        /// or implementing IWoopsaContainer yourself.
+        /// 
+        /// It will automatically create the required HTTP server
+        /// on the specified port and will prefix woopsa verbs with the specified 
+        /// route prefix. It will also add all the necessary native extensions for 
+        /// Publish/Subscribe and Mutli-Requests.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        /// <param name="port">The port on which to run the web server</param>
+        /// <param name="routePrefix">
+        /// The prefix to add to all routes for woopsa verbs. For example, specifying
+        /// "myPrefix" will make the server available on http://server/myPrefix
+        /// </param>
+        public WoopsaServer(IWoopsaContainer root, int port, string routePrefix)
+            : this(root, new WebServer(port, true), routePrefix)
+        {
+            _selfCreatedServer = true;
+        }
+
+        /// <summary>
+        /// Creates an instance of the Woopsa server without using the Reflector. You
+        /// will have to create the object hierarchy yourself, using WoopsaObjects 
+        /// or implementing IWoopsaContainer yourself.
+        /// 
+        /// If you are already using a <see cref="WebServer"/> somewhere else,
+        /// this constructor will simply add the woopsa routes to that server.
+        /// This allows you to serve static content and the Woopsa protocol
+        /// on the same network interface and on the same port.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        /// <param name="server">The server on which Woopsa routes will be added</param>
+        /// <param name="routePrefix">
+        /// The prefix to add to all routes for woopsa verbs. For example, specifying
+        /// "myPrefix" will make the server available on http://server/myPrefix
+        /// </param>
         public WoopsaServer(IWoopsaContainer root, WebServer server, string routePrefix = DefaultServerPrefix)
         {
             _root = root;
@@ -61,6 +161,14 @@ namespace Woopsa
             AddRoutes(server, routePrefix);
         }
 
+        public void ClearCache()
+        {
+            _pathCache = new Dictionary<string, IWoopsaElement>();
+            if (_root is WoopsaObjectAdapter)
+                (_root as WoopsaObjectAdapter).ClearCache();
+        }
+
+        #region Private Members
         private void AddRoutes(WebServer server, string routePrefix)
         {
             AllowCrossOrigin = true;
@@ -75,11 +183,6 @@ namespace Woopsa
             //    by crawlers and such. Invoking a function will, in most cases, change the state of
             //    the server.
             server.Routes.Add(routePrefix + "invoke", HTTPMethod.POST, (request, response) => { HandleRequest(WoopsaVerb.Invoke, request, response); }, true);
-        }
-
-        public void ClearCache()
-        {
-            _pathCache = new Dictionary<string, IWoopsaElement>();
         }
 
         private void HandleRequest(WoopsaVerb verb, HTTPRequest request, HTTPResponse response)
@@ -262,7 +365,9 @@ namespace Woopsa
 
             return elem;
         }
+        #endregion
 
+        #region IDisposable
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
@@ -276,5 +381,6 @@ namespace Woopsa
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+        #endregion
     }
 }

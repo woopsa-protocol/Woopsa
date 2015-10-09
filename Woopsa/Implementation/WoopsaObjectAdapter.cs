@@ -50,6 +50,11 @@ namespace Woopsa
             }
         }
 
+        public void ClearCache()
+        {
+            _typesCache = new Dictionary<Type, TypeCache>();
+        }
+
         protected override void PopulateObject()
         {
             base.PopulateObject();

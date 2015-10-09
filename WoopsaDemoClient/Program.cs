@@ -30,7 +30,7 @@ namespace WoopsaDemoClient
                 // As an example, if we find a PropertyInteger value (like in the demo server),
                 // we change its value to 1. That way you can see how it's done using the
                 // standard client
-                if (property.Name == "PropertyInteger")
+                if (property.Name == "Altitude")
                 {
                     // Create a subscription for example's sake
                     Console.WriteLine("  => Creating a subscription");
@@ -56,12 +56,12 @@ namespace WoopsaDemoClient
                 // As an example, if we find a SayHello method (like in the demo server),
                 // we call it. That way you can see how to call methods using the standard
                 // client!
-                if (method.Name == "SayHello")
+                if (method.Name == "GetWeatherAtDate")
                 {
-                    Console.WriteLine("  => SayHello found! Calling it now...");
+                    Console.WriteLine("  => GetWeatherAtDate found! Calling it now...");
 					Console.WriteLine("  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
 						{
-							new WoopsaValue("Woopsa Demo Client")
+							new WoopsaValue(DateTime.Now)
 						})
 					);
                 }
@@ -83,9 +83,6 @@ namespace WoopsaDemoClient
             // Leave the DOS window open
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
-
-            // Exit gracefully
-            client.Dispose();
         }
 
         static void property_Change(object sender, WoopsaNotificationEventArgs e)
