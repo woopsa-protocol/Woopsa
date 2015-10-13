@@ -133,7 +133,8 @@ namespace Woopsa
                         {
                             if (mapper.AcceptSubroutes)
                             {
-                                request.Subroute = request.BaseURL.Replace(mapper.Route, "");
+                                int pos = request.BaseURL.IndexOf(mapper.Route);
+                                request.Subroute = request.BaseURL.Substring(0, pos) + request.BaseURL.Substring(pos + mapper.Route.Length);
                             }
                             matchFound = true;
                             break;
