@@ -85,7 +85,11 @@ namespace Woopsa
         public static string Serialise(this IWoopsaValue value)
         {
             StringBuilder valueAsText = new StringBuilder();
-            if (value.Type != WoopsaValueType.JsonData)
+            if ( value.Type != WoopsaValueType.JsonData 
+                && value.Type != WoopsaValueType.Real
+                && value.Type != WoopsaValueType.Integer
+                && value.Type != WoopsaValueType.Logical
+                && value.Type != WoopsaValueType.TimeSpan )
                 valueAsText.Append(ValueEscapeCharacter).Append(value.AsText.JsonEscape()).Append(ValueEscapeCharacter);
             else
                 valueAsText.Append(value.AsText);

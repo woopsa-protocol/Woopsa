@@ -193,28 +193,41 @@ namespace Woopsa
 
         private void AddItemFromCache(ItemCache item)
         {
-            new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject), _visibility);
+            // TODO : Avoid failing silently
+            try
+            {
+                object value = item.PropertyInfo.GetValue(TargetObject);
+                // If an inner item is null, we ignore it from the Woopsa hierarchy
+                if (value != null)
+                    new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject), _visibility);
+            }
+            catch (Exception) { } // Property getters that throw exceptions don't play nice. So we fail silently
         }
 
         private void AddMethodFromCache(MethodCache method)
         {
-            new WoopsaMethod(this, method.MethodInfo.Name, method.ReturnType, method.WoopsaArguments, (args) =>
+            // TODO : Avoid failing silently
+            try
             {
-                List<object> typedArguments = new List<object>();
-                for (var i = 0; i < method.Arguments.Count; i++)
+                new WoopsaMethod(this, method.MethodInfo.Name, method.ReturnType, method.WoopsaArguments, (args) =>
                 {
-                    typedArguments.Add(((WoopsaValue)args.ElementAt(i)).ConvertTo(method.Arguments.ElementAt(i).Type));
-                }
-                if (method.MethodInfo.ReturnType == typeof(void))
-                {
-                    method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray());
-                    return null;
-                }
-                else
-                {
-                    return method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()).ToWoopsaValue(method.ReturnType);
-                }
-            });
+                    List<object> typedArguments = new List<object>();
+                    for (var i = 0; i < method.Arguments.Count; i++)
+                    {
+                        typedArguments.Add(((WoopsaValue)args.ElementAt(i)).ConvertTo(method.Arguments.ElementAt(i).Type));
+                    }
+                    if (method.MethodInfo.ReturnType == typeof(void))
+                    {
+                        method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray());
+                        return null;
+                    }
+                    else
+                    {
+                        return method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()).ToWoopsaValue(method.ReturnType);
+                    }
+                });
+            }
+            catch (Exception) { } // This can happen when methods are overriden. This isn't supported in Woopsa.
         }
 
         private bool TestVisibility(PropertyCache property)

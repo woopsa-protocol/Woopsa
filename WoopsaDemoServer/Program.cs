@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Net.Sockets;
 using Woopsa;
 
 namespace WoopsaDemoServer
@@ -59,15 +60,30 @@ namespace WoopsaDemoServer
     {
         static void Main(string[] args)
         {
-            WeatherStation root = new WeatherStation();
-            WoopsaServer woopsaServer = new WoopsaServer(root, 80);
+            try
+            {
+                WeatherStation root = new WeatherStation();
+                WoopsaServer woopsaServer = new WoopsaServer(root, 80);
 
-            Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-            Console.WriteLine("Some examples of what you can do directly from your browser:");
-            Console.WriteLine(" * View the object hierarchy of the root object:");
-            Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-            Console.WriteLine(" * Read the value of a property:");
-            Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+                Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+                Console.WriteLine("Some examples of what you can do directly from your browser:");
+                Console.WriteLine(" * View the object hierarchy of the root object:");
+                Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+                Console.WriteLine(" * Read the value of a property:");
+                Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+            }
+            catch (SocketException e)
+            {
+                // A SocketException is caused by an application already listening on a port in 90% of cases
+                // Applications known to use port 80:
+                //  - IIS
+                //  - Apache
+                //  - Nginx
+                //  - Skype
+                Console.WriteLine("Error: Could not start Woopsa Server. Maybe an application is already listening on port 80?");
+                Console.WriteLine("SocketException: {0}", e.Message);
+                Console.ReadLine();
+            }
         }
     }
 }

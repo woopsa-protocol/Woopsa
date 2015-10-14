@@ -96,6 +96,7 @@ namespace Woopsa
             : this(root, new WebServer(80, true)) 
         {
             _selfCreatedServer = true;
+            WebServer.Start();
         }
 
         /// <summary>
@@ -113,6 +114,7 @@ namespace Woopsa
             : this(root, new WebServer(port, true))
         {
             _selfCreatedServer = true;
+            WebServer.Start();
         }
 
         /// <summary>
@@ -135,6 +137,7 @@ namespace Woopsa
             : this(root, new WebServer(port, true), routePrefix)
         {
             _selfCreatedServer = true;
+            WebServer.Start();
         }
 
         /// <summary>

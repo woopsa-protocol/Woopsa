@@ -116,6 +116,7 @@ namespace Woopsa
         };
 
         private bool _abort = false;
+        private bool _started = false;
         #endregion
 
         #region Public Methods
@@ -125,6 +126,8 @@ namespace Woopsa
         public void Start()
         {
             _listenerThread.Start();
+            _listener.Start();
+            _started = true;
         }
 
         /// <summary>
@@ -140,8 +143,7 @@ namespace Woopsa
         #region Private Methods
         private void Listen()
         {
-            _listener.Start();
-            while(!_abort)
+            while(!_abort && _started)
             {
                 try
                 {
