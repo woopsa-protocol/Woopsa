@@ -19,43 +19,46 @@ namespace Woopsa
     }
 
     [AttributeUsage(AttributeTargets.Class)]
-    public class OnlyWoopsaVisible : Attribute
+    public class WoopsaVisibility : Attribute
     {
-        public OnlyWoopsaVisible(bool value)
+        public WoopsaVisibility(WoopsaObjectAdapterVisibility visibility)
         {
-            Value = value;
+            Value = visibility;
         }
 
-        public bool Value { get; private set; }
+        public WoopsaObjectAdapterVisibility Value { get; private set; }
     }
 
     public enum WoopsaObjectAdapterVisibility
     {
-        All,
-        Declared,
-        WoopsaVisible
+        All = 1,
+        Declared = 2,
+        WoopsaVisible = 4
     }
-    
+
     [Flags]
-    public enum WoopsaObjectAdapterCacheMode
+    public enum WoopsaObjectAdapterOptions
     {
-        None,
-        ByClass
+        None = 0,
+        CacheClasses = 1,
+        ListEnumerables = 2,
+        HideSpecialMethods = 4
     }
 
 	public class WoopsaObjectAdapter: WoopsaObject
 	{
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterVisibility visibility = WoopsaObjectAdapterVisibility.All,
-            WoopsaObjectAdapterCacheMode cacheMode = WoopsaObjectAdapterCacheMode.ByClass)
+            WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.CacheClasses)
             : base(container, name)
         {
             TargetObject = targetObject;
-            Visibility = visibility;
-            _cacheMode = cacheMode;
-            if (targetObject.GetType().GetCustomAttribute<OnlyWoopsaVisible>() != null && targetObject.GetType().GetCustomAttribute<OnlyWoopsaVisible>().Value )
+            _visibility = visibility;
+            Options = options;
+            Filter = DefaultFilter;
+            if (targetObject.GetType().GetCustomAttribute<WoopsaVisibility>() != null )
             {
-                Visibility = WoopsaObjectAdapterVisibility.WoopsaVisible;
+                _visibility = targetObject.GetType().GetCustomAttribute<WoopsaVisibility>().Value;
             }
         }
 
@@ -64,14 +67,42 @@ namespace Woopsa
             _typesCache = new Dictionary<Type, TypeCache>();
         }
 
+        public bool DefaultFilter(MemberInfo info)
+        {
+            if (HasOption(WoopsaObjectAdapterOptions.HideSpecialMethods))
+                if (info.DeclaringType == typeof(object))
+                    return false;
+                else if (info is MethodInfo)
+                    return !(info as MethodInfo).IsSpecialName;
+                else
+                    return true;
+            else
+                return true;
+        }
+        
+        public object TargetObject { get; private set; }
+
+        public WoopsaObjectAdapterOptions Options { get; private set; }
+
+        public Func<MemberInfo, bool> Filter { get; set; }
+
+        #region private members
+        private static Dictionary<Type, TypeCache> _typesCache = new Dictionary<Type, TypeCache>();
+
+        #endregion
+
+        #region Protected Members
+        protected WoopsaObjectAdapterVisibility _visibility;
+        #endregion
+
+        #region Private/Protected Methods
         protected override void PopulateObject()
         {
             base.PopulateObject();
-
-            if ((_cacheMode & WoopsaObjectAdapterCacheMode.ByClass) == WoopsaObjectAdapterCacheMode.ByClass &&  _typesCache.ContainsKey(TargetObject.GetType()))
+            if (HasOption(WoopsaObjectAdapterOptions.CacheClasses) && _typesCache.ContainsKey(TargetObject.GetType()))
             {
                 TypeCache cache = _typesCache[TargetObject.GetType()];
-                foreach(var property in cache.Properties)
+                foreach (var property in cache.Properties)
                     if (TestVisibility(property))
                         AddPropertyFromCache(property);
                 foreach (var item in cache.Items)
@@ -84,30 +115,17 @@ namespace Woopsa
             else
             {
                 TypeCache newType = new TypeCache();
-                if ((_cacheMode & WoopsaObjectAdapterCacheMode.ByClass) == WoopsaObjectAdapterCacheMode.ByClass)
+                if (HasOption(WoopsaObjectAdapterOptions.CacheClasses))
                     _typesCache.Add(TargetObject.GetType(), newType);
                 PopulateItems(newType);
                 PopulateProperties(newType);
                 PopulateMethods(newType);
             }
         }
-        
-        public object TargetObject { get; private set; } 
 
-        #region private members
-        private static Dictionary<Type, TypeCache> _typesCache = new Dictionary<Type, TypeCache>();
-
-        private WoopsaObjectAdapterCacheMode _cacheMode;
-        #endregion
-
-        #region Protected Members
-        protected WoopsaObjectAdapterVisibility Visibility;
-        #endregion
-
-        #region Private Methods
         protected virtual void PopulateProperties(TypeCache typeCache)
         {
-            foreach (var propertyInfo in TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var propertyInfo in TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where<PropertyInfo>(Filter))
             {
                 WoopsaValueType woopsaType;
                 if (WoopsaTypeUtils.InferWoopsaType(propertyInfo.PropertyType, out woopsaType))
@@ -123,8 +141,10 @@ namespace Woopsa
                     var woopsaVisible = propertyInfo.GetCustomAttribute<WoopsaVisible>();
                     if (woopsaVisible != null && woopsaVisible.Visible)
                         newProperty.WoopsaVisible = true;
-                    else
+                    else if (woopsaVisible != null && !woopsaVisible.Visible)
                         newProperty.WoopsaVisible = false;
+                    else if (woopsaVisible == null)
+                        newProperty.WoopsaVisible = true;
                     if ( TestVisibility(newProperty))
                         AddPropertyFromCache(newProperty);
                     typeCache.Properties.Add(newProperty);
@@ -134,7 +154,7 @@ namespace Woopsa
 
         protected virtual void PopulateItems(TypeCache typeCache)
         {
-            foreach (var propertyInfo in TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance))
+            foreach (var propertyInfo in TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where<PropertyInfo>(Filter))
             {
                 WoopsaValueType woopsaType;
                 if (!WoopsaTypeUtils.InferWoopsaType(propertyInfo.PropertyType, out woopsaType))
@@ -145,8 +165,10 @@ namespace Woopsa
                     var woopsaVisible = propertyInfo.GetCustomAttribute<WoopsaVisible>();
                     if (woopsaVisible != null && woopsaVisible.Visible)
                         newItem.WoopsaVisible = true;
-                    else
+                    else if (woopsaVisible != null && !woopsaVisible.Visible)
                         newItem.WoopsaVisible = false;
+                    else if (woopsaVisible == null)
+                        newItem.WoopsaVisible = true;
                     if (TestVisibility(newItem))
                         AddItemFromCache(newItem);
                     typeCache.Items.Add(newItem);
@@ -156,7 +178,7 @@ namespace Woopsa
 
         protected virtual void PopulateMethods(TypeCache typeCache)
         {
-            foreach(var method in TargetObject.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).Where((m) => (m.IsSpecialName == false)))
+            foreach (var method in TargetObject.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance).Where<MethodInfo>(Filter))
             {
                 // Check if return type is Woopsable
                 WoopsaValueType returnType;
@@ -189,8 +211,10 @@ namespace Woopsa
                         var woopsaVisible = method.GetCustomAttribute<WoopsaVisible>();
                         if (woopsaVisible != null && woopsaVisible.Visible)
                             newMethod.WoopsaVisible = true;
-                        else
+                        else if (woopsaVisible != null && !woopsaVisible.Visible)
                             newMethod.WoopsaVisible = false;
+                        else if (woopsaVisible == null)
+                            newMethod.WoopsaVisible = true;
                         if (TestVisibility(newMethod))
                             AddMethodFromCache(newMethod);
                         typeCache.Methods.Add(newMethod);
@@ -220,7 +244,7 @@ namespace Woopsa
                 object value = item.PropertyInfo.GetValue(TargetObject);
                 // If an inner item is null, we ignore it from the Woopsa hierarchy
                 if (value != null)
-                    new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject), Visibility);
+                    new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject), _visibility, Options);
             }
             catch (Exception) { } // Property getters that throw exceptions don't play nice. So we fail silently
         }
@@ -253,12 +277,17 @@ namespace Woopsa
 
         private bool TestVisibility(PropertyCache property)
         {
-            if (Visibility == WoopsaObjectAdapterVisibility.All)
-                return true;
-            else
-                if (Visibility == WoopsaObjectAdapterVisibility.Declared && property.PropertyInfo.DeclaringType == TargetObject.GetType())
+            if (!property.WoopsaVisible)
+                return false;
+            if (_visibility == WoopsaObjectAdapterVisibility.All)
+                if (property.WoopsaVisible)
                     return true;
-                else if (Visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && property.WoopsaVisible)
+                else
+                    return false;
+            else
+                if (_visibility == WoopsaObjectAdapterVisibility.Declared && property.PropertyInfo.DeclaringType == TargetObject.GetType())
+                    return true;
+                else if (_visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && property.WoopsaVisible)
                     return true;
                 else
                     return false;
@@ -266,12 +295,17 @@ namespace Woopsa
 
         private bool TestVisibility(MethodCache method)
         {
-            if (Visibility == WoopsaObjectAdapterVisibility.All)
-                return true;
-            else
-                if (Visibility == WoopsaObjectAdapterVisibility.Declared && method.MethodInfo.DeclaringType == TargetObject.GetType())
+            if (!method.WoopsaVisible)
+                return false;
+            if (_visibility == WoopsaObjectAdapterVisibility.All)
+                if (method.WoopsaVisible)
                     return true;
-                else if (Visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && method.WoopsaVisible)
+                else
+                    return false;
+            else
+                if (_visibility == WoopsaObjectAdapterVisibility.Declared && method.MethodInfo.DeclaringType == TargetObject.GetType())
+                    return true;
+                else if (_visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && method.WoopsaVisible)
                     return true;
                 else
                     return false;
@@ -279,15 +313,25 @@ namespace Woopsa
 
         private bool TestVisibility(ItemCache item)
         {
-            if (Visibility == WoopsaObjectAdapterVisibility.All)
-                return true;
-            else
-                if (Visibility == WoopsaObjectAdapterVisibility.Declared && item.PropertyInfo.DeclaringType == TargetObject.GetType())
-                    return true;
-                else if (Visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && item.WoopsaVisible)
+            if (!item.WoopsaVisible)
+                return false;
+            if (_visibility == WoopsaObjectAdapterVisibility.All)
+                if (item.WoopsaVisible)
                     return true;
                 else
                     return false;
+            else
+                if (_visibility == WoopsaObjectAdapterVisibility.Declared && item.PropertyInfo.DeclaringType == TargetObject.GetType())
+                    return true;
+                else if (_visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && item.WoopsaVisible)
+                    return true;
+                else
+                    return false;
+        }
+
+        private bool HasOption(WoopsaObjectAdapterOptions option)
+        {
+            return (Options & option) == option;
         }
 
         #endregion

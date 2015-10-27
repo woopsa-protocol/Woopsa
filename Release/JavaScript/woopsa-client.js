@@ -8,8 +8,8 @@
 		
 		this.subscriptionId = null;
 		
-		monitorInterval = monitorInterval || 100;
-		publishInterval = publishInterval || 200;
+		monitorInterval = monitorInterval || 20;
+		publishInterval = publishInterval || 50;
 		successCallback = successCallback || nop;
 				
 		this.unregister = function (successCallback) {
@@ -164,6 +164,8 @@
 		
 		this.invoke = function (path, arguments, callback, timeout) {
 			timeout = timeout || 10000;
+			arguments = arguments || {};
+			callback = callback || (function (){});
 			return $.ajax({
 				type: 'POST',
 				timeout: timeout,
@@ -190,10 +192,33 @@
 			return newChannel;
 		};
 		
+		var subscriptionChannelCreating = false;
+		var queue = [];
 		this.onChange = function (path, callback, monitorInterval, publishInterval) {
-			if ( subscriptionChannel == null ) {
+			if ( subscriptionChannelCreating ){
+				queue.push({
+					path: path,
+					callback: callback,
+					monitorInterval: monitorInterval,
+					publishInterval: publishInterval
+				});
+				return;
+			}
+			if ( subscriptionChannel == null && !subscriptionChannelCreating ) {
+				subscriptionChannelCreating = true;
 				this.createSubscriptionChannel(200, (function (){
 					this.onChange(path, callback, monitorInterval, publishInterval);
+					subscriptionChannelCreating = false;
+					for(var i = queue.length-1; i >= 0; i--){
+						var elem = queue[i];
+						subscriptionChannel.registerSubscription(
+							elem.path,
+							elem.callback,
+							elem.monitorInterval,
+							elem.publishInterval
+						);
+						queue.splice(i,1);
+					}
 				}).bind(this))
 			}else{
 				subscriptionChannel.registerSubscription(path, callback, nop, monitorInterval, publishInterval);
