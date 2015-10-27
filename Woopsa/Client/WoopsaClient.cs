@@ -36,7 +36,8 @@ namespace Woopsa
         {
             if (disposing)
             {
-                _clientObject.Dispose();
+                if ( _clientObject != null )
+                    _clientObject.Dispose();
             }
         }
 

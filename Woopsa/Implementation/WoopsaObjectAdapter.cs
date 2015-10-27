@@ -42,7 +42,8 @@ namespace Woopsa
         None = 0,
         CacheClasses = 1,
         ListEnumerables = 2,
-        HideSpecialMethods = 4
+        HideSpecialMethods = 4,
+        SendTimestamps = 8
     }
 
 	public class WoopsaObjectAdapter: WoopsaObject
@@ -227,11 +228,11 @@ namespace Woopsa
         {
             if (property.ReadOnly)
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
-                    (sender) => (property.PropertyInfo.GetValue(TargetObject).ToWoopsaValue(property.Type))
+                    (sender) => (property.PropertyInfo.GetValue(TargetObject).ToWoopsaValue(property.Type, HasOption(WoopsaObjectAdapterOptions.SendTimestamps)))
                 );
             else
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
-                    (sender) => (property.PropertyInfo.GetValue(TargetObject).ToWoopsaValue(property.Type)),
+                    (sender) => (property.PropertyInfo.GetValue(TargetObject).ToWoopsaValue(property.Type, HasOption(WoopsaObjectAdapterOptions.SendTimestamps))),
                     (sender, value) => property.PropertyInfo.SetValue(TargetObject, ((WoopsaValue)value).ConvertTo(property.PropertyInfo.PropertyType))
                 );
         }

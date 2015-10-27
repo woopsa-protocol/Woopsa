@@ -10,27 +10,46 @@ namespace Woopsa
 	{
 		#region IWoopsaValue
 
-        public static WoopsaValue ToWoopsaValue(this object value, WoopsaValueType type)
+        public static WoopsaValue ToWoopsaValue(this object value, WoopsaValueType type, bool timestamp = false)
         {
             try
             {
-                switch (type)
-                {
-                    case WoopsaValueType.Logical:
-                        return new WoopsaValue((bool)value);
-                    case WoopsaValueType.Integer:
-                        return new WoopsaValue(Convert.ToInt64(value));
-                    case WoopsaValueType.Real:
-                        return new WoopsaValue(Convert.ToDouble(value));
-                    case WoopsaValueType.DateTime:
-                        return new WoopsaValue((DateTime)value);
-                    case WoopsaValueType.TimeSpan:
-                        return new WoopsaValue((TimeSpan)value);
-                    case WoopsaValueType.Text:
-                        return new WoopsaValue(value.ToString());
-                    default:
-                        return new WoopsaValue(value.ToString(), type);
-                }
+                if (!timestamp)
+                    switch (type)
+                    {
+                        case WoopsaValueType.Logical:
+                            return new WoopsaValue((bool)value);
+                        case WoopsaValueType.Integer:
+                            return new WoopsaValue(Convert.ToInt64(value));
+                        case WoopsaValueType.Real:
+                            return new WoopsaValue(Convert.ToDouble(value));
+                        case WoopsaValueType.DateTime:
+                            return new WoopsaValue((DateTime)value);
+                        case WoopsaValueType.TimeSpan:
+                            return new WoopsaValue((TimeSpan)value);
+                        case WoopsaValueType.Text:
+                            return new WoopsaValue(value.ToString());
+                        default:
+                            return new WoopsaValue(value.ToString(), type);
+                    }
+                else
+                    switch (type)
+                    {
+                        case WoopsaValueType.Logical:
+                            return new WoopsaValue((bool)value, DateTime.Now);
+                        case WoopsaValueType.Integer:
+                            return new WoopsaValue(Convert.ToInt64(value), DateTime.Now);
+                        case WoopsaValueType.Real:
+                            return new WoopsaValue(Convert.ToDouble(value), DateTime.Now);
+                        case WoopsaValueType.DateTime:
+                            return new WoopsaValue((DateTime)value, DateTime.Now);
+                        case WoopsaValueType.TimeSpan:
+                            return new WoopsaValue((TimeSpan)value, DateTime.Now);
+                        case WoopsaValueType.Text:
+                            return new WoopsaValue(value.ToString(), DateTime.Now);
+                        default:
+                            return new WoopsaValue(value.ToString(), type, DateTime.Now);
+                    }
             }
             catch(InvalidCastException)
             {
