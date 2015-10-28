@@ -125,8 +125,8 @@ namespace Woopsa
         /// </summary>
         public void Start()
         {
-            _listenerThread.Start();
             _listener.Start();
+            _listenerThread.Start();
             _started = true;
         }
 

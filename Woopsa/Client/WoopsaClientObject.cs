@@ -69,14 +69,14 @@ namespace Woopsa
             {
                 if (property.ReadOnly)
                 {
-                    WoopsaClientProperty newProperty = new WoopsaClientProperty(this,
+                    new WoopsaClientProperty(this,
                         property.Name,
                         (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
                         GetProperty);
                 }
                 else
                 {
-                    WoopsaClientProperty newProperty = new WoopsaClientProperty(this,
+                    new WoopsaClientProperty(this,
                         property.Name,
                         (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
                         GetProperty,
@@ -89,7 +89,7 @@ namespace Woopsa
                 List<WoopsaMethodArgumentInfo> argumentInfos = new List<WoopsaMethodArgumentInfo>();
                 foreach (var argumentInfo in method.ArgumentInfos)
                     argumentInfos.Add(new WoopsaMethodArgumentInfo(argumentInfo.Name, (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), argumentInfo.Type)));
-                WoopsaMethod newMethod = new WoopsaMethod(this,
+                new WoopsaMethod(this,
                     method.Name,
                     (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), method.ReturnType),
                     argumentInfos,
@@ -98,7 +98,7 @@ namespace Woopsa
 
             foreach (var item in _meta.Items)
             {
-                WoopsaClientObject newObject = new WoopsaClientObject(_client, this, item);
+                new WoopsaClientObject(_client, this, item);
             }
         }
 

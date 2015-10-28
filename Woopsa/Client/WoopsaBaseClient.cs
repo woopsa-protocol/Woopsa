@@ -54,7 +54,7 @@ namespace Woopsa
         {
             string response = Request("meta" + path);
             var serializer = new JavaScriptSerializer();
-            var result = (WoopsaMetaResult)serializer.Deserialize(response, typeof(WoopsaMetaResult));
+            var result = serializer.Deserialize<WoopsaMetaResult>(response);
             return result;
         }
 
@@ -100,9 +100,8 @@ namespace Woopsa
 
         private WoopsaValue WoopsaValueFromResponse(string response)
         {
-            Stopwatch w = new Stopwatch();
             var serializer = new JavaScriptSerializer();
-            WoopsaReadResult result = (WoopsaReadResult)serializer.Deserialize(response, typeof(WoopsaReadResult));
+            WoopsaReadResult result = serializer.Deserialize<WoopsaReadResult>(response);
 
             if ((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type) == WoopsaValueType.JsonData)
             {

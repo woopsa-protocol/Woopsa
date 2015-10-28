@@ -2,8 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -50,7 +48,7 @@ namespace Woopsa
 	{
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterVisibility visibility = WoopsaObjectAdapterVisibility.All,
-            WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.CacheClasses)
+            WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.CacheClasses | WoopsaObjectAdapterOptions.HideSpecialMethods)
             : base(container, name)
         {
             TargetObject = targetObject;
@@ -287,7 +285,7 @@ namespace Woopsa
                     return false;
             else
                 if (_visibility == WoopsaObjectAdapterVisibility.Declared && property.PropertyInfo.DeclaringType == TargetObject.GetType())
-                    return true;
+                    return property.WoopsaVisible;
                 else if (_visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && property.WoopsaVisible)
                     return true;
                 else
@@ -305,7 +303,7 @@ namespace Woopsa
                     return false;
             else
                 if (_visibility == WoopsaObjectAdapterVisibility.Declared && method.MethodInfo.DeclaringType == TargetObject.GetType())
-                    return true;
+                    return method.WoopsaVisible;
                 else if (_visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && method.WoopsaVisible)
                     return true;
                 else
@@ -323,7 +321,7 @@ namespace Woopsa
                     return false;
             else
                 if (_visibility == WoopsaObjectAdapterVisibility.Declared && item.PropertyInfo.DeclaringType == TargetObject.GetType())
-                    return true;
+                    return item.WoopsaVisible;
                 else if (_visibility == WoopsaObjectAdapterVisibility.WoopsaVisible && item.WoopsaVisible)
                     return true;
                 else

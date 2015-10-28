@@ -77,8 +77,8 @@ namespace Woopsa
             _routePrefix = routePrefix;
             WebServer = new WebServer(port, true);
             AddRoutes(WebServer, routePrefix);
-            WoopsaMultiRequestHandler multiHandler = new WoopsaMultiRequestHandler(adapter, this);
-            SubscriptionService subscriptionService = new SubscriptionService(adapter);
+            new WoopsaMultiRequestHandler(adapter, this);
+            new SubscriptionService(adapter);
             WebServer.Start();
         }
 

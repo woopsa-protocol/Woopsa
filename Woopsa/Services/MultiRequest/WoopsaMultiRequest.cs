@@ -3,8 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-//using System.Runtime.Serialization;
-//using System.Runtime.Serialization.Json;
 using System.Web.Script.Serialization;
 using System.IO;
 using System.Collections.Specialized;
@@ -23,7 +21,7 @@ namespace Woopsa
         {
             _server = server;
 
-            WoopsaMethod multiMethod = new WoopsaMethod(root, 
+            new WoopsaMethod(root, 
                 WoopsaMultiRequestConst.WoopsaMultiRequestMethodName,
                 WoopsaValueType.JsonData,
                 new List<WoopsaMethodArgumentInfo>{new WoopsaMethodArgumentInfo(WoopsaMultiRequestConst.WoopsaMultiRequestArgumentName, WoopsaValueType.JsonData)},
@@ -34,7 +32,7 @@ namespace Woopsa
         private IWoopsaValue HandleCall(IWoopsaValue requestsArgument)
         {
             var serializer = new JavaScriptSerializer();
-            Request[] requestsList = (Request[])serializer.Deserialize(requestsArgument.AsText, typeof(Request[]));
+            Request[] requestsList = serializer.Deserialize<Request[]>(requestsArgument.AsText);
             List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
             foreach(Request request in requestsList)
             {

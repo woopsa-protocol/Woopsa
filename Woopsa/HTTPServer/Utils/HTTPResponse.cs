@@ -193,7 +193,7 @@ namespace Woopsa
                 {
                     writer.Write(header + "\r\n");
                 }
-                writer.WriteLine("");
+                writer.Write("\r\n");
                 writer.Flush();
                 _bufferStream.Position = 0;
                 _bufferStream.CopyTo(_outputStream);

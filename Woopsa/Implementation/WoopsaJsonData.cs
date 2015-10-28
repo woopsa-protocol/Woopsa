@@ -77,7 +77,7 @@ namespace Woopsa
         public string AsText()
         {
             if (IsSimple)
-                return (string)_data;
+                return (string)_data.ToString();
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("string", _data.GetType().ToString()));
         }
