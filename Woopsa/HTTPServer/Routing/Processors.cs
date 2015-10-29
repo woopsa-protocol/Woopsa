@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -21,7 +22,10 @@ namespace Woopsa
     /// the HTTP request will lead to a 404, for example. It's very
     /// useful for making a TLS or HTTP 2 layer, for example.
     /// </summary>
-    public abstract class PreRouteProcessor { }
+    public abstract class PreRouteProcessor 
+    {
+        public abstract Stream ProcessStream(Stream input);
+    }
 
     /// <summary>
     /// A Request Processor is a processor which needs to process

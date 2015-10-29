@@ -22,6 +22,7 @@ namespace Woopsa
     {
         public const string DefaultServerPrefix = "/woopsa/";
         public const int DefaultPort = 80;
+        public const int DefaultPortSsl = 443;
 
         public WebServer WebServer { get; private set; }
 

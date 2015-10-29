@@ -5,7 +5,10 @@ using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
+using System.Net.Security;
 using System.Net.Sockets;
+using System.Security.Authentication;
+using System.Security.Cryptography.X509Certificates;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading;
@@ -71,6 +74,7 @@ namespace Woopsa
         public WebServer(int port, bool multithreaded)
         {
             Port = port;
+            PreRouteProcessors = new List<PreRouteProcessor>();
             _routeSolver = new RouteSolver();
             _routeSolver.Error += _routeSolver_Error;
             _listener = new TcpListener(IPAddress.Any, port);
@@ -99,7 +103,12 @@ namespace Woopsa
         /// </summary>
         public bool MultiThreaded { get; private set; }
 
+        /// <summary>
+        /// Which TCP port the WebServer is currently listening on
+        /// </summary>
         public int Port { get; private set; }
+
+        public List<PreRouteProcessor> PreRouteProcessors { get; private set; }
         #endregion
 
         #region Private Members
@@ -126,8 +135,8 @@ namespace Woopsa
         public void Start()
         {
             _listener.Start();
-            _listenerThread.Start();
             _started = true;
+            _listenerThread.Start();
         }
 
         /// <summary>
@@ -148,9 +157,19 @@ namespace Woopsa
                 try
                 {
                     TcpClient client = _listener.AcceptTcpClient();
+                    Stream clientStream = client.GetStream();
+
+                    foreach (PreRouteProcessor processor in PreRouteProcessors)
+                    {
+                        clientStream = processor.ProcessStream(clientStream);
+                    }
+
+                    if (clientStream == null)
+                        continue;
+
                     if (MultiThreaded)
                     {
-                        ThreadPool.QueueUserWorkItem((o) => HandleClient(client.GetStream()));
+                        ThreadPool.QueueUserWorkItem((o) => HandleClient(clientStream));
                     }
                     else
                     {
