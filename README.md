@@ -23,3 +23,8 @@ System requirements:
 
 ### Linux/MacOS
 A build/release script is coming soon!
+
+## Compatibility
+Woopsa has been tested and works on:
+ * .NET Framework 4.5
+ * Mono 4.0+
