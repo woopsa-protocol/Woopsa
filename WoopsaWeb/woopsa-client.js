@@ -8,8 +8,8 @@
 		
 		this.subscriptionId = null;
 		
-		monitorInterval = monitorInterval || 20;
-		publishInterval = publishInterval || 50;
+		monitorInterval = monitorInterval || 0.02;
+		publishInterval = publishInterval || 0.05;
 		successCallback = successCallback || nop;
 				
 		this.unregister = function (successCallback) {

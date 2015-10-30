@@ -116,7 +116,7 @@ namespace Woopsa
 
 		public static Int32 ToInt32(this IWoopsaValue value)
 		{
-			if (value.Type == WoopsaValueType.Integer)
+			if (value.Type == WoopsaValueType.Integer )
 			{
 				Int32 result;
 				if (Int32.TryParse(value.AsText, out result))

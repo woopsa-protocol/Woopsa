@@ -20,7 +20,7 @@ namespace Woopsa
             throw new NotImplementedException();
         }
 
-        public override void Register(string path, int monitorInterval, int publishInterval)
+        public override void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             throw new NotImplementedException();
         }

@@ -102,6 +102,15 @@ namespace Woopsa
             }
             return false;
         }
+
+        public IEnumerable<RouteMapper> RouteMappers
+        {
+            get
+            {
+                foreach (RouteMapper route in _routes)
+                    yield return route;
+            }
+        }
         #endregion
 
         #region Private/Protected/Internal Methods

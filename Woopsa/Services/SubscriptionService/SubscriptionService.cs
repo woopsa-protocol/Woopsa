@@ -26,8 +26,8 @@ namespace Woopsa
                 new WoopsaMethodArgumentInfo[]{
                     new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, WoopsaValueType.Integer),
                     new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaPropertyLink, WoopsaValueType.WoopsaLink),
-                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, WoopsaValueType.Integer),
-                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, WoopsaValueType.Integer)
+                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, WoopsaValueType.TimeSpan),
+                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, WoopsaValueType.TimeSpan)
                 },
                 (args) => (RegisterSubscription(args.ElementAt(0), args.ElementAt(1), args.ElementAt(2), args.ElementAt(3)))
             );
@@ -66,7 +66,7 @@ namespace Woopsa
             int channelId = subscriptionChannel.ToInt32();
             if (_channels.ContainsKey(channelId))
             {
-                return new WoopsaValue(_channels[channelId].RegisterSubscription(Container, woopsaPropertyLink, monitorInterval.ToInt32(), publishInterval.ToInt32()));
+                return new WoopsaValue(_channels[channelId].RegisterSubscription(Container, woopsaPropertyLink, (int)monitorInterval.ToTimeSpan().TotalMilliseconds, (int)publishInterval.ToTimeSpan().TotalMilliseconds));
             }
             else
                 throw new WoopsaException(String.Format("Tried to register a subscription on channel with id={0} that does not exist", subscriptionChannel.ToInt32()));

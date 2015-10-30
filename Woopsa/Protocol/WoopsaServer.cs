@@ -433,12 +433,14 @@ namespace Woopsa
 
         private class AccessControlProcessor : PostRouteProcessor, IRequestProcessor
         {
+            public static readonly TimeSpan MaxAge = TimeSpan.FromDays(20);
 
             public bool Process(HTTPRequest request, HTTPResponse response)
             {
                 response.SetHeader("Access-Control-Allow-Headers", "Authorization");
                 response.SetHeader("Access-Control-Allow-Origin", "*");
                 response.SetHeader("Access-Control-Allow-Credentials", "true");
+                response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString());
                 return true;
             }
         }

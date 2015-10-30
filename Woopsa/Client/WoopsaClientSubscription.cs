@@ -30,7 +30,7 @@ namespace Woopsa
             Register(path, WoopsaClientSubscription.DefaultMonitorInterval, WoopsaClientSubscription.DefaultPublishInterval);
         }
 
-        public override void Register(string path, int monitorInterval, int publishInterval)
+        public override void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             WoopsaClientSubscription subscription = new WoopsaClientSubscription(this, _client, path, monitorInterval, publishInterval);
             lock (_subscriptions)
@@ -120,13 +120,13 @@ namespace Woopsa
 
         private class WoopsaClientSubscription
         {
-            public const int DefaultMonitorInterval = 100;
-            public const int DefaultPublishInterval = 200;
+            public static readonly TimeSpan DefaultMonitorInterval = TimeSpan.FromMilliseconds(200);
+            public static readonly TimeSpan DefaultPublishInterval = TimeSpan.FromMilliseconds(200);
 
             public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, WoopsaBaseClient client, string path)
                 : this(channel, client, path, DefaultMonitorInterval, DefaultPublishInterval) { }
 
-            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, WoopsaBaseClient client, string path, int monitorInterval, int publishInterval)
+            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, WoopsaBaseClient client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
             {
                 _channel = channel;
                 _client = client;
@@ -148,13 +148,13 @@ namespace Woopsa
             private WoopsaClientSubscriptionChannel _channel;
             private WoopsaBaseClient _client;
 
-            private int Register(int monitorInterval, int publishInterval)
+            private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
             {
                 NameValueCollection arguments = new NameValueCollection();
                 arguments.Add(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, _channel.ChannelId.ToString());
                 arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPropertyLink, Path);
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, monitorInterval.ToString());
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, publishInterval.ToString());
+                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, monitorInterval.TotalSeconds.ToString());
+                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, publishInterval.TotalSeconds.ToString());
                 IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription, arguments);
                 return result.ToInt32();
             }

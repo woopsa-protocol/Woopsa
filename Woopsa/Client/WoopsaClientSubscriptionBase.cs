@@ -20,7 +20,7 @@ namespace Woopsa
 
         public abstract void Register(string path);
 
-        public abstract void Register(string path, int monitorInterval, int publishInterval);
+        public abstract void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval);
 
         public abstract bool Unregister(string path);
     }
