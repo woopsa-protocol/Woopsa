@@ -13,6 +13,30 @@ namespace Woopsa
             _client = new WoopsaBaseClient(url);
         }
 
+        public string Username
+        {
+            get
+            {
+                return _client.Username;
+            }
+            set
+            {
+                _client.Username = value;
+            }
+        }
+
+        public string Password
+        {
+            get
+            {
+                return _client.Password;
+            }
+            set
+            {
+                _client.Password = value;
+            }
+        }
+
         public WoopsaClientObject Root 
         { 
             get

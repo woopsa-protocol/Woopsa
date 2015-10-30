@@ -136,16 +136,31 @@
 			this.url = url + "/";
 		}
 		
+		this.username = null,
+		this.password = null;
+		
 		this.read = function (path, callback) {
-			return $.get(this.url + "read" + path, {}, function (data, textStatus, jqXHR) {
+			return $.ajax({
+				type: 'GET',
+				url: this.url + "read" + path,
+				beforeSend: authenticateHeaders.bind(this)
+			})
+			.done(function (data) {
 				callback(data.Value, path);
-			}).fail(function (request, status, errorThrown){
+			})
+			.fail(function (request, status, errorThrown){
 				raiseError(status, errorThrown);
 			});
 		};
 		
 		this.write = function (path, value, callback) {
-			return $.post(this.url + "write" + path, {value: value}, function (data, textStatus, jqXHR) {
+			return $.ajax({
+				type: 'POST',
+				url: this.url + 'write' + path,
+				beforeSend: authenticateHeaders.bind(this),
+				data: {value: value}
+			})
+			.done(function (data) {
 				callback(true, path);
 			})
 			.fail(function (request, status, errorThrown){
@@ -154,7 +169,12 @@
 		};
 	
 		this.meta = function (path, callback) {
-			return $.get(this.url + "meta" + path, {}, function (data, textStatus, jqXHR) {
+			return $.ajax({
+				type: 'GET',
+				url: this.url + "meta" + path,
+				beforeSend: authenticateHeaders.bind(this),
+			})
+			.done(function (data) {
 				callback(data, path);
 			})
 			.fail(function (request, status, errorThrown){
@@ -169,6 +189,7 @@
 			return $.ajax({
 				type: 'POST',
 				timeout: timeout,
+				beforeSend: authenticateHeaders.bind(this),
 				url: this.url + "invoke" + path,
 				data: arguments
 			})
@@ -214,6 +235,7 @@
 						subscriptionChannel.registerSubscription(
 							elem.path,
 							elem.callback,
+							nop,
 							elem.monitorInterval,
 							elem.publishInterval
 						);
@@ -233,6 +255,11 @@
 			for ( var i = 0; i < errorCallbacks.length; i++ ) {
 				errorCallbacks[i](type, errorThrown);
 			}
+		}
+		
+		function authenticateHeaders(xhr){
+			if ( this.username != null )
+				xhr.setRequestHeader("Authorization", "Basic " + btoa(this.username + ":" + this.password));
 		}
 	};
 })(window);

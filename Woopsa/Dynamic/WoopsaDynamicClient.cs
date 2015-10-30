@@ -15,6 +15,30 @@ namespace Woopsa
             _object = new WoopsaDynamicObject(_client.Root);
         }
 
+        public string Username
+        {
+            get
+            {
+                return _client.Username;
+            }
+            set
+            {
+                _client.Username = value;
+            }
+        }
+
+        public string Password
+        {
+            get
+            {
+                return _client.Password;
+            }
+            set
+            {
+                _client.Password = value;
+            }
+        }
+
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
             return _object.TryGetMember(binder, out result);

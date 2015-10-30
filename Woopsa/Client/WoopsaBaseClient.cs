@@ -23,6 +23,9 @@ namespace Woopsa
             _url = url;
         }
 
+        public string Username { get; set; }
+        public string Password { get; set; }
+
         public event EventHandler<WoopsaNotificationsEventArgs> PropertyChange;
 
         public WoopsaValue Read(string path)
@@ -122,6 +125,12 @@ namespace Woopsa
         private string Request(string path, NameValueCollection postData, int timeout)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(_url + path);
+
+            if (Username != null)
+            {
+                request.Credentials = new NetworkCredential(Username, Password);
+            }
+
             request.Timeout = timeout;
             if (postData != null)
             {

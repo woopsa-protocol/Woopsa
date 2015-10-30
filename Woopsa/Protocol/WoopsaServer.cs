@@ -172,13 +172,44 @@ namespace Woopsa
                 (_root as WoopsaObjectAdapter).ClearCache();
         }
 
+        public WWWAuthenticator.Check CheckAuthenticate 
+        {
+            get
+            {
+                return _checkAuthenticate;
+            }
+            set
+            {
+                _checkAuthenticate = value;
+                if (_checkAuthenticate == null)
+                {
+                    foreach (RouteMapper mapper in WebServer.Routes.RouteMappers)
+                        mapper.RemoveProcessor(_authenticator);
+                    _authenticator = null;
+                }
+                else if (_authenticator == null)
+                {
+                    _authenticator = new WWWAuthenticator("Woopsa authentication");
+                    _authenticator.DoCheck = _checkAuthenticate;
+                    _metaRoute.AddProcessor(_authenticator);
+                    _readRoute.AddProcessor(_authenticator);
+                    _writeRoute.AddProcessor(_authenticator);
+                    _invokeRoute.AddProcessor(_authenticator);
+                }
+                _authenticator.DoCheck = _checkAuthenticate;
+            }
+        }
+        private WWWAuthenticator.Check _checkAuthenticate;
+        private WWWAuthenticator _authenticator;
+
         #region Private Members
         private void AddRoutes(WebServer server, string routePrefix)
         {
             AllowCrossOrigin = true;
-            server.Routes.Add(routePrefix + "meta", HTTPMethod.GET, (request, response) => { HandleRequest(WoopsaVerb.Meta, request, response); }, true);
-            server.Routes.Add(routePrefix + "read", HTTPMethod.GET, (request, response) => { HandleRequest(WoopsaVerb.Read, request, response); }, true);
-            server.Routes.Add(routePrefix + "write", HTTPMethod.POST, (request, response) => { HandleRequest(WoopsaVerb.Write, request, response); }, true);
+            server.Routes.Add(routePrefix, HTTPMethod.OPTIONS, (Request, response) => { }, true).AddProcessor(_accessControlProcessor);
+            _metaRoute = server.Routes.Add(routePrefix + "meta", HTTPMethod.GET, (request, response) => { HandleRequest(WoopsaVerb.Meta, request, response); }, true).AddProcessor(_accessControlProcessor);
+            _readRoute = server.Routes.Add(routePrefix + "read", HTTPMethod.GET, (request, response) => { HandleRequest(WoopsaVerb.Read, request, response); }, true).AddProcessor(_accessControlProcessor);
+            _writeRoute = server.Routes.Add(routePrefix + "write", HTTPMethod.POST, (request, response) => { HandleRequest(WoopsaVerb.Write, request, response); }, true).AddProcessor(_accessControlProcessor);
             // POST is used here instead of GET for two main reasons:
             //  - The length of a GET query is limited in HTTP. There is no official limit but most
             //    implementations have a 2-8 KB limit, which is not good when we want to do large
@@ -186,7 +217,7 @@ namespace Woopsa
             //  - GET requestsList should not change the state of the server, as they can be triggered
             //    by crawlers and such. Invoking a function will, in most cases, change the state of
             //    the server.
-            server.Routes.Add(routePrefix + "invoke", HTTPMethod.POST, (request, response) => { HandleRequest(WoopsaVerb.Invoke, request, response); }, true);
+            _invokeRoute = server.Routes.Add(routePrefix + "invoke", HTTPMethod.POST, (request, response) => { HandleRequest(WoopsaVerb.Invoke, request, response); }, true).AddProcessor(_accessControlProcessor);
         }
 
         private void HandleRequest(WoopsaVerb verb, HTTPRequest request, HTTPResponse response)
@@ -325,6 +356,12 @@ namespace Woopsa
         private string _routePrefix;
         private bool _selfCreatedServer = false;
         private Dictionary<string, IWoopsaElement> _pathCache = new Dictionary<string, IWoopsaElement>();
+        private AccessControlProcessor _accessControlProcessor = new AccessControlProcessor();
+
+        private RouteMapper _readRoute;
+        private RouteMapper _writeRoute;
+        private RouteMapper _metaRoute;
+        private RouteMapper _invokeRoute;
 
         private void Stop()
         {
@@ -393,5 +430,17 @@ namespace Woopsa
             GC.SuppressFinalize(this);
         }
         #endregion
+
+        private class AccessControlProcessor : PostRouteProcessor, IRequestProcessor
+        {
+
+            public bool Process(HTTPRequest request, HTTPResponse response)
+            {
+                response.SetHeader("Access-Control-Allow-Headers", "Authorization");
+                response.SetHeader("Access-Control-Allow-Origin", "*");
+                response.SetHeader("Access-Control-Allow-Credentials", "true");
+                return true;
+            }
+        }
     }
 }

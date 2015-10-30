@@ -121,7 +121,8 @@ namespace Woopsa
             {"GET",     HTTPMethod.GET},
             {"POST",    HTTPMethod.POST},
             {"PUT",     HTTPMethod.PUT},
-            {"DELETE",  HTTPMethod.DELETE}
+            {"DELETE",  HTTPMethod.DELETE},
+            {"OPTIONS", HTTPMethod.OPTIONS}
         };
 
         private bool _abort = false;

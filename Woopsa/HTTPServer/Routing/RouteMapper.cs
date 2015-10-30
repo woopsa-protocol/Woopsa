@@ -71,6 +71,11 @@ namespace Woopsa
             _processors.Add(processor);
             return this; //Allows daisy-chaining of AddProcessor calls
         }
+
+        public bool RemoveProcessor(PostRouteProcessor processor)
+        {
+            return _processors.Remove(processor);
+        }
         #endregion
 
         #region Private/Protected/Internal methods
