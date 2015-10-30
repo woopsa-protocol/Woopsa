@@ -46,9 +46,11 @@ namespace Woopsa
 
 	public class WoopsaObjectAdapter: WoopsaObject
 	{
+        public const char IEnumerableIndexSeparator = '_';
+
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterVisibility visibility = WoopsaObjectAdapterVisibility.All,
-            WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.CacheClasses | WoopsaObjectAdapterOptions.HideSpecialMethods)
+            WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.CacheClasses | WoopsaObjectAdapterOptions.HideSpecialMethods | WoopsaObjectAdapterOptions.ListEnumerables)
             : base(container, name)
         {
             TargetObject = targetObject;
@@ -124,6 +126,26 @@ namespace Woopsa
 
         protected virtual void PopulateProperties(TypeCache typeCache)
         {
+            // Listing IEnumerables of things that aren't WoopsaObjects is complicated
+            //if (TargetObject is System.Collections.IEnumerable && HasOption(WoopsaObjectAdapterOptions.ListEnumerables))
+            //{
+            //    Options &= ~WoopsaObjectAdapterOptions.CacheClasses;
+            //    int i = 0;
+            //    System.Collections.IEnumerable asEnumerable = TargetObject as System.Collections.IEnumerable;
+            //    foreach (var elem in asEnumerable)
+            //    {
+            //        string name = elem.GetType().Name + IEnumerableIndexSeparator + i;
+            //        var closure = elem;
+            //        WoopsaValueType type;
+            //        WoopsaTypeUtils.InferWoopsaType(elem.GetType(), out type);
+            //        new WoopsaProperty(this, name, type,
+            //            (sender) => (elem.ToWoopsaValue(type, HasOption(WoopsaObjectAdapterOptions.SendTimestamps))),
+            //            delegate(object sender, IWoopsaValue value) { closure = ((WoopsaValue)value).ConvertTo(elem.GetType()); }
+            //        );
+            //        i++;
+            //    }
+            //}
+
             foreach (var propertyInfo in TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where<PropertyInfo>(Filter))
             {
                 WoopsaValueType woopsaType;
@@ -153,6 +175,18 @@ namespace Woopsa
 
         protected virtual void PopulateItems(TypeCache typeCache)
         {
+            if (TargetObject is IEnumerable<object> && HasOption(WoopsaObjectAdapterOptions.ListEnumerables))
+            {
+                Options &= ~WoopsaObjectAdapterOptions.CacheClasses;
+                int i = 0;
+                foreach(object elem in (TargetObject as IEnumerable<object>))
+                {
+                    string name = elem.GetType().Name + IEnumerableIndexSeparator + i;
+                    i++;
+                    new WoopsaObjectAdapter(this, name, elem, _visibility);
+                }
+            }
+
             foreach (var propertyInfo in TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance).Where<PropertyInfo>(Filter))
             {
                 WoopsaValueType woopsaType;
