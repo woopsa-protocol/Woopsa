@@ -201,6 +201,32 @@
 			});
 		};
 		
+		this.multiRequest = function(requests, callback){
+			var internalRequests = {};
+			var allArguments = [];
+			for(var i = 0; i < requests.length; i++){
+				var req = requests[i];
+				internalRequests[req.Id] = req;
+				allArguments.push({
+					Id: req.Id,
+					Action: req.Action,
+					Path: req.Path,
+					Value: req.Value,
+					Arguments: req.Arguments
+				});
+			}
+			
+			return this.invoke("/MultiRequest", {Requests: JSON.stringify(allArguments)}, (function (data){
+				for(var i = 0; i < data.length; i++){
+					var response = data[i];
+					var internalRequest = internalRequests[response.Id];
+					if ( internalRequest.callback )
+						internalRequest.callback(response.Result);
+				}
+				callback(data);
+			}).bind(this));
+		}
+		
 		this.createSubscriptionChannel = function (notificationQueueSize, callback) {
 			if ( subscriptionChannel != null ) {
 				callback.call(subscriptionChannel, subscriptionChannel.channelId);
