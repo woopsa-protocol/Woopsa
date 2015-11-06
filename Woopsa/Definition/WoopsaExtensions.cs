@@ -432,7 +432,7 @@ namespace Woopsa
             return null;
         }
 
-		internal static IWoopsaContainer ByNameOrNull(this IEnumerable<IWoopsaContainer> containers, string name)
+		public static IWoopsaContainer ByNameOrNull(this IEnumerable<IWoopsaContainer> containers, string name)
 		{
 			foreach (var item in containers)
 				if (item.Name == name)
@@ -440,7 +440,7 @@ namespace Woopsa
 			return null;
 		}
 
-        internal static IWoopsaProperty ByNameOrNull(this IEnumerable<IWoopsaProperty> properties, string name)
+        public static IWoopsaProperty ByNameOrNull(this IEnumerable<IWoopsaProperty> properties, string name)
 		{
 			foreach (var item in properties)
 				if (item.Name == name)
@@ -448,7 +448,7 @@ namespace Woopsa
 			return null;
 		}
 
-        internal static IWoopsaMethod ByNameOrNull(this IEnumerable<IWoopsaMethod> methods, string name)
+        public static IWoopsaMethod ByNameOrNull(this IEnumerable<IWoopsaMethod> methods, string name)
 		{
 			foreach (var item in methods)
 				if (item.Name == name)

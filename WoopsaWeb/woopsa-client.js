@@ -191,10 +191,14 @@
 				timeout: timeout,
 				beforeSend: authenticateHeaders.bind(this),
 				url: this.url + "invoke" + path,
-				data: arguments
+				data: arguments,
+				dataType: "text"
 			})
 			.done(function (data){
-				callback(data.Value);
+				if ( data == "" )
+					callback();
+				else
+					callback(JSON.parse(data).Value);
 			})
 			.fail(function (request, status, errorThrown){
 				raiseError(status, errorThrown);
