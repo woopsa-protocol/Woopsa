@@ -153,8 +153,8 @@ namespace Woopsa
                 NameValueCollection arguments = new NameValueCollection();
                 arguments.Add(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, _channel.ChannelId.ToString());
                 arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPropertyLink, Path);
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, monitorInterval.TotalSeconds.ToString());
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, publishInterval.TotalSeconds.ToString());
+                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, monitorInterval.TotalSeconds.ToStringWoopsa());
+                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, publishInterval.TotalSeconds.ToStringWoopsa());
                 IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription, arguments);
                 return result.ToInt32();
             }

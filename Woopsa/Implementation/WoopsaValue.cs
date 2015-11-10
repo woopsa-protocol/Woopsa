@@ -38,12 +38,12 @@ namespace Woopsa
 		}
 
 		public WoopsaValue(Int64 value)
-			: this(value.ToString(), WoopsaValueType.Integer)
+			: this(value.ToStringWoopsa(), WoopsaValueType.Integer)
 		{
 		}
 
 		public WoopsaValue(double value)
-			: this(value.ToString(), WoopsaValueType.Real)
+			: this(value.ToStringWoopsa(), WoopsaValueType.Real)
 		{
 		}
 

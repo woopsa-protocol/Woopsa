@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using System.Collections.Specialized;
 using System.Diagnostics;
 using Woopsa;
+using System.Globalization;
 
 namespace Woopsa
 {
@@ -440,7 +441,7 @@ namespace Woopsa
                 response.SetHeader("Access-Control-Allow-Headers", "Authorization");
                 response.SetHeader("Access-Control-Allow-Origin", "*");
                 response.SetHeader("Access-Control-Allow-Credentials", "true");
-                response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString());
+                response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString(CultureInfo.InvariantCulture));
                 return true;
             }
         }

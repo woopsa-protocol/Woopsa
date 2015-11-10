@@ -90,7 +90,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				sbyte result;
-				if (sbyte.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("sbyte", value.AsText));
@@ -104,7 +104,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				Int16 result;
-				if (Int16.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("Int16", value.AsText));
@@ -119,7 +119,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer )
 			{
 				Int32 result;
-				if (Int32.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("Int32", value.AsText));
@@ -133,7 +133,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				Int64 result;
-				if (Int64.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("Int64", value.AsText));
@@ -147,7 +147,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				byte result;
-				if (byte.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("byte", value.AsText));
@@ -161,7 +161,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				UInt16 result;
-				if (UInt16.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("UInt16", value.AsText));
@@ -175,7 +175,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				UInt32 result;
-				if (UInt32.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("UInt32", value.AsText));
@@ -189,7 +189,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Integer)
 			{
 				UInt64 result;
-				if (UInt64.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("UInt64", value.AsText));
@@ -203,7 +203,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Real)
 			{
 				float result;
-				if (float.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("float", value.AsText));
@@ -219,7 +219,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.Real)
 			{
 				double result;
-				if (double.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return result;
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("double", value.AsText));
@@ -249,7 +249,7 @@ namespace Woopsa
 			if (value.Type == WoopsaValueType.TimeSpan)
 			{				
 				double result;
-				if (double.TryParse(value.AsText, out result))
+				if (TryParseWoopsa(value.AsText, out result))
 					return TimeSpan.FromSeconds(result);
 				else
 					throw new WoopsaException(WoopsaCastValueExceptionMessage("TimeSpan", value.AsText));
@@ -279,12 +279,79 @@ namespace Woopsa
 			else
 				throw new WoopsaException(string.Format("Cannot decode WoopsaValue of type {0} as a WoopsaLink", value.Type));
 		}
-
 		#endregion IWoopsaValue
 
-		#region IWoopsaObject
+        #region Helpers
+        public static bool TryParseWoopsa(string value, out float result)
+        {
+            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
 
-		/// <summary>
+        public static bool TryParseWoopsa(string value, out double result)
+        {
+            return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out sbyte result)
+        {
+            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int16 result)
+        {
+            return Int16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int32 result)
+        {
+            return Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int64 result)
+        {
+            return Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out byte result)
+        {
+            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out UInt16 result)
+        {
+            return UInt16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out UInt32 result)
+        {
+            return UInt32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+        public static bool TryParseWoopsa(string value, out UInt64 result)
+        {
+            return UInt64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static string ToStringWoopsa(this double value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(this Int64 value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(this int value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+
+        #endregion
+
+        #region IWoopsaObject
+
+        /// <summary>
 		/// Gets the path of a WoopsaElement relative to a root
 		/// </summary>
 		/// <param name="element">The WoopsaElement to get the path for</param>

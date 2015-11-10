@@ -15,7 +15,7 @@ namespace Woopsa
 
         public static string ToWoopsaTimeSpan(this TimeSpan timeSpan)
         {
-            return timeSpan.TotalSeconds.ToString();
+            return timeSpan.TotalSeconds.ToStringWoopsa();
         }
 
         public static string WoopsaError(string error)
