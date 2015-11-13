@@ -2,3 +2,10 @@ bin
 obj
 /*.suo
 /WoopsaDemoServer/*.suo
+/WoopsaC/Debug
+/WoopsaC/DemoServer/Debug
+*.sdf
+*.suo
+*.filters
+*.user
+*.log
