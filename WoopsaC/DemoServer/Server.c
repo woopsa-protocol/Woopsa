@@ -26,8 +26,7 @@
 	exit(errno)
 #endif
 
-int sockInit(void)
-{
+int sockInit(void) {
 #ifdef _WIN32
 	WSADATA wsa_data;
 	return WSAStartup(MAKEWORD(1, 1), &wsa_data);
@@ -36,8 +35,7 @@ int sockInit(void)
 #endif
 }
 
-int sockQuit(void)
-{
+int sockQuit(void) {
 #ifdef _WIN32
 	return WSACleanup();
 #else
@@ -46,8 +44,7 @@ int sockQuit(void)
 }
 
 /* Note: For POSIX, typedef SOCKET as an int. */
-int sockClose(SOCKET sock)
-{
+int sockClose(SOCKET sock) {
 	int status = 0;
 #ifdef _WIN32
 	status = shutdown(sock, SD_BOTH);
@@ -60,11 +57,18 @@ int sockClose(SOCKET sock)
 	return status;
 }
 
+int lol = 2;
+char lol2[] = "Ha \" ha ha";
+
+WOOPSA_BEGIN(woopsaEntries)
+	WOOPSA_PROPERTY(lol, WOOPSA_TYPE_INTEGER)
+	WOOPSA_PROPERTY(lol2, WOOPSA_TYPE_TEXT)
+WOOPSA_END
+
 #define WOOPSA_PORT 8000
 #define BUFFER_SIZE 65535
 
-int main(int argc, char argv[])
-{
+int main(int argc, char argv[]) {
 	SOCKET sock, clientSock;
 	struct sockaddr_in addr, clientAddr;
 	char buffer[BUFFER_SIZE];
@@ -73,19 +77,17 @@ int main(int argc, char argv[])
 	WoopsaUInt16 responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
-	server = WoopsaInit("woopsa", NULL);
+	WoopsaInit(&server, "/woopsa/", woopsaEntries);
 
 	printf("Woopsa C library v0.1 demo server.\n");
 
-	if (sockInit() != 0)
-	{
+	if (sockInit() != 0) {
 		printf("Error initializing sockets\n");
 		EXIT_ERROR();
 	}
 
 	sock = socket(AF_INET, SOCK_STREAM, 0);
-	if (!CHECK_SOCKET(sock))
-	{
+	if (!CHECK_SOCKET(sock)) {
 		printf("Error creating socket\n");
 		EXIT_ERROR();
 	}
@@ -94,8 +96,7 @@ int main(int argc, char argv[])
 	addr.sin_addr.s_addr = INADDR_ANY;
 	addr.sin_port = htons(WOOPSA_PORT);
 
-	if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) != 0)
-	{
+	if (bind(sock, (struct sockaddr *)&addr, sizeof(addr)) != 0) {
 		printf("Error binding socket\n");
 		EXIT_ERROR();
 	}
@@ -103,45 +104,36 @@ int main(int argc, char argv[])
 	listen(sock, 5);
 	printf("Server listening on port %d\n", WOOPSA_PORT);
 
-	while (1)
-	{
+	while (1) {
 		clientAddrSize = sizeof(struct sockaddr_in);
 		clientSock = accept(sock, &clientAddr, &clientAddrSize);
-		if (!CHECK_SOCKET(clientSock))
-		{
+		if (!CHECK_SOCKET(clientSock)) {
 			printf("Received an invalid client socket.\n");
 			EXIT_ERROR();
 		}
 
-		while (1)
-		{
+		while (1) {
 			readBytes = recv(clientSock, buffer, sizeof(buffer), NULL);
 
-			if (WoopsaCheckRequestFinished(buffer, sizeof(buffer)) == 1)
-			{
-				printf("Found end\n");
+			if (WoopsaCheckRequestFinished(buffer, sizeof(buffer)) != 1) {
+				continue;
 			}
-			if (readBytes == 0)
-			{
+			if (readBytes == 0) {
 				printf("Finished\n");
 				break;
 			}
-			
-			if (WoopsaHandleRequest(server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength) == 0)
-			{
-				send(clientSock, buffer, responseLength, NULL);
-			}
+
+			WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength);
+			send(clientSock, buffer, responseLength, NULL);
 		}
 	}
 
-	if (sockClose(sock) != 0)
-	{
+	if (sockClose(sock) != 0) {
 		printf("Error closing socket\n");
 		EXIT_ERROR();
 	}
 
-	if (sockQuit() != 0)
-	{
+	if (sockQuit() != 0) {
 		printf("Error quitting sockets\n");
 		EXIT_ERROR();
 	}
