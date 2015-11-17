@@ -136,12 +136,12 @@ namespace Woopsa
 
         private WoopsaValue GetProperty(object sender)
         {
-            return _client.Read(this.GetPath() + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name);
+            return _client.Read(this.GetPath().TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name);
         }
 
         private void SetProperty(object sender, IWoopsaValue value)
         {
-            _client.Write(this.GetPath() + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name, value.AsText);
+            _client.Write(this.GetPath().TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name, value.AsText);
         }
 
         private WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments, List<WoopsaMethodArgumentInfo> argumentInfos, string methodName)

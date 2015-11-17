@@ -66,7 +66,7 @@ WOOPSA_BEGIN(woopsaEntries)
 WOOPSA_END
 
 #define WOOPSA_PORT 8000
-#define BUFFER_SIZE 65535
+#define BUFFER_SIZE 1024
 
 int main(int argc, char argv[]) {
 	SOCKET sock, clientSock;
@@ -115,16 +115,18 @@ int main(int argc, char argv[]) {
 		while (1) {
 			readBytes = recv(clientSock, buffer, sizeof(buffer), NULL);
 
-			if (WoopsaCheckRequestFinished(buffer, sizeof(buffer)) != 1) {
-				continue;
-			}
 			if (readBytes == 0) {
 				printf("Finished\n");
 				break;
 			}
 
-			WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength);
-			send(clientSock, buffer, responseLength, NULL);
+			if (WoopsaCheckRequestFinished(buffer, sizeof(buffer)) != 1) {
+				//continue;
+			}
+
+			if (WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength) >= WOOPSA_SUCCESS) {
+				send(clientSock, buffer, responseLength, NULL);
+			}
 		}
 	}
 

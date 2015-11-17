@@ -71,7 +71,10 @@ TypesDictionaryEntry Types[] = {
 #define JSON_ERROR "{\"Error\":\"%s\"}"
 #define JSON_META_START "{\"Name\":\"Root\",\"Properties\":"
 #define JSON_META_END ",\"Items\":[],\"Methods\":[]}"
-#define JSON_PROPERTY "{\"Name\":\"%s\",\"Type\":\"%s\",\"ReadOnly\":%s}"
+#define JSON_PROPERTY_NAME "{\"Name\":\""
+#define JSON_PROPERTY_TYPE "\",\"Type\":\""
+#define JSON_PROPERTY_READONLY "\",\"ReadOnly\":"
+#define JSON_PROPERTY_END "}"
 #define JSON_ARRAY_START "["
 #define JSON_ARRAY_END "]"
 #define JSON_ARRAY_DELIMITER ","
@@ -199,6 +202,11 @@ WoopsaUInt16 PrepareResponse(
 	return size;
 }
 
+void SetContentLength(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaUInt16 contentLengthPosition, WoopsaUInt16 contentLength) {
+	sprintf(outputBuffer + contentLengthPosition, HEADER_CONTENT_LENGTH_FORMAT, contentLength);
+	outputBuffer[contentLengthPosition + strlen(HEADER_CONTENT_LENGTH_SPACE)] = '\r';
+}
+
 WoopsaUInt16 PrepareResponseWithContent(
 		WoopsaChar8* outputBuffer,
 		const WoopsaUInt16 outputBufferLength,
@@ -209,7 +217,8 @@ WoopsaUInt16 PrepareResponseWithContent(
 
 	len = PrepareResponse(outputBuffer, outputBufferLength, httpStatusCode, httpStatusStr, &pos);
 	contentLength = strlen(content);
-	sprintf(outputBuffer + pos, HEADER_CONTENT_LENGTH_FORMAT, contentLength);
+	SetContentLength(outputBuffer, outputBufferLength, pos, contentLength);
+	len += Append(outputBuffer, content, outputBufferLength);
 	return len;
 }
 
@@ -217,11 +226,6 @@ WoopsaUInt16 PrepareResponseWithContent(
 // of the response is the error string itself.
 WoopsaUInt16 PrepareError(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaChar8 errorCode[], const WoopsaChar8 errorStr[]) {
 	return PrepareResponseWithContent(outputBuffer, outputBufferLength, errorCode, errorStr, errorStr);
-}
-
-void SetContentLength(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaUInt16 contentLengthPosition, WoopsaUInt16 contentLength) {
-	sprintf(outputBuffer + contentLengthPosition, HEADER_CONTENT_LENGTH_FORMAT, contentLength);
-	outputBuffer[contentLengthPosition + strlen(HEADER_CONTENT_LENGTH_SPACE)] = '\r';
 }
 
 ///////////////////////////////////////////////////////////////////////////////
@@ -241,15 +245,15 @@ WoopsaUInt8 WoopsaCheckRequestFinished(WoopsaChar8* inputBuffer, WoopsaUInt16 in
 }
 
 WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength, WoopsaChar8* outputBuffer, WoopsaUInt16 outputBufferLength, WoopsaUInt16* responseLength) {
-	WoopsaChar8* header;
-	WoopsaChar8* woopsaPath;
+	WoopsaChar8* header = NULL;
+	WoopsaChar8* woopsaPath = NULL;
 	//HttpHeader parsedHeader;
 	WoopsaChar8 numericValueBuffer[MAX_NUMERICAL_VALUE_LENGTH];
-	WoopsaChar8 oldChar;// , path[MAX_PATH_LENGTH], verb[MAX_VERB_LENGTH], valueBuffer[MAX_TEXT_LENGTH], responseBuffer[MAX_TEXT_LENGTH], itemsBuffer[MAX_TEXT_LENGTH];
-	WoopsaUInt16 i, pos, isPost = 0, contentLengthPosition, contentLength = 0;
-	WoopsaInt16 headerSize;
-	WoopsaProperty* woopsaProperty;
-	TypesDictionaryEntry* typeEntry;
+	WoopsaChar8 oldChar = NULL;
+	WoopsaUInt16 i = 0, pos = 0, isPost = 0, contentLengthPosition = 0, contentLength = 0;
+	WoopsaInt16 headerSize = 0;
+	WoopsaProperty* woopsaProperty = NULL;
+	TypesDictionaryEntry* typeEntry = NULL;
 	WoopsaChar8* buffer = server->buffer;
 
 	memset(buffer, NULL, sizeof(WoopsaBuffer));
@@ -287,23 +291,28 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 	woopsaPath = &(buffer[strlen(server->pathPrefix)]);
 	if (strstr(woopsaPath, VERB_META) == woopsaPath && isPost == 0) {
 		// Meta request
-		//buffer[0] = '\0';
-		//i = 0;
-		//*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, )
-		//	Append(buffer, JSON_ARRAY_START, sizeof(server->buffer));
-		//while (server->properties[i].name != NULL) {
-		//	woopsaProperty = &server->properties[i];
-		//	typeEntry = GetTypeEntry(woopsaProperty->type);
-		//	snprintf(buffer, sizeof(WoopsaBuffer), JSON_PROPERTY, woopsaProperty->name, typeEntry->string, (woopsaProperty->readOnly == 0) ? JSON_FALSE : JSON_TRUE);
-		//	Append(buffer, buffer, sizeof(WoopsaBuffer));
-		//	if (server->properties[i + 1].name != NULL)
-		//		Append(itemsBuffer, JSON_ARRAY_DELIMITER, sizeof(responseBuffer));
-		//	i++;
-		//}
-		//Append(itemsBuffer, JSON_ARRAY_END, sizeof(responseBuffer));
-		//snprintf(responseBuffer, sizeof(responseBuffer), JSON_META, itemsBuffer);
+		buffer[0] = NULL;
 
-		//*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, responseBuffer);
+		// TODO : Do something useful with that path
+		woopsaPath = &(woopsaPath[sizeof(VERB_META)]);
+
+		*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, &contentLengthPosition);
+		
+		contentLength += Append(outputBuffer, JSON_META_START JSON_ARRAY_START, outputBufferLength);
+		for(i = 0; server->properties[i].name != NULL; i++) {
+			woopsaProperty = &server->properties[i];
+			typeEntry = GetTypeEntry(woopsaProperty->type);
+			contentLength += Append(outputBuffer, JSON_PROPERTY_NAME, outputBufferLength);
+			contentLength += AppendEscape(outputBuffer, woopsaProperty->name, JSON_STRING_DELIMITER_CHAR, JSON_ESCAPE_CHAR, outputBufferLength);
+			contentLength += Append(outputBuffer, JSON_PROPERTY_TYPE, outputBufferLength);
+			contentLength += Append(outputBuffer, typeEntry->string, outputBufferLength);
+			contentLength += Append(outputBuffer, JSON_PROPERTY_READONLY, outputBufferLength);
+			contentLength += Append(outputBuffer, (woopsaProperty->readOnly) ? JSON_FALSE : JSON_TRUE, outputBufferLength);
+			contentLength += Append(outputBuffer, JSON_PROPERTY_END, outputBufferLength);
+			if (server->properties[i + 1].name != NULL)
+				contentLength += Append(outputBuffer, JSON_ARRAY_DELIMITER, outputBufferLength);
+		}
+		contentLength += Append(outputBuffer, JSON_ARRAY_END JSON_META_END, outputBufferLength);
 	} else if (strstr(woopsaPath, VERB_READ) == woopsaPath && isPost == 0) {
 		// Read request
 		buffer[0] = NULL;
@@ -317,7 +326,6 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, &contentLengthPosition);
 
 		contentLength += Append(outputBuffer, JSON_VALUE_VALUE, outputBufferLength);
-
 		if (woopsaProperty->type == WOOPSA_TYPE_TEXT
 			|| woopsaProperty->type == WOOPSA_TYPE_LINK
 			|| woopsaProperty->type == WOOPSA_TYPE_RESOURCE_URL
@@ -333,9 +341,6 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		contentLength += Append(outputBuffer, JSON_VALUE_TYPE, outputBufferLength);
 		contentLength += Append(outputBuffer, typeEntry->string, outputBufferLength);
 		contentLength += Append(outputBuffer, JSON_VALUE_END, outputBufferLength);
-
-		SetContentLength(outputBuffer, outputBufferLength, contentLengthPosition, contentLength);
-		*responseLength += contentLength;
 	} else if (strstr(woopsaPath, VERB_WRITE) == woopsaPath && isPost == 1) {
 		// Write request
 	} else {
@@ -343,6 +348,9 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		*responseLength = PrepareError(outputBuffer, outputBufferLength, HTTP_CODE_NOT_FOUND, HTTP_TEXT_NOT_FOUND);
 		return WOOPSA_CLIENT_REQUEST_ERROR;
 	}
+
+	SetContentLength(outputBuffer, outputBufferLength, contentLengthPosition, contentLength);
+	*responseLength += contentLength;
 
 	return WOOPSA_SUCCESS;
 }
