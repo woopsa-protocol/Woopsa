@@ -271,7 +271,6 @@ namespace Woopsa
 
         private void AddItemFromCache(ItemCache item)
         {
-            // TODO : Avoid failing silently
             try
             {
                 object value = item.PropertyInfo.GetValue(TargetObject);
@@ -279,12 +278,11 @@ namespace Woopsa
                 if (value != null)
                     new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject), _visibility, Options);
             }
-            catch (Exception) { } // Property getters that throw exceptions don't play nice. So we fail silently
+            catch (Exception) { } // Property getters that throw exceptions are not added to the object hierarchy
         }
 
         private void AddMethodFromCache(MethodCache method)
         {
-            // TODO : Avoid failing silently
             try
             {
                 new WoopsaMethod(this, method.MethodInfo.Name, method.ReturnType, method.WoopsaArguments, (args) =>

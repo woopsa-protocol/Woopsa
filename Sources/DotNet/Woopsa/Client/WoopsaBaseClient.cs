@@ -65,6 +65,7 @@ namespace Woopsa
         {
             if (_subscriptionChannel == null)
             {
+                // TODO: fallback if no subscription service 
                 if (!_hasSubscriptionService.HasValue)
                 {
                     // TODO : Check if this is supported on the server

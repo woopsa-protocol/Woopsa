@@ -26,12 +26,10 @@ namespace Woopsa
                     return new WoopsaJsonData(dic[key]);
                 }
                 else
-                    throw new WoopsaInvalidOperationException("String indexer is only available on WoopsaJsonData of type Object.");
+                    throw new InvalidOperationException("String indexer is only available on WoopsaJsonData of type Object.");
             }
         }
 
-        // TODO: Existe-t-il un truc plus propre? Si ce n'est pas un
-        // dictionnaire, on aimerait bien éviter ce genre de propriété
         public IEnumerable<string> Keys
         {
             get
@@ -39,7 +37,7 @@ namespace Woopsa
                 if (IsDictionary)
                     return (_data as Dictionary<string, object>).Keys;
                 else
-                    throw new WoopsaInvalidOperationException("List of keys is only available on WoopsaJsonData of type Object");
+                    return new string[0];
             }
         }
 
@@ -53,7 +51,7 @@ namespace Woopsa
                     return new WoopsaJsonData(arr[key]);
                 }
                 else
-                    throw new WoopsaInvalidOperationException("Integer indexer is only available on JsonDataof type Array.");
+                    throw new InvalidOperationException("Integer indexer is only available on JsonDataof type Array.");
             }
         }
 
@@ -64,7 +62,7 @@ namespace Woopsa
                 if (IsArray)
                     return (_data as object[]).Length;
                 else
-                    throw new WoopsaInvalidOperationException("Length is only available on WoopsaJsonData of type Array.");
+                    throw new InvalidOperationException("Length is only available on WoopsaJsonData of type Array.");
             }
         }
 

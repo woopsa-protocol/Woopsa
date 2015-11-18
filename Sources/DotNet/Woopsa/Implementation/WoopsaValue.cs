@@ -134,7 +134,7 @@ namespace Woopsa
             get
             {
                 if (_jsonData == null)
-                    throw new WoopsaInvalidOperationException("JsonData is only available on WoopsaValue of type JsonData");
+                    throw new InvalidOperationException("JsonData is only available on WoopsaValue of type JsonData");
                 else
                     return _jsonData;
             }

@@ -62,14 +62,14 @@ extern "C"
 
 // Creates a new Woopsa server using the specified prefix 
 // and a list of properties to publish
-void			WoopsaInit(WoopsaServer* server, WoopsaChar8* prefix, WoopsaProperty properties[]);
+void WoopsaServerInit(WoopsaServer* server, WoopsaChar8* prefix, WoopsaProperty properties[]);
 
 // Checks if the request contained in inputBuffer
 // is finished. This is useful in the case where
 // data is received in fragments for some reason.
 // You should always call this method on your buffer
 // before passing it to WoopsaHandleRequest
-WoopsaChar8		WoopsaCheckRequestFinished(WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength);
+WoopsaUInt8	WoopsaCheckRequestComplete(WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength);
 
 // Parses a request and prepares the reply as well
 // Returns:
@@ -80,7 +80,7 @@ WoopsaChar8		WoopsaCheckRequestFinished(WoopsaChar8* inputBuffer, WoopsaUInt16 i
 #define WOOPSA_CLIENT_REQUEST_ERROR 1
 #define WOOPSA_OTHER_ERROR 2
 
-WoopsaUInt8		WoopsaHandleRequest(WoopsaServer* server, WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength, WoopsaChar8* outputBuffer, WoopsaUInt16 outputBufferLength, WoopsaUInt16* responseLength);
+WoopsaUInt8	WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength, WoopsaChar8* outputBuffer, WoopsaUInt16 outputBufferLength, WoopsaUInt16* responseLength);
 
 #ifdef __cplusplus
 }

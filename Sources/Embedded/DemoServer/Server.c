@@ -77,7 +77,7 @@ int main(int argc, char argv[]) {
 	WoopsaUInt16 responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
-	WoopsaInit(&server, "/woopsa/", woopsaEntries);
+	WoopsaServerInit(&server, "/woopsa/", woopsaEntries);
 
 	printf("Woopsa C library v0.1 demo server.\n");
 
@@ -120,8 +120,8 @@ int main(int argc, char argv[]) {
 				break;
 			}
 
-			if (WoopsaCheckRequestFinished(buffer, sizeof(buffer)) != 1) {
-				//continue;
+			if (WoopsaCheckRequestComplete(buffer, sizeof(buffer)) != 1) {
+				continue;
 			}
 
 			if (WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength) >= WOOPSA_SUCCESS) {

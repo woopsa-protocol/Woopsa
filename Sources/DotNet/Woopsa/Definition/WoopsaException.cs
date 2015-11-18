@@ -38,11 +38,8 @@ namespace Woopsa
 		}
     }
 
-    // TODO: This used to inherit from WoopsaException
-    // Inheriting from InvalidOperationException allows this exception
-    // to be raised in Getters/Setters, such as WoopsaJsonData indexers
 	[Serializable]
-	public class WoopsaInvalidOperationException : InvalidOperationException
+	public class WoopsaInvalidOperationException : WoopsaException
     {
         public WoopsaInvalidOperationException()
         {

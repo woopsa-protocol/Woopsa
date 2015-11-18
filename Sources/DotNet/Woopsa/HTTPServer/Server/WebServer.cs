@@ -157,6 +157,8 @@ namespace Woopsa
             {
                 try
                 {
+                    // TODO : Make sure the stream is closed every time
+                    // in all cases
                     TcpClient client = _listener.AcceptTcpClient();
                     Stream clientStream = client.GetStream();
 
