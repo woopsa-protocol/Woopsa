@@ -151,7 +151,7 @@ namespace Woopsa
             {
                 namedArguments.Add(argumentInfos[i].Name, arguments.ElementAt(i).AsText);
             }
-            return _client.Invoke(this.GetPath() + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments);
+            return _client.Invoke(this.GetPath().TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments);
         }
 
         private WoopsaBaseClient _client = null;

@@ -8,3 +8,4 @@ Debug
 *.filters
 *.user
 *.log
+/Sources/Embedded/Release

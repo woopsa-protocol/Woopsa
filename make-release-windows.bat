@@ -12,6 +12,10 @@ set DOT_NET_SERVER_EXAMPLE_DIR=WoopsaDemoServer
 set DOT_NET_CLIENT_EXAMPLE_DIR=WoopsaDemoClient
 set JAVASCRIPT_RELEASE_DIR=JavaScript
 set JAVASCRIPT_PROJECT_DIR=Sources\JavaScript
+set EMBEDDED_RELEASE_DIR=Embedded
+set EMBEDDED_SOURCES_DIR=Sources\Embedded
+set EMBEDDED_PROJECT_DIR=Server
+set EMBEDDED_EXAMPLE_DIR=Release
 
 REM .NET Library
 if not exist %RELEASE_DIR% mkdir %RELEASE_DIR%

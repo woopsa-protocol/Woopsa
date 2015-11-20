@@ -57,13 +57,29 @@ int sockClose(SOCKET sock) {
 	return status;
 }
 
-int lol = 2;
-char lol2[] = "Ha \" ha ha";
+float Temperature = 24.2;
+char IsRaining = 1;
+int Altitude = 430;
+float Sensitivity = 0.5;
+char City[20] = "Geneva";
+float TimeSinceLastRain = 11;
+
+
+char weatherBuffer[20];
+char* GetWeather() {
+	sprintf(weatherBuffer, "sunny");
+	return weatherBuffer;
+}
 
 WOOPSA_BEGIN(woopsaEntries)
-	WOOPSA_PROPERTY(lol, WOOPSA_TYPE_INTEGER)
-	WOOPSA_PROPERTY(lol2, WOOPSA_TYPE_TEXT)
-WOOPSA_END
+	WOOPSA_PROPERTY_READONLY(Temperature, WOOPSA_TYPE_REAL)
+	WOOPSA_PROPERTY(IsRaining, WOOPSA_TYPE_LOGICAL)
+	WOOPSA_PROPERTY(Altitude, WOOPSA_TYPE_INTEGER)
+	WOOPSA_PROPERTY(Sensitivity, WOOPSA_TYPE_REAL)
+	WOOPSA_PROPERTY(City, WOOPSA_TYPE_TEXT)
+	WOOPSA_PROPERTY(TimeSinceLastRain, WOOPSA_TYPE_TIME_SPAN)
+	WOOPSA_METHOD(GetWeather, WOOPSA_TYPE_TEXT)
+WOOPSA_END;
 
 #define WOOPSA_PORT 8000
 #define BUFFER_SIZE 1024
@@ -72,12 +88,12 @@ int main(int argc, char argv[]) {
 	SOCKET sock, clientSock;
 	struct sockaddr_in addr, clientAddr;
 	char buffer[BUFFER_SIZE];
-	int clientAddrSize, readBytes;
+	int clientAddrSize = 0, readBytes = 0;
 	WoopsaServer server;
 	WoopsaUInt16 responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
-	WoopsaServerInit(&server, "/woopsa/", woopsaEntries);
+	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, NULL);
 
 	printf("Woopsa C library v0.1 demo server.\n");
 
@@ -113,20 +129,29 @@ int main(int argc, char argv[]) {
 		}
 
 		while (1) {
-			readBytes = recv(clientSock, buffer, sizeof(buffer), NULL);
+			readBytes = recv(clientSock, buffer + readBytes, sizeof(buffer), NULL);
+
+			if (readBytes == SOCKET_ERROR) {
+				printf("Error %d", WSAGetLastError());
+				break;
+			}
 
 			if (readBytes == 0) {
 				printf("Finished\n");
 				break;
 			}
 
-			if (WoopsaCheckRequestComplete(buffer, sizeof(buffer)) != 1) {
+			if (WoopsaCheckRequestComplete(&server, buffer, sizeof(buffer)) != 1) {
+				// If the request is not complete, it means more data needs 
+				// to be -added- to the buffer
 				continue;
 			}
 
 			if (WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength) >= WOOPSA_SUCCESS) {
 				send(clientSock, buffer, responseLength, NULL);
 			}
+			readBytes = 0;
+			memset(buffer, 0, sizeof(buffer));
 		}
 	}
 
