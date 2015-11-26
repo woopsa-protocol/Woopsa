@@ -1,1 +1,2 @@
-devenv WoopsaC.sln /build Release /project DemoServer
+devenv WoopsaEmbedded.sln /build Release /project Server
+devenv WoopsaEmbedded.sln /build Release /project DemoServer

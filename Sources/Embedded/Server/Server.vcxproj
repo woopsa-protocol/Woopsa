@@ -40,6 +40,8 @@
   <PropertyGroup Label="UserMacros" />
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <PreBuildEventUseInBuild>false</PreBuildEventUseInBuild>
+    <NMakeBuildCommandLine>xcopy "$(ProjectDir)*.h" "$(ProjectDir)..\ArduinoDemoServer\"
+xcopy "$(ProjectDir)*.c" "$(ProjectDir)..\ArduinoDemoServer\"</NMakeBuildCommandLine>
   </PropertyGroup>
   <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">
     <ClCompile>

@@ -84,6 +84,12 @@ WOOPSA_END;
 #define WOOPSA_PORT 8000
 #define BUFFER_SIZE 1024
 
+
+WoopsaUInt16 ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaUInt16 dataBufferSize) {
+	strcpy(dataBuffer, "Hello world!");
+	return strlen("Hellow world!");
+}
+
 int main(int argc, char argv[]) {
 	SOCKET sock, clientSock;
 	struct sockaddr_in addr, clientAddr;
@@ -141,7 +147,7 @@ int main(int argc, char argv[]) {
 				break;
 			}
 
-			if (WoopsaCheckRequestComplete(&server, buffer, sizeof(buffer)) != 1) {
+			if (WoopsaCheckRequestComplete(&server, buffer, sizeof(buffer)) != WOOPSA_REQUEST_COMLETE) {
 				// If the request is not complete, it means more data needs 
 				// to be -added- to the buffer
 				continue;

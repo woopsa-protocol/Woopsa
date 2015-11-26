@@ -13,8 +13,6 @@
 		
 		$("#urlForm").submit(function (){
 			woopsa = new WoopsaClient($("#serverUrl").val(), jQuery);
-			woopsa.username = "admin";
-			woopsa.password = "password";
 			
 			//The very easy way of making a subscription
 			woopsa.onChange($("#subscribePath").val(), function (value){
