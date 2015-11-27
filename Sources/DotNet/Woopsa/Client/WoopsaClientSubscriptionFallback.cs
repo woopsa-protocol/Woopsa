@@ -8,26 +8,45 @@ namespace Woopsa
 {
     internal class WoopsaClientSubscriptionChannelFallback : WoopsaClientSubscriptionChannelBase
     {
-        public WoopsaClientSubscriptionChannelFallback(WoopsaBaseClient client)
+        public WoopsaClientSubscriptionChannelFallback(WoopsaClientObject client)
         {
+            Console.WriteLine("Using a fallback");
             _client = client;
+            _service = new SubscriptionService(_client);
+            _channel = new WoopsaClientSubscriptionChannel(_client);
+            //_service = new SubscriptionService(client);
         }
 
-        private WoopsaBaseClient _client;
+        public override event EventHandler<WoopsaNotificationsEventArgs> ValueChange
+        {
+            add
+            {
+                _channel.ValueChange += value;
+            }
+            remove
+            {
+                _channel.ValueChange -= value;
+            }
+        }
+
+        private WoopsaClientObject _client;
 
         public override void Register(string path)
         {
-            throw new NotImplementedException();
+            _channel.Register(path);
         }
 
         public override void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            throw new NotImplementedException();
+            _channel.Register(path, monitorInterval, publishInterval);
         }
 
         public override bool Unregister(string path)
         {
-            throw new NotImplementedException();
+            return _channel.Unregister(path);
         }
+
+        private SubscriptionService _service;
+        private WoopsaClientSubscriptionChannel _channel;
     }
 }

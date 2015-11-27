@@ -13,15 +13,19 @@ namespace Woopsa
     {
         public const int DefaultNotificationQueueSize = 200;
         private readonly TimeSpan WaitNotificationTimeout = TimeSpan.FromSeconds(10);
-        private const string SubscriptionService = "SubscriptionService/";
 
         public int ChannelId { get; private set; }
 
-        public WoopsaClientSubscriptionChannel(WoopsaBaseClient client) : this(client, DefaultNotificationQueueSize) { }
+        public WoopsaClientSubscriptionChannel(IWoopsaObject client) : this(client, DefaultNotificationQueueSize) { }
 
-        public WoopsaClientSubscriptionChannel(WoopsaBaseClient client, int notificationQueueSize)
+        public WoopsaClientSubscriptionChannel(IWoopsaObject client, int notificationQueueSize)
         {
             _client = client;
+
+            _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+            _createSubscriptionChannel = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel);
+            _waitNotification = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaWaitNotification);
+
             Register(notificationQueueSize);
         }
 
@@ -67,10 +71,15 @@ namespace Woopsa
             return false;
         }
 
-        private WoopsaBaseClient _client;
+        private IWoopsaObject _client;
         private List<WoopsaClientSubscription> _subscriptions = new List<WoopsaClientSubscription>();
         private bool _listenStarted = false;
         private Thread _listenThread;
+
+        private IWoopsaObject _subscriptionService;
+        private IWoopsaMethod _createSubscriptionChannel;
+        private IWoopsaMethod _waitNotification;
+
 
         private void DoWaitNotification()
         {
@@ -89,9 +98,11 @@ namespace Woopsa
 
         private int WaitNotification(out IWoopsaNotifications notificationsResult)
         {
-            NameValueCollection arguments = new NameValueCollection();
-            arguments.Add(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, ChannelId.ToString());
-            WoopsaJsonData results = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaWaitNotification, arguments, (int)WaitNotificationTimeout.TotalMilliseconds).JsonData;
+            List<WoopsaValue> arguments = new List<WoopsaValue>();
+            arguments.Add(ChannelId);
+            IWoopsaValue val = _waitNotification.Invoke(arguments);
+            WoopsaJsonData results = ((WoopsaValue)val).JsonData;
+            //WoopsaJsonData results = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaWaitNotification, arguments, (int)WaitNotificationTimeout.TotalMilliseconds).JsonData;
             WoopsaNotifications notificationsList = new WoopsaNotifications();
             int count = 0;
             for (int i = 0; i < results.Length; i++ )
@@ -112,9 +123,10 @@ namespace Woopsa
 
         private void Register(int notificationQueueSize)
         {
-            NameValueCollection arguments = new NameValueCollection();
-            arguments.Add(WoopsaServiceSubscriptionConst.WoopsaNotificationQueueSize, notificationQueueSize.ToString());
-            IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel, arguments);
+            List<WoopsaValue> arguments = new List<WoopsaValue>();
+            arguments.Add(notificationQueueSize);
+            IWoopsaValue result = _createSubscriptionChannel.Invoke(arguments);
+            //IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel, arguments);
             ChannelId = result.ToInt32();
         }
 
@@ -123,13 +135,16 @@ namespace Woopsa
             public static readonly TimeSpan DefaultMonitorInterval = TimeSpan.FromMilliseconds(200);
             public static readonly TimeSpan DefaultPublishInterval = TimeSpan.FromMilliseconds(200);
 
-            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, WoopsaBaseClient client, string path)
+            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path)
                 : this(channel, client, path, DefaultMonitorInterval, DefaultPublishInterval) { }
 
-            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, WoopsaBaseClient client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
+            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
             {
                 _channel = channel;
                 _client = client;
+                _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+                _registerSubscription = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription);
+                _unregisterSubscription = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription);
                 Path = path;
                 Id = Register(monitorInterval, publishInterval);
             }
@@ -139,23 +154,28 @@ namespace Woopsa
 
             public bool Unregister()
             {
-                NameValueCollection arguments = new NameValueCollection();
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaSubscriptionId, Id.ToString());
-                IWoopsaValue result = _client.Invoke(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription, arguments);
+                List<WoopsaValue> arguments = new List<WoopsaValue>();
+                arguments.Add(Id);
+                IWoopsaValue result = _unregisterSubscription.Invoke(arguments);
+                //IWoopsaValue result = _client.Invoke(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription, arguments);
                 return result.ToBool();
             }
 
             private WoopsaClientSubscriptionChannel _channel;
-            private WoopsaBaseClient _client;
+            private IWoopsaObject _client;
+            private IWoopsaObject _subscriptionService;
+            private IWoopsaMethod _registerSubscription;
+            private IWoopsaMethod _unregisterSubscription;
 
             private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
             {
-                NameValueCollection arguments = new NameValueCollection();
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, _channel.ChannelId.ToString());
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPropertyLink, Path);
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaMonitorInterval, monitorInterval.TotalSeconds.ToStringWoopsa());
-                arguments.Add(WoopsaServiceSubscriptionConst.WoopsaPublishInterval, publishInterval.TotalSeconds.ToStringWoopsa());
-                IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription, arguments);
+                List<WoopsaValue> arguments = new List<WoopsaValue>();
+                arguments.Add(_channel.ChannelId);
+                arguments.Add(new WoopsaValue(Path, WoopsaValueType.WoopsaLink));
+                arguments.Add(monitorInterval);
+                arguments.Add(publishInterval); 
+                IWoopsaValue result = _registerSubscription.Invoke(arguments);
+                //IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription, arguments);
                 return result.ToInt32();
             }
         }

@@ -26,8 +26,6 @@ namespace Woopsa
         public string Username { get; set; }
         public string Password { get; set; }
 
-        public event EventHandler<WoopsaNotificationsEventArgs> PropertyChange;
-
         public WoopsaValue Read(string path)
         {
             string response = Request("read" + path);
@@ -59,47 +57,6 @@ namespace Woopsa
             var serializer = new JavaScriptSerializer();
             var result = serializer.Deserialize<WoopsaMetaResult>(response);
             return result;
-        }
-
-        public void Subscribe(string path)
-        {
-            if (_subscriptionChannel == null)
-            {
-                // TODO: fallback if no subscription service 
-                if (!_hasSubscriptionService.HasValue)
-                {
-                    // TODO : Check if this is supported on the server
-                    _hasSubscriptionService = true;
-                }
-                if (_hasSubscriptionService == true)
-                    _subscriptionChannel = new WoopsaClientSubscriptionChannel(this);
-                else
-                    _subscriptionChannel = new WoopsaClientSubscriptionChannelFallback(this);
-
-                _subscriptionChannel.ValueChange +=_subscriptionChannel_ValueChange;
-            }
-            _subscriptionChannel.Register(path);
-        }
-
-        public void Unsubscribe(string path)
-        {
-            if (_subscriptionChannel != null)
-            {
-                _subscriptionChannel.Unregister(path);
-            }
-        }
-
-        private void _subscriptionChannel_ValueChange(object sender, WoopsaNotificationsEventArgs notifications)
-        {
-            DoPropertyChanged(notifications);
-        }
-
-        protected virtual void DoPropertyChanged(WoopsaNotificationsEventArgs notifications)
-        {
-            if (PropertyChange != null)
-            {
-                PropertyChange(this, notifications);
-            }
         }
 
         private WoopsaValue WoopsaValueFromResponse(string response)
@@ -183,8 +140,6 @@ namespace Woopsa
         }
 
         private string _url;
-        private WoopsaClientSubscriptionChannelBase _subscriptionChannel;
-        private bool? _hasSubscriptionService = null;
 
         private class WoopsaReadResult
         {

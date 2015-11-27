@@ -13,7 +13,7 @@ namespace Woopsa
             : base(container, name)
         {
             _client = client;
-            _client.PropertyChange += _client_PropertyChange;
+            //_client.PropertyChange += _client_PropertyChange;
         }
 
         public delegate void PropertyChanged(IWoopsaValue value);
@@ -35,7 +35,8 @@ namespace Woopsa
             {
                 foreach (var item in base.Items)
                 {
-                    yield return (item as WoopsaClientObject);
+                    if ( (item as WoopsaClientObject) != null )
+                        yield return (item as WoopsaClientObject);
                 }
             }
         }
@@ -102,9 +103,26 @@ namespace Woopsa
             }
         }
 
+        #region Subscription Service
+        public event EventHandler<WoopsaNotificationsEventArgs> PropertyChange;
         public void Subscribe(string path, PropertyChanged propertyChangedHandler)
         {
-            _client.Subscribe(path);
+            if (_subscriptionChannel == null)
+            {
+                // TODO: fallback if no subscription service 
+                if (!_hasSubscriptionService.HasValue)
+                {
+                    //_hasSubscriptionService = false;
+                    _hasSubscriptionService = this.Items.ByNameOrNull(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName) != null;
+                }
+                if (_hasSubscriptionService == true)
+                    _subscriptionChannel = new WoopsaClientSubscriptionChannel(this);
+                else
+                    _subscriptionChannel = new WoopsaClientSubscriptionChannelFallback(this);
+
+                _subscriptionChannel.ValueChange += _subscriptionChannel_ValueChange;
+            }
+            _subscriptionChannel.Register(path);
             _subscriptionsCache.Add(path, propertyChangedHandler);
         }
 
@@ -114,16 +132,13 @@ namespace Woopsa
             {
                 _subscriptionsCache.Remove(path);
             }
-            _client.Unsubscribe(path);
+            if (_subscriptionChannel != null)
+            {
+                _subscriptionChannel.Unregister(path);
+            }
         }
 
-        protected override void PopulateObject()
-        {
-            base.PopulateObject();
-            Refresh(true);
-        }
-
-        private void _client_PropertyChange(object sender, WoopsaNotificationsEventArgs notifications)
+        private void _subscriptionChannel_ValueChange(object sender, WoopsaNotificationsEventArgs notifications)
         {
             foreach (var notification in notifications.Notifications.Notifications)
             {
@@ -132,6 +147,13 @@ namespace Woopsa
                     _subscriptionsCache[notification.PropertyLink.AsText](notification.Value);
                 }
             }
+        }
+        #endregion
+
+        protected override void PopulateObject()
+        {
+            base.PopulateObject();
+            Refresh(true);
         }
 
         private WoopsaValue GetProperty(object sender)
@@ -157,6 +179,9 @@ namespace Woopsa
         private WoopsaBaseClient _client = null;
         private WoopsaMetaResult _meta = null;
         private Dictionary<string, PropertyChanged> _subscriptionsCache = new Dictionary<string, PropertyChanged>();
+
+        private WoopsaClientSubscriptionChannelBase _subscriptionChannel;
+        private bool? _hasSubscriptionService = null;
     }
 
     public class WoopsaClientProperty : WoopsaProperty

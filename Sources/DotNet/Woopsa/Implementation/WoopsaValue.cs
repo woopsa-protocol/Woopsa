@@ -13,6 +13,8 @@ namespace Woopsa
 			_text = text;
 			_type = type;
 			_timestamp = timestamp;
+            if (type == WoopsaValueType.JsonData)
+                _jsonData = new WoopsaJsonData(text);
 		}
 
 		public WoopsaValue(string text, WoopsaValueType type)

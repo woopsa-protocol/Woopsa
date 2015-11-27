@@ -9,6 +9,14 @@ namespace Woopsa
 {
     public class WoopsaJsonData
     {
+        public WoopsaJsonData(string serializedData)
+        {
+            JavaScriptSerializer deserializer = new JavaScriptSerializer();
+            _data = deserializer.Deserialize<object>(serializedData);
+            _asDictionary = (_data as Dictionary<string, object>);
+            _asArray = _data as object[];
+        }
+
         public WoopsaJsonData(object deserializedData)
         {
             _data = deserializedData;

@@ -8,7 +8,7 @@ namespace Woopsa
 {
     internal abstract class WoopsaClientSubscriptionChannelBase
     {
-        public event EventHandler<WoopsaNotificationsEventArgs> ValueChange;
+        public virtual event EventHandler<WoopsaNotificationsEventArgs> ValueChange;
 
         protected virtual void DoValueChanged(IWoopsaNotifications notifications)
         {
