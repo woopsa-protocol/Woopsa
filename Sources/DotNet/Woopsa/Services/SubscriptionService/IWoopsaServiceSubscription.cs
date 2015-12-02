@@ -11,6 +11,8 @@ namespace Woopsa
 		public static readonly TimeSpan NotificationTimeoutInterval = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan SubscriptionChannelLifeTime = TimeSpan.FromMinutes(20);
 
+        public const int MaximumNotificationId = 1000000000;
+
 		public const string WoopsaServiceSubscriptionName   = "SubscriptionService";
         public const string WoopsaCreateSubscriptionChannel = "CreateSubscriptionChannel";
         public const string WoopsaRegisterSubscription      = "RegisterSubscription";
@@ -23,7 +25,8 @@ namespace Woopsa
         public const string WoopsaMonitorInterval           = "MonitorInterval";
         public const string WoopsaPublishInterval           = "PublishInterval";
         public const string WoopsaSubscriptionId            = "SubscriptionId";
-	}
+        public const string WoopsaLastNotificationId        = "LastNotificationId";
+    }
 
 	public interface IWoopsaServiceSubscription
 	{
@@ -56,14 +59,16 @@ namespace Woopsa
 		/// 
 		/// </summary>
 		/// <param name="subscriptionChannel"></param>
+        /// <param name="lastNotificationId"></param>
 		/// <returns>JsonData. Json serialization of the IWoopsaNotifications. throws an exception if the channel is not valid</returns>
-		IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel);
+		IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId);
 	}
 
 	public interface IWoopsaNotification
 	{
 		IWoopsaValue PropertyLink { get; }
 		IWoopsaValue Value { get; }
+        int Id { get; set; }
 	}
 
 	public interface IWoopsaNotifications

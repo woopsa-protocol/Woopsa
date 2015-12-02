@@ -173,21 +173,18 @@ namespace Woopsa
         /// this method.
         /// </para>
         /// </summary>
-        /// <param name="output">The stream in which to copy the output. Does not close the stream</param>
-        public void Respond(Stream output)
+        /// <param name="outputStream">The stream in which to copy the output. Does not close the stream</param>
+        public void Respond(Stream outputStream)
         {
             try
             {
-                if (output != null)
-                {
-                    _outputStream = output;
-                }
+                MemoryStream responseStream = new MemoryStream();
                 _bufferWriter.Flush();
                 SetHeaderIfNotExists(HTTPHeader.ContentType, MIMETypes.Text.Plain);
                 ResponseLength = _bufferStream.Length;
                 SetHeader(HTTPHeader.ContentLength, ResponseLength.ToString());
                 SetHeader(HTTPHeader.Date, DateTime.Now.ToHTTPDate());
-                StreamWriter writer = new StreamWriter(_outputStream, new UTF8Encoding(false), 4096, true);
+                StreamWriter writer = new StreamWriter(responseStream, new UTF8Encoding(false), 4096, true);
                 writer.Write("HTTP/1.1 " + ResponseCode + " " + ResponseMessage + "\r\n");
                 foreach (string header in Headers)
                 {
@@ -196,7 +193,9 @@ namespace Woopsa
                 writer.Write("\r\n");
                 writer.Flush();
                 _bufferStream.Position = 0;
-                _bufferStream.CopyTo(_outputStream);
+                _bufferStream.CopyTo(responseStream);
+                responseStream.Position = 0;
+                responseStream.CopyTo(outputStream);
             }
             catch(IOException e)
             {
@@ -211,8 +210,7 @@ namespace Woopsa
         }
         #endregion
         
-        #region Private Members
-        private Stream _outputStream;
+        #region Private Members        
         private Stream _bufferStream;
         private StreamWriter _bufferWriter;
         private Dictionary<string, string> _headers;

@@ -103,7 +103,7 @@ namespace Woopsa
 
             if (postData != null)
             {
-                using( var writer = new StreamWriter(request.GetRequestStream()) )
+                using (var writer = new StreamWriter(request.GetRequestStream()))
                 {
                     for (var i = 0; i < postData.Count; i++)
                     {
@@ -116,15 +116,51 @@ namespace Woopsa
                 }
             }
 
-            var response = (HttpWebResponse)request.GetResponse();
-
-            if (response.StatusCode != HttpStatusCode.OK)
-                throw new WoopsaException(response.StatusDescription);
+            HttpWebResponse response = null;
+            try
+            {
+                response = (HttpWebResponse)request.GetResponse();
+            }
+            catch (WebException exception) 
+            {
+                response = (HttpWebResponse)exception.Response;
+                if (response == null)
+                {
+                    // Sometimes, we can make the request, but the server dies
+                    // before we get a reply - in that case the Response
+                    // is null, so we re-throw the exception
+                    throw exception;
+                }
+            }
 
             string result;
             using ( var reader = new StreamReader(response.GetResponseStream()) )
             {
                 result = reader.ReadToEnd();
+            }
+
+            if (response.StatusCode != HttpStatusCode.OK)
+            {
+                if (response.ContentType == MIMETypes.Application.JSON)
+                {
+                    var serializer = new JavaScriptSerializer();
+                    WoopsaErrorResult error = serializer.Deserialize<WoopsaErrorResult>(result);
+
+                    if (error.Type == typeof(WoopsaNotFoundException).Name)
+                        throw new WoopsaNotFoundException(error.Message);
+                    else if (error.Type == typeof(WoopsaNotificationsLostException).Name)
+                        throw new WoopsaNotificationsLostException(error.Message);
+                    else if (error.Type == typeof(WoopsaInvalidOperationException).Name)
+                        throw new WoopsaInvalidOperationException(error.Message);
+                    else if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
+                        throw new WoopsaInvalidSubscriptionChannelException(error.Message);
+                    else if (error.Type == typeof(WoopsaException).Name)
+                        throw new WoopsaException(error.Message);
+                    else
+                        throw new Exception(error.Message);
+                }
+                else
+                    throw new WoopsaException(response.StatusDescription);
             }
             return result;
         }
@@ -147,6 +183,12 @@ namespace Woopsa
             public string Type { get; set; }
             public string TimeStamp { get; set; }
         }
+    }
+
+    public class WoopsaErrorResult
+    {
+        public string Type { get; set; }
+        public string Message { get; set; }
     }
 
     public class WoopsaMetaResult

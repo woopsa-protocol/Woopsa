@@ -48,9 +48,10 @@ namespace Woopsa
                 WoopsaServiceSubscriptionConst.WoopsaWaitNotification,
                 WoopsaValueType.JsonData,
                 new WoopsaMethodArgumentInfo[]{
-                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, WoopsaValueType.Integer)
+                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel, WoopsaValueType.Integer),
+                    new WoopsaMethodArgumentInfo(WoopsaServiceSubscriptionConst.WoopsaLastNotificationId, WoopsaValueType.Integer)
                 },
-                (args) => (WaitNotification(args.ElementAt(0)))
+                (args) => (WaitNotification(args.ElementAt(0), args.ElementAt(1)))
             );
         }
 
@@ -84,16 +85,17 @@ namespace Woopsa
                 throw new WoopsaException(String.Format("Tried to uregister a subscription on channel with id={0} that does not exist", subscriptionChannel.ToInt32()));
         }
 
-        public IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel)
+        public IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId)
         {
             int channelId = subscriptionChannel.ToInt32();
+            int notificationId = lastNotificationId.ToInt32();
             if (_channels.ContainsKey(channelId))
             {
-                IWoopsaNotifications notifications = _channels[channelId].WaitNotification(WoopsaServiceSubscriptionConst.NotificationTimeoutInterval);
+                IWoopsaNotifications notifications = _channels[channelId].WaitNotification(WoopsaServiceSubscriptionConst.NotificationTimeoutInterval, notificationId);
                 return WoopsaValue.WoopsaJsonData(notifications.Serialize());
             }
             else
-                throw new WoopsaException(String.Format("Tried to call WaitNotification on channel with id={0} that does not exist", channelId));
+                throw new WoopsaInvalidSubscriptionChannelException(String.Format("Tried to call WaitNotification on channel with id={0} that does not exist", channelId));
         }
             
         private WoopsaMethod _createSubscriptionChannel;

@@ -46,7 +46,7 @@ namespace Woopsa
 
 	public class WoopsaObjectAdapter: WoopsaObject
 	{
-        public const char IEnumerableIndexSeparator = '_';
+        public const string IEnumerableIndexerFormat = "{0}[{1}]";
 
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterVisibility visibility = WoopsaObjectAdapterVisibility.All,
@@ -181,7 +181,7 @@ namespace Woopsa
                 int i = 0;
                 foreach(object elem in (TargetObject as IEnumerable<object>))
                 {
-                    string name = elem.GetType().Name + IEnumerableIndexSeparator + i;
+                    string name = String.Format(IEnumerableIndexerFormat, elem.GetType().Name, i);
                     i++;
                     new WoopsaObjectAdapter(this, name, elem, _visibility);
                 }
@@ -287,19 +287,32 @@ namespace Woopsa
             {
                 new WoopsaMethod(this, method.MethodInfo.Name, method.ReturnType, method.WoopsaArguments, (args) =>
                 {
-                    List<object> typedArguments = new List<object>();
-                    for (var i = 0; i < method.Arguments.Count; i++)
+                    try
                     {
-                        typedArguments.Add(((WoopsaValue)args.ElementAt(i)).ConvertTo(method.Arguments.ElementAt(i).Type));
+                        List<object> typedArguments = new List<object>();
+                        for (var i = 0; i < method.Arguments.Count; i++)
+                        {
+                            typedArguments.Add(((WoopsaValue)args.ElementAt(i)).ConvertTo(method.Arguments.ElementAt(i).Type));
+                        }
+                        if (method.MethodInfo.ReturnType == typeof(void))
+                        {
+                            method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray());
+                            return null;
+                        }
+                        else
+                        {
+                            return method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()).ToWoopsaValue(method.ReturnType);
+                        }
                     }
-                    if (method.MethodInfo.ReturnType == typeof(void))
+                    catch (TargetInvocationException e)
                     {
-                        method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray());
-                        return null;
-                    }
-                    else
-                    {
-                        return method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()).ToWoopsaValue(method.ReturnType);
+                        // Because we are invoking using reflection, the 
+                        // exception that is actually thrown is a TargetInvocationException
+                        // containing the actual exception
+                        if (e.InnerException != null)
+                            throw e.InnerException;
+                        else
+                            throw e;
                     }
                 });
             }

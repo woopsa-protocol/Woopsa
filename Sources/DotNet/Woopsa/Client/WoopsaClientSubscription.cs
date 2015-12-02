@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -13,6 +14,7 @@ namespace Woopsa
     {
         public const int DefaultNotificationQueueSize = 200;
         private readonly TimeSpan WaitNotificationTimeout = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan WaitNotificationRetryPeriod = TimeSpan.FromSeconds(10);
 
         public int ChannelId { get; private set; }
 
@@ -21,12 +23,13 @@ namespace Woopsa
         public WoopsaClientSubscriptionChannel(IWoopsaObject client, int notificationQueueSize)
         {
             _client = client;
+            _notificationQueueSize = notificationQueueSize;
 
             _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
             _createSubscriptionChannel = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel);
             _waitNotification = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaWaitNotification);
 
-            Register(notificationQueueSize);
+            Create(_notificationQueueSize);
         }
 
         public override void Register(string path)
@@ -79,7 +82,9 @@ namespace Woopsa
         private IWoopsaObject _subscriptionService;
         private IWoopsaMethod _createSubscriptionChannel;
         private IWoopsaMethod _waitNotification;
+        private int _notificationQueueSize;
 
+        private int _lastNotificationId = 1;
 
         private void DoWaitNotification()
         {
@@ -88,9 +93,50 @@ namespace Woopsa
                 if (_subscriptions.Count > 0)
                 {
                     IWoopsaNotifications notifications;
-                    if (WaitNotification(out notifications) > 0)
+                    try
                     {
-                        DoValueChanged(notifications);
+                        if (WaitNotification(out notifications) > 0)
+                        {
+                            foreach (IWoopsaNotification notification in notifications.Notifications)
+                                if (notification.Id > _lastNotificationId)
+                                    _lastNotificationId = notification.Id;
+                            DoValueChanged(notifications);
+                        }
+                    }
+                    catch (WoopsaInvalidSubscriptionChannelException)
+                    {
+                        // This can happen if the server died and was relaunched
+                        // => the channel doesn't exist anymore so we need to re-
+                        // create it and re-subscribe
+                        Thread.Sleep(WaitNotificationRetryPeriod);
+                        Create(_notificationQueueSize);
+                        lock (_subscriptions)
+                        {
+                            //Check if we haven't already subscribed to this guy by any chance
+                            foreach (var sub in _subscriptions)
+                                sub.Register();
+                        }
+                        _lastNotificationId = 1;
+                    }
+                    catch (WoopsaNotificationsLostException)
+                    {
+                        // This happens when we haven't "collected" notifications
+                        // fast enough and the queue has been filled up completely,
+                        // forcing past notifications to be erased. We must 
+                        // acknowledge to the server.
+                        if (WaitNotification(out notifications, 0) > 0)
+                        {
+                            foreach (IWoopsaNotification notification in notifications.Notifications)
+                                if (notification.Id > _lastNotificationId)
+                                    _lastNotificationId = notification.Id;
+                            DoValueChanged(notifications);
+                        }
+                    }
+                    catch (WebException)
+                    {
+                        // There was some sort of network error. We will
+                        // try again later
+                        Thread.Sleep(WaitNotificationRetryPeriod);
                     }
                 }
             }
@@ -98,8 +144,14 @@ namespace Woopsa
 
         private int WaitNotification(out IWoopsaNotifications notificationsResult)
         {
+            return WaitNotification(out notificationsResult, _lastNotificationId);
+        }
+
+        private int WaitNotification(out IWoopsaNotifications notificationsResult, int lastNotificationId)
+        {
             List<WoopsaValue> arguments = new List<WoopsaValue>();
             arguments.Add(ChannelId);
+            arguments.Add(lastNotificationId);
             IWoopsaValue val = _waitNotification.Invoke(arguments);
             WoopsaJsonData results = ((WoopsaValue)val).JsonData;
             //WoopsaJsonData results = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaWaitNotification, arguments, (int)WaitNotificationTimeout.TotalMilliseconds).JsonData;
@@ -110,10 +162,12 @@ namespace Woopsa
                 WoopsaJsonData notification = results[i];
                 var notificationValue = notification["Value"];
                 var notificationPropertyLink = notification["PropertyLink"];
+                var notificationId = notification["Id"];
                 WoopsaValueType type = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), notificationValue["Type"]);
                 WoopsaValue value = new WoopsaValue(notificationValue["Value"], type, DateTime.Parse(notificationValue["TimeStamp"]));
                 WoopsaValue propertyLink = new WoopsaValue(notificationPropertyLink["Value"], WoopsaValueType.WoopsaLink);
                 WoopsaNotification newNotification = new WoopsaNotification(value, propertyLink);
+                newNotification.Id = notificationId;
                 notificationsList.Add(newNotification);
                 count++;
             }
@@ -121,7 +175,7 @@ namespace Woopsa
             return count;
         }
 
-        private void Register(int notificationQueueSize)
+        private void Create(int notificationQueueSize)
         {
             List<WoopsaValue> arguments = new List<WoopsaValue>();
             arguments.Add(notificationQueueSize);
@@ -142,12 +196,20 @@ namespace Woopsa
             {
                 _channel = channel;
                 _client = client;
+                _monitorInterval = monitorInterval;
+                _publishInterval = publishInterval;
                 _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
                 _registerSubscription = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription);
                 _unregisterSubscription = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription);
                 Path = path;
-                Id = Register(monitorInterval, publishInterval);
+                Register();
             }
+            
+            public void Register()
+            {
+                Id = Register(_monitorInterval, _publishInterval);
+            }
+
 
             public int Id { get; private set; }
             public string Path { get; private set; }
@@ -166,6 +228,8 @@ namespace Woopsa
             private IWoopsaObject _subscriptionService;
             private IWoopsaMethod _registerSubscription;
             private IWoopsaMethod _unregisterSubscription;
+            private TimeSpan _monitorInterval;
+            private TimeSpan _publishInterval;
 
             private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
             {

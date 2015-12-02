@@ -17,6 +17,8 @@ namespace Woopsa
         public IWoopsaValue Value { get; private set; }
 
         public IWoopsaValue PropertyLink { get; private set; }
+
+        public int Id { get; set; }
     }
 
     public class WoopsaNotifications : IWoopsaNotifications

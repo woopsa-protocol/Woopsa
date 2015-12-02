@@ -10,11 +10,9 @@ namespace Woopsa
     {
         public WoopsaClientSubscriptionChannelFallback(WoopsaClientObject client)
         {
-            Console.WriteLine("Using a fallback");
             _client = client;
             _service = new SubscriptionService(_client);
             _channel = new WoopsaClientSubscriptionChannel(_client);
-            //_service = new SubscriptionService(client);
         }
 
         public override event EventHandler<WoopsaNotificationsEventArgs> ValueChange

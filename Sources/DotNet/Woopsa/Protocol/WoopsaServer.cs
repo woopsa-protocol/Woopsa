@@ -249,15 +249,19 @@ namespace Woopsa
             }
             catch (WoopsaNotFoundException e)
             {
-                response.WriteError(HTTPStatusCode.NotFound, e.Message, WoopsaFormat.WoopsaError(e.Message), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.NotFound, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
             }
             catch (WoopsaInvalidOperationException e)
             {
-                response.WriteError(HTTPStatusCode.BadRequest, e.Message, WoopsaFormat.WoopsaError(e.Message), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.BadRequest, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
+            }
+            catch (WoopsaException e)
+            {
+                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.WoopsaError(e.Message), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
             }
         }
 

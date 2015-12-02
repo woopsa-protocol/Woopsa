@@ -18,9 +18,9 @@ namespace Woopsa
             return timeSpan.TotalSeconds.ToStringWoopsa();
         }
 
-        public static string WoopsaError(string error)
+        public static string WoopsaError(Exception e)
         {
-            return String.Format(ErrorFormat, error);
+            return String.Format(ErrorFormat, e.Message, e.GetType().Name);
         }
 
         /// <summary>
@@ -79,7 +79,7 @@ namespace Woopsa
 
         public static string Serialize(this IWoopsaNotification notification)
         {
-            return String.Format(NotificationFormat, notification.Value.Serialise(), notification.PropertyLink.Serialise());
+            return String.Format(NotificationFormat, notification.Value.Serialise(), notification.PropertyLink.Serialise(), notification.Id);
         }
 
         public static string Serialise(this IWoopsaValue value)
@@ -202,7 +202,7 @@ namespace Woopsa
         public const string KeyId               = "Id";
         public const string KeyResult           = "Result";
 
-        const string NotificationFormat         = "{{\"" + KeyValue + "\":{0},\"" + KeyPropertyLink + "\":{1}}}";
+        const string NotificationFormat         = "{{\"" + KeyValue + "\":{0},\"" + KeyPropertyLink + "\":{1}, \"" + KeyId + "\": {2}}}";
 
         const string ValueFormatNoDate          = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\"}}";
         const string ValueFormatWithDate        = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\",\"" + KeyTimeStamp + "\":\"{2}\"}}";
@@ -213,7 +213,7 @@ namespace Woopsa
         const string MetadataMethod             = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyReturnType + "\":\"{1}\",\"" + KeyArgumentInfos + "\":{2}}}";
         const string MetadataArgumentInfo       = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyType + "\":\"{1}\"}}";
 
-        const string ErrorFormat                = "{{\"" + KeyError + "\":true, \"" + KeyMessage + "\":\"{0}\"}}";
+        const string ErrorFormat                = "{{\"" + KeyError + "\":true, \"" + KeyMessage + "\":\"{0}\", \"" + KeyType + "\":\"{1}\"}}";
 
         const string MultipleRequestResponseFormat = "{{\"" + KeyId + "\":{0}, \"" + KeyResult + "\":{1}}}";
 

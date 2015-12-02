@@ -57,6 +57,7 @@
 		this.subscriptionsDictionary = {};
 		
 		var created = false;
+		var channelLastNotificationId = 1;
 		
 		this.registerSubscription = function (path, onChangeCallback, successCallback, monitorInterval, publishInterval) {
 			var newSubscription = new Subscription(this, path, onChangeCallback, successCallback, monitorInterval, publishInterval);
@@ -96,15 +97,20 @@
 		
 		var retryFrequency = 10000; //The frequency at which to retry connecting, in milliseconds
 		
-		var waitNotification = function () {
+		var waitNotification = function (lastNotificationId) {
+			if( typeof(lastNotificationId)== "undefined" ) {
+				lastNotificationId = channelLastNotificationId;
+			}
 			return client.invoke(
 				"/SubscriptionService/WaitNotification",
-				{SubscriptionChannel: this.channelId},
+				{SubscriptionChannel: this.channelId, LastNotificationId: lastNotificationId},
 				(function (notifications) {
 					for ( var i = 0; i < notifications.length; i++ ) {
 						var notification = notifications[i];
 						if ( this.subscriptionsDictionary[notification.PropertyLink.Value] ) {
 							this.subscriptionsDictionary[notification.PropertyLink.Value].onChange(notification.Value.Value);
+							if ( notification.Id > channelLastNotificationId )
+								channelLastNotificationId = notification.Id;
 						}
 					}
 					waitNotification.call(this);
@@ -112,15 +118,26 @@
 			).fail(function (request, status, error){
 				if ( request.readyState == 4 ){
 					//We have reconnected but the server has forgotten our channel
-					this.register().done(function (){
-						for ( var i = 0; i < this.subscriptions.length; i++ ) {
-							this.subscriptions[i].register()
-						}
-					}.bind(this))
+					if (request.getResponseHeader("Content-Type") == "application/json"){
+						var woopsaException = JSON.parse(request.responseText);
+						if (woopsaException.Type == "WoopsaInvalidSubscriptionChannelException"){
+							this.register().done(function (){
+								for ( var i = 0; i < this.subscriptions.length; i++ ) {
+									this.subscriptions[i].register()
+								}
+							}.bind(this));
+							setTimeout((function (){
+								waitNotification.call(this, channelLastNotificationId);
+							}).bind(this), retryFrequency);
+						}else if (woopsaException.Type == "WoopsaNotificationsLostException"){
+							waitNotification.call(this, 0);
+						}				
+					}
+				}else{					
+					setTimeout((function (){
+						waitNotification.call(this, channelLastNotificationId);
+					}).bind(this), retryFrequency);
 				}
-				setTimeout((function (){
-					waitNotification.call(this);
-				}).bind(this), retryFrequency);
 			}.bind(this));
 		}
 	};

@@ -266,12 +266,15 @@ namespace Woopsa
                     ExtractPOST(request, reader, clientEncoding);
 
                     bool keepAlive = false;
+                    // According to spec, Keep-Alive is ON by default
+                    if (version == "HTTP/1.1")
+                        keepAlive = true;
                     if (request.Headers.ContainsKey(HTTPHeader.Connection))
                     {
-                        if (request.Headers[HTTPHeader.Connection].ToLower().Equals("keep-alive"))
+                        if (request.Headers[HTTPHeader.Connection].ToLower().Equals("close"))
                         {
-                            keepAlive = true;
-                            response.SetHeader(HTTPHeader.Connection, "keep-alive");
+                            keepAlive = false;
+                            response.SetHeader(HTTPHeader.Connection, "close");
                         }
                     }
 
