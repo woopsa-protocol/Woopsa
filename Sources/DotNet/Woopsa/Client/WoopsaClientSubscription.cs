@@ -84,7 +84,7 @@ namespace Woopsa
         private IWoopsaMethod _waitNotification;
         private int _notificationQueueSize;
 
-        private int _lastNotificationId = 1;
+        private int _lastNotificationId = 0;
 
         private void DoWaitNotification()
         {

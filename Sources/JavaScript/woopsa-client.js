@@ -57,7 +57,7 @@
 		this.subscriptionsDictionary = {};
 		
 		var created = false;
-		var channelLastNotificationId = 1;
+		var channelLastNotificationId = 0;
 		
 		this.registerSubscription = function (path, onChangeCallback, successCallback, monitorInterval, publishInterval) {
 			var newSubscription = new Subscription(this, path, onChangeCallback, successCallback, monitorInterval, publishInterval);
