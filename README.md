@@ -22,6 +22,23 @@ WoopsaServer server = new WoopsaServer(station);
 station.Temperature = 42;
 ```
 
+**Example Embedded C Server (Arduino, others)**
+
+```c
+double Temperature;
+int Altitude;
+float GetAirPressure() {
+  return 42.2;
+}
+
+WOOPSA_BEGIN(woopsa_entries)
+  WOOPSA_PROPERTY_READONLY(Temperature, WOOPSA_TYPE_REAL)
+  WOOPSA_PROPERTY(Altitude, WOOPSA_TYPE_INTEGER)
+  WOOPSA_METHOD(GetAirPressure, WOOPSA_TYPE_REAL)
+WOOPSA_END
+...
+```
+
 ## Getting the library
 The latest release is part of the git repository, in the well-named **Release** directory. It contains the .NET and JavaScript versions of the Woopsa library, as well as a few examples to get started!
 
