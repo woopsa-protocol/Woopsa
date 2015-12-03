@@ -20,7 +20,7 @@ namespace Woopsa
 
         public static string WoopsaError(Exception e)
         {
-            return String.Format(ErrorFormat, e.Message, e.GetType().Name);
+            return String.Format(ErrorFormat, e.Message.JsonEscape(), e.GetType().Name);
         }
 
         /// <summary>

@@ -155,7 +155,7 @@ namespace Woopsa
 
 
 		private static int _lastId = (int)new Random().NextDouble();
-        private bool _notificationsLost = true;
+        private bool _notificationsLost = false;
         private int _lastSubscriptionId = 1;
         private int _lastNotificationId = 1;
         private Dictionary<int, WoopsaSubscription> _subscriptions = new Dictionary<int, WoopsaSubscription>();
