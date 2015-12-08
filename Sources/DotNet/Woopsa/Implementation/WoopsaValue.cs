@@ -8,16 +8,63 @@ namespace Woopsa
 {
 	public class WoopsaValue : IWoopsaValue
 	{
-		public WoopsaValue(string text, WoopsaValueType type, DateTime? timestamp)
+		private WoopsaValue(string text, WoopsaValueType type, DateTime? timestamp)
 		{
 			_text = text;
 			_type = type;
-			_timestamp = timestamp;
+			_timestamp = timestamp;           
             if (type == WoopsaValueType.JsonData)
                 _jsonData = new WoopsaJsonData(text);
 		}
 
-		public WoopsaValue(string text, WoopsaValueType type)
+        public static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp)
+        {
+            return new WoopsaValue(text, type, timestamp);
+        }
+
+        public static WoopsaValue CreateUnchecked(string text, WoopsaValueType type)
+        {
+            return CreateUnchecked(text, type, null);
+        }
+
+        public static WoopsaValue CreateChecked(string text, WoopsaValueType type, DateTime? timestamp)
+        {
+            try
+            {
+                // Sanity check for the value passed in argument
+                switch (type)
+                {
+                    case WoopsaValueType.Integer:
+                        Int64.Parse(text);
+                        break;
+                    case WoopsaValueType.Real:
+                        Double.Parse(text);
+                        break;
+                    case WoopsaValueType.Logical:
+                        Boolean.Parse(text);
+                        text = text.ToLower(); // .NET and JSON serialize booleans differently (.NET uses a capital first letter) :/
+                        break;
+                    case WoopsaValueType.DateTime:
+                        DateTime.Parse(text);
+                        break;
+                    case WoopsaValueType.TimeSpan:
+                        Double.Parse(text);
+                        break;
+                }
+            }
+            catch (Exception)
+            {
+                throw new WoopsaException(String.Format("Cannot create a WoopsaValue of type {0} from string \"{1}\"", type.ToString(), text));
+            }
+            return CreateUnchecked(text, type, timestamp);
+        }
+
+        public static WoopsaValue CreateChecked(string text, WoopsaValueType type)
+        {
+            return CreateChecked(text, type, null);
+        }
+
+        private WoopsaValue(string text, WoopsaValueType type)
             : this(text, type, null)
 		{
 		}

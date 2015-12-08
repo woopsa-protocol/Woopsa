@@ -11,6 +11,9 @@ namespace Woopsa
 		public static readonly TimeSpan NotificationTimeoutInterval = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan SubscriptionChannelLifeTime = TimeSpan.FromMinutes(20);
 
+        public static readonly TimeSpan DefaultMonitorInterval = TimeSpan.FromMilliseconds(200);
+        public static readonly TimeSpan DefaultPublishInterval = TimeSpan.FromMilliseconds(200);
+
         public const int MaximumNotificationId = 1000000000;
 
 		public const string WoopsaServiceSubscriptionName   = "SubscriptionService";
@@ -66,8 +69,8 @@ namespace Woopsa
 
 	public interface IWoopsaNotification
 	{
-		IWoopsaValue PropertyLink { get; }
-		IWoopsaValue Value { get; }
+        IWoopsaValue Value { get; }
+        int SubscriptionId { get; }
         int Id { get; set; }
 	}
 

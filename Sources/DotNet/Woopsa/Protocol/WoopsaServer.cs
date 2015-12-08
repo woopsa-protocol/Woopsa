@@ -289,7 +289,7 @@ namespace Woopsa
                 {
                     throw new WoopsaInvalidOperationException(String.Format("Cannot write a read-only WoopsaProperty for path {0}", path));
                 }
-                property.Value = new WoopsaValue(value, property.Type);
+                property.Value = WoopsaValue.CreateUnchecked(value, property.Type);
                 return property.Value.Serialise();
             }
             else
@@ -336,7 +336,7 @@ namespace Woopsa
                     string argumentValue = arguments[argInfo.Name];
                     if (argumentValue == null)
                         throw new WoopsaInvalidOperationException(String.Format("Missing argument {0} for method {1}", argInfo.Name, elem.Name));
-                    wArguments.Add(new WoopsaValue(argumentValue, argInfo.Type));
+                    wArguments.Add(WoopsaValue.CreateUnchecked(argumentValue, argInfo.Type));
                 }
 
                 IWoopsaValue result = method.Invoke(wArguments);

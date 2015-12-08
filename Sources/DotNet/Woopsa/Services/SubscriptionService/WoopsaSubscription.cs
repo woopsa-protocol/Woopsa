@@ -86,7 +86,7 @@ namespace Woopsa
             if (!newValue.Equals(_oldValue))
             {
                 _oldValue = newValue;
-                return new WoopsaNotification(new WoopsaValue(newValue.AsText, newValue.Type, DateTime.Now), PropertyLink);
+                return new WoopsaNotification(WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now), Id);
             }
             else
             {

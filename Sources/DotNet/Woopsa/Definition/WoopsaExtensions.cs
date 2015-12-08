@@ -10,11 +10,11 @@ namespace Woopsa
 	{
 		#region IWoopsaValue
 
-        public static WoopsaValue ToWoopsaValue(this object value, WoopsaValueType type, bool timestamp = false)
+        public static WoopsaValue ToWoopsaValue(this object value, WoopsaValueType type, bool timestamped = false, DateTime? timestamp = null)
         {
             try
             {
-                if (!timestamp)
+                if (!timestamped)
                     switch (type)
                     {
                         case WoopsaValueType.Logical:
@@ -30,26 +30,33 @@ namespace Woopsa
                         case WoopsaValueType.Text:
                             return new WoopsaValue(value.ToString());
                         default:
-                            return new WoopsaValue(value.ToString(), type);
+                            return WoopsaValue.CreateUnchecked(value.ToString(), type);
                     }
                 else
+                {
+                    DateTime dateTime;
+                    if (timestamp.HasValue)
+                        dateTime = timestamp.Value;
+                    else
+                        dateTime = DateTime.Now;
                     switch (type)
                     {
                         case WoopsaValueType.Logical:
-                            return new WoopsaValue((bool)value, DateTime.Now);
+                            return new WoopsaValue((bool)value, dateTime);
                         case WoopsaValueType.Integer:
-                            return new WoopsaValue(Convert.ToInt64(value), DateTime.Now);
+                            return new WoopsaValue(Convert.ToInt64(value), dateTime);
                         case WoopsaValueType.Real:
-                            return new WoopsaValue(Convert.ToDouble(value), DateTime.Now);
+                            return new WoopsaValue(Convert.ToDouble(value), dateTime);
                         case WoopsaValueType.DateTime:
-                            return new WoopsaValue((DateTime)value, DateTime.Now);
+                            return new WoopsaValue((DateTime)value, dateTime);
                         case WoopsaValueType.TimeSpan:
-                            return new WoopsaValue((TimeSpan)value, DateTime.Now);
+                            return new WoopsaValue((TimeSpan)value, dateTime);
                         case WoopsaValueType.Text:
-                            return new WoopsaValue(value.ToString(), DateTime.Now);
+                            return new WoopsaValue(value.ToString(), dateTime);
                         default:
-                            return new WoopsaValue(value.ToString(), type, DateTime.Now);
+                            return WoopsaValue.CreateUnchecked(value.ToString(), type, dateTime);
                     }
+                }
             }
             catch(InvalidCastException)
             {
@@ -399,15 +406,22 @@ namespace Woopsa
 		{
 			if (element != null)
 			{
-				if (element.Owner != root)
-				{
-					BuildPath(stringBuilder, element.Owner, root);
-				}
-				if (element.Owner != null) // it is not the root
-				{
-					stringBuilder.Append(WoopsaConst.WoopsaPathSeparator);
-					stringBuilder.Append(element.Name);
-				}
+                if (element == root)
+                {
+                    stringBuilder.Append(WoopsaConst.WoopsaPathSeparator);
+                }
+                else
+                {
+                    if (element.Owner != root)
+                    {
+                        BuildPath(stringBuilder, element.Owner, root);
+                    }
+                    if (element.Owner != null) // it is not the root
+                    {
+                        stringBuilder.Append(WoopsaConst.WoopsaPathSeparator);
+                        stringBuilder.Append(element.Name);
+                    }
+                }
 			}
 		}
 

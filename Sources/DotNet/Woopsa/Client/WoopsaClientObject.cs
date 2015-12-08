@@ -9,14 +9,18 @@ namespace Woopsa
 {
     public class WoopsaClientObject : WoopsaObject
     {
-        internal WoopsaClientObject(WoopsaBaseClient client, WoopsaClientObject container, string name) 
+        internal WoopsaClientObject(WoopsaBaseClient client, WoopsaContainer container, string name, IWoopsaContainer root) 
             : base(container, name)
         {
             _client = client;
+            if (root == null)
+                _root = this;
+            else
+                _root = root;
             //_client.PropertyChange += _client_PropertyChange;
         }
 
-        public delegate void PropertyChanged(IWoopsaValue value);
+        public delegate void PropertyChanged(IWoopsaNotification value);
 
         public new IEnumerable<WoopsaClientProperty> Properties
         {
@@ -43,15 +47,23 @@ namespace Woopsa
 
         public void Refresh()
         {
-            Refresh(false);
+            Refresh(true);
         }
 
-        public void Refresh(bool first)
+        private void Refresh(bool flushProperties)
         {
-            _meta = _client.Meta(this.GetPath());
+            _meta = _client.Meta(this.GetPath(_root));
 
-            if (!first)
+            if (flushProperties)
             {
+                // We need this apparently useless "flushProperties"
+                // argument because Get'ing one of these 3 properties
+                // will trigger the DoPopulate method on the WoopsaObject,
+                // which will in turn ask this clientobject to call this
+                // same refresh method, leading to a deadly never-ending
+                // recursive call to itself!
+                // However we still want to provide a way for users of 
+                // this API to completely refresh this client's items.
                 for (int i = Properties.Count(); i >= 0; i--)
                 {
                     Remove((WoopsaProperty)Properties.ElementAt(i));
@@ -99,13 +111,14 @@ namespace Woopsa
 
             foreach (var item in _meta.Items)
             {
-                new WoopsaClientObject(_client, this, item);
+                new WoopsaClientObject(_client, this, item, _root);
             }
         }
 
         #region Subscription Service
         public event EventHandler<WoopsaNotificationsEventArgs> PropertyChange;
-        public void Subscribe(string path, PropertyChanged propertyChangedHandler)
+
+        public int Subscribe(string path, PropertyChanged propertyChangedHandler, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             if (_subscriptionChannel == null)
             {
@@ -122,19 +135,20 @@ namespace Woopsa
 
                 _subscriptionChannel.ValueChange += _subscriptionChannel_ValueChange;
             }
-            _subscriptionChannel.Register(path);
-            _subscriptionsCache.Add(path, propertyChangedHandler);
+            int subscriptionId = _subscriptionChannel.Register(path, monitorInterval, publishInterval);
+            _subscriptionsDictionary.Add(subscriptionId, propertyChangedHandler);
+            return subscriptionId;
         }
 
-        public void Unsubscribe(string path)
+        public void Unsubscribe(int id)
         {
-            if (_subscriptionsCache.ContainsKey(path))
+            if (_subscriptionsDictionary.ContainsKey(id))
             {
-                _subscriptionsCache.Remove(path);
+                _subscriptionsDictionary.Remove(id);
             }
             if (_subscriptionChannel != null)
             {
-                _subscriptionChannel.Unregister(path);
+                _subscriptionChannel.Unregister(id);
             }
         }
 
@@ -142,9 +156,9 @@ namespace Woopsa
         {
             foreach (var notification in notifications.Notifications.Notifications)
             {
-                if (_subscriptionsCache.ContainsKey(notification.PropertyLink.AsText))
+                if (_subscriptionsDictionary.ContainsKey(notification.SubscriptionId))
                 {
-                    _subscriptionsCache[notification.PropertyLink.AsText](notification.Value);
+                    _subscriptionsDictionary[notification.SubscriptionId](notification);
                 }
             }
         }
@@ -153,17 +167,17 @@ namespace Woopsa
         protected override void PopulateObject()
         {
             base.PopulateObject();
-            Refresh(true);
+            Refresh(false);
         }
 
         private WoopsaValue GetProperty(object sender)
         {
-            return _client.Read(this.GetPath().TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name);
+            return _client.Read(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name);
         }
 
         private void SetProperty(object sender, IWoopsaValue value)
         {
-            _client.Write(this.GetPath().TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name, value.AsText);
+            _client.Write(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + (sender as IWoopsaProperty).Name, value.AsText);
         }
 
         private WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments, List<WoopsaMethodArgumentInfo> argumentInfos, string methodName)
@@ -173,15 +187,18 @@ namespace Woopsa
             {
                 namedArguments.Add(argumentInfos[i].Name, arguments.ElementAt(i).AsText);
             }
-            return _client.Invoke(this.GetPath().TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments);
+            return _client.Invoke(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments);
         }
 
         private WoopsaBaseClient _client = null;
         private WoopsaMetaResult _meta = null;
-        private Dictionary<string, PropertyChanged> _subscriptionsCache = new Dictionary<string, PropertyChanged>();
+        private Dictionary<int, PropertyChanged> _subscriptionsDictionary = new Dictionary<int, PropertyChanged>();
+        //private Dictionary<string, PropertyChanged> _subscriptionsCache = new Dictionary<string, PropertyChanged>();
 
         private WoopsaClientSubscriptionChannelBase _subscriptionChannel;
         private bool? _hasSubscriptionService = null;
+
+        private IWoopsaContainer _root;
     }
 
     public class WoopsaClientProperty : WoopsaProperty
@@ -268,36 +285,61 @@ namespace Woopsa
             return property.Value.AsText;
         }
 
+        public int SubscribeToChanges(EventHandler<WoopsaNotificationEventArgs> callback, TimeSpan monitorInterval, TimeSpan publishInterval)
+        {
+            if (_subscriptions == null)
+                _subscriptions = new Dictionary<int, EventHandler<WoopsaNotificationEventArgs>>();
+            int subscriptionId = _container.Subscribe(this.GetPath(), HandlePropertyChanged, monitorInterval, publishInterval);
+            lock(_subscriptions)
+                _subscriptions.Add(subscriptionId, callback);
+            return subscriptionId;
+        }
+
+        public void UnsubscribeToChanges(int subscriptionId)
+        {
+            
+        }
+
         public event EventHandler<WoopsaNotificationEventArgs> Change
         {
             add
             {
-                if (!_listenStarted)
-                {
-                    _container.Subscribe(this.GetPath(), HandlePropertyChanged);
-                }
-                _changeInternal += value;
+                if (_subscriptions == null)
+                    _subscriptions = new Dictionary<int, EventHandler<WoopsaNotificationEventArgs>>();
+                int subscriptionId = _container.Subscribe(this.GetPath(), HandlePropertyChanged, WoopsaServiceSubscriptionConst.DefaultMonitorInterval, WoopsaServiceSubscriptionConst.DefaultPublishInterval);
+                lock(_subscriptions)
+                    _subscriptions.Add(subscriptionId, value);
             }
             remove
             {
-                _changeInternal -= value;
-                if (_changeInternal == null)
+                lock (_subscriptions)
                 {
-                    _container.Unsubscribe(this.GetPath());
+                    foreach (var subscription in _subscriptions)
+                    {
+                        if (subscription.Value == value)
+                        {
+                            _subscriptions.Remove(subscription.Key);
+                            _container.Unsubscribe(subscription.Key);
+                            return;
+                        }
+                    }
                 }
             }
         }
-        private event EventHandler<WoopsaNotificationEventArgs> _changeInternal;
 
-        private void HandlePropertyChanged(IWoopsaValue value)
+        private void HandlePropertyChanged(IWoopsaNotification value)
         {
-            if (_changeInternal != null)
+            lock (_subscriptions)
             {
-                _changeInternal(this, new WoopsaNotificationEventArgs(value));
+                if (_subscriptions.ContainsKey(value.SubscriptionId))
+                    _subscriptions[value.SubscriptionId](this, new WoopsaNotificationEventArgs(value.Value));
             }
         }
 
-        private bool _listenStarted = false;
+        // Subscriptions using custom parameters (publish/monitor interval)
+        // are more quickly refered to by their subscription ID, because the
+        // SubscribeToChanges function returns an integer
+        private Dictionary<int, EventHandler<WoopsaNotificationEventArgs>> _subscriptions;
         private WoopsaClientObject _container;
     }
 

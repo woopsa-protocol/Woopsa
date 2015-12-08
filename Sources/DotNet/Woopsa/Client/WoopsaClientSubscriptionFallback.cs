@@ -28,20 +28,15 @@ namespace Woopsa
         }
 
         private WoopsaClientObject _client;
-
-        public override void Register(string path)
+        
+        public override int Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            _channel.Register(path);
+            return _channel.Register(path, monitorInterval, publishInterval);
         }
 
-        public override void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public override bool Unregister(int id)
         {
-            _channel.Register(path, monitorInterval, publishInterval);
-        }
-
-        public override bool Unregister(string path)
-        {
-            return _channel.Unregister(path);
+            return _channel.Unregister(id);
         }
 
         private SubscriptionService _service;

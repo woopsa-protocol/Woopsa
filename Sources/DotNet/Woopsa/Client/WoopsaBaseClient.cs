@@ -74,9 +74,9 @@ namespace Woopsa
             else
             {
                 if (result.TimeStamp == null)
-                    return new WoopsaValue(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));
+                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));// result.Value.ToWoopsaValue((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));
                 else
-                    return new WoopsaValue(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), DateTime.Parse(result.TimeStamp));
+                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), DateTime.Parse(result.TimeStamp)); //result.Value.ToWoopsaValue((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), true, DateTime.Parse(result.TimeStamp));
             }
         }
         

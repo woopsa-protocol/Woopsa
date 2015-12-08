@@ -8,9 +8,15 @@ namespace Woopsa
 {
     public class WoopsaClient : IDisposable
     {
-        public WoopsaClient(string url)
+        public WoopsaClient(string url) : this(url, null, null) { }
+
+        public WoopsaClient(string url, WoopsaContainer container, string name)
         {
             _client = new WoopsaBaseClient(url);
+            _container = container;
+            _name = name;
+            if (_container != null)
+                Refresh();
         }
 
         public string Username
@@ -50,11 +56,15 @@ namespace Woopsa
         public void Refresh()
         {
             WoopsaMetaResult meta = _client.Meta(WoopsaConst.WoopsaRootPath);
-            _clientObject = new WoopsaClientObject(_client, null, meta.Name);
+            if (_name == null)
+                _name = meta.Name;
+            _clientObject = new WoopsaClientObject(_client, _container, _name, null);
         }
 
         private WoopsaBaseClient _client;
         private WoopsaClientObject _clientObject;
+        private WoopsaContainer _container;
+        private string _name;
 
         protected virtual void Dispose(bool disposing)
         {

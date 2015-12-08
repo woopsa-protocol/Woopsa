@@ -8,15 +8,15 @@ namespace Woopsa
 {
     public class WoopsaNotification : IWoopsaNotification
     {
-        public WoopsaNotification(IWoopsaValue value, IWoopsaValue propertyLink)
+        public WoopsaNotification(IWoopsaValue value, int subscriptionId)
         {
             Value = value;
-            PropertyLink = propertyLink;
+            SubscriptionId = subscriptionId;
         }
 
         public IWoopsaValue Value { get; private set; }
 
-        public IWoopsaValue PropertyLink { get; private set; }
+        public int SubscriptionId { get; private set; }
 
         public int Id { get; set; }
     }

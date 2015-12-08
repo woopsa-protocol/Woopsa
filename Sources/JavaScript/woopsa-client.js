@@ -4,7 +4,7 @@
 	var Subscription = function (channel, path, onChangeCallback, successCallback, monitorInterval, publishInterval) {
 		this.channel = channel;
 		this.path = path;
-		this.onChange = onChangeCallback || nop;		
+		this.onChange = onChangeCallback || nop;
 		
 		this.subscriptionId = null;
 		
@@ -60,13 +60,15 @@
 		var channelLastNotificationId = 0;
 		
 		this.registerSubscription = function (path, onChangeCallback, successCallback, monitorInterval, publishInterval) {
-			var newSubscription = new Subscription(this, path, onChangeCallback, successCallback, monitorInterval, publishInterval);
+			var newSubscription = new Subscription(this, path, onChangeCallback, (function (){
+				this.subscriptionsDictionary[newSubscription.subscriptionId] = newSubscription;
+				successCallback();
+			}).bind(this), monitorInterval, publishInterval);
 			this.subscriptions.push(newSubscription);
 			if ( !this.listenStarted ) {
 				this.listenStarted = true;
 				waitNotification.call(this);
 			}
-			this.subscriptionsDictionary[path] = newSubscription;
 			return newSubscription;
 		};
 		
@@ -107,8 +109,8 @@
 				(function (notifications) {
 					for ( var i = 0; i < notifications.length; i++ ) {
 						var notification = notifications[i];
-						if ( this.subscriptionsDictionary[notification.PropertyLink.Value] ) {
-							this.subscriptionsDictionary[notification.PropertyLink.Value].onChange(notification.Value.Value);
+						if ( this.subscriptionsDictionary[notification.SubscriptionId] ) {
+							this.subscriptionsDictionary[notification.SubscriptionId].onChange(notification.Value.Value);
 							if ( notification.Id > channelLastNotificationId )
 								channelLastNotificationId = notification.Id;
 						}

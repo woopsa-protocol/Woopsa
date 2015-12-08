@@ -32,20 +32,12 @@ namespace Woopsa
             Create(_notificationQueueSize);
         }
 
-        public override void Register(string path)
-        {
-            Register(path, WoopsaClientSubscription.DefaultMonitorInterval, WoopsaClientSubscription.DefaultPublishInterval);
-        }
-
-        public override void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public override int Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             WoopsaClientSubscription subscription = new WoopsaClientSubscription(this, _client, path, monitorInterval, publishInterval);
             lock (_subscriptions)
             {
                 //Check if we haven't already subscribed to this guy by any chance
-                foreach (var sub in _subscriptions)
-                    if (sub.Path.Equals(path))
-                        return;
                 _subscriptions.Add(subscription);
             }
             if (!_listenStarted)
@@ -55,15 +47,16 @@ namespace Woopsa
                 _listenThread.Start();
                 _listenStarted = true;
             }
+            return subscription.Id;
         }
 
-        public override bool Unregister(string path)
+        public override bool Unregister(int id)
         {
             lock (_subscriptions)
             {
                 foreach (var subscription in _subscriptions)
                 {
-                    if (subscription.Path.Equals(path))
+                    if (subscription.Id.Equals(id))
                     {
                         bool result = subscription.Unregister();
                         _subscriptions.Remove(subscription);
@@ -161,12 +154,11 @@ namespace Woopsa
             {
                 WoopsaJsonData notification = results[i];
                 var notificationValue = notification["Value"];
-                var notificationPropertyLink = notification["PropertyLink"];
+                var notificationSubscriptionId = notification["SubscriptionId"];
                 var notificationId = notification["Id"];
                 WoopsaValueType type = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), notificationValue["Type"]);
-                WoopsaValue value = new WoopsaValue(notificationValue["Value"], type, DateTime.Parse(notificationValue["TimeStamp"]));
-                WoopsaValue propertyLink = new WoopsaValue(notificationPropertyLink["Value"], WoopsaValueType.WoopsaLink);
-                WoopsaNotification newNotification = new WoopsaNotification(value, propertyLink);
+                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue["Value"], type, DateTime.Parse(notificationValue["TimeStamp"]));
+                WoopsaNotification newNotification = new WoopsaNotification(value, notificationSubscriptionId);
                 newNotification.Id = notificationId;
                 notificationsList.Add(newNotification);
                 count++;
@@ -184,14 +176,8 @@ namespace Woopsa
             ChannelId = result.ToInt32();
         }
 
-        private class WoopsaClientSubscription
+        internal class WoopsaClientSubscription
         {
-            public static readonly TimeSpan DefaultMonitorInterval = TimeSpan.FromMilliseconds(200);
-            public static readonly TimeSpan DefaultPublishInterval = TimeSpan.FromMilliseconds(200);
-
-            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path)
-                : this(channel, client, path, DefaultMonitorInterval, DefaultPublishInterval) { }
-
             public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
             {
                 _channel = channel;
@@ -235,7 +221,7 @@ namespace Woopsa
             {
                 List<WoopsaValue> arguments = new List<WoopsaValue>();
                 arguments.Add(_channel.ChannelId);
-                arguments.Add(new WoopsaValue(Path, WoopsaValueType.WoopsaLink));
+                arguments.Add(WoopsaValue.CreateUnchecked(Path, WoopsaValueType.WoopsaLink));
                 arguments.Add(monitorInterval);
                 arguments.Add(publishInterval); 
                 IWoopsaValue result = _registerSubscription.Invoke(arguments);

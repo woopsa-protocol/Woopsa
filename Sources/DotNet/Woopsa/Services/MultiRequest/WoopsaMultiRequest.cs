@@ -57,7 +57,7 @@ namespace Woopsa
                 response.Result = result;
                 responses.Add(response);
             }
-            return new WoopsaValue(responses.Serialize(), WoopsaValueType.JsonData);
+            return WoopsaValue.CreateUnchecked(responses.Serialize(), WoopsaValueType.JsonData);
         }
 
         private static Stream GenerateStreamFromString(string s)

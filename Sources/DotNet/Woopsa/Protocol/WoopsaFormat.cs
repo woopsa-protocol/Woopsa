@@ -79,7 +79,7 @@ namespace Woopsa
 
         public static string Serialize(this IWoopsaNotification notification)
         {
-            return String.Format(NotificationFormat, notification.Value.Serialise(), notification.PropertyLink.Serialise(), notification.Id);
+            return String.Format(NotificationFormat, notification.Value.Serialise(), notification.SubscriptionId, notification.Id);
         }
 
         public static string Serialise(this IWoopsaValue value)
@@ -198,11 +198,11 @@ namespace Woopsa
         public const string KeyItems            = "Items";
         public const string KeyError            = "Error";
         public const string KeyMessage          = "Message";
-        public const string KeyPropertyLink     = "PropertyLink";
+        public const string KeySubscriptionId   = "SubscriptionId";
         public const string KeyId               = "Id";
         public const string KeyResult           = "Result";
 
-        const string NotificationFormat         = "{{\"" + KeyValue + "\":{0},\"" + KeyPropertyLink + "\":{1}, \"" + KeyId + "\": {2}}}";
+        const string NotificationFormat         = "{{\"" + KeyValue + "\":{0},\"" + KeySubscriptionId + "\":{1}, \"" + KeyId + "\": {2}}}";
 
         const string ValueFormatNoDate          = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\"}}";
         const string ValueFormatWithDate        = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\",\"" + KeyTimeStamp + "\":\"{2}\"}}";

@@ -112,7 +112,7 @@ namespace Woopsa
             {
                 if (binder.Name.Equals(property.Name))
                 {
-                    property.Value = new WoopsaValue(value.ToWoopsaValue(property.Type), property.Type);
+                    property.Value = WoopsaValue.CreateUnchecked(value.ToWoopsaValue(property.Type), property.Type);
                     return true;
                 }
             }

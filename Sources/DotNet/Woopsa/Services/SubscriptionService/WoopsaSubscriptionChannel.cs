@@ -11,6 +11,7 @@ namespace Woopsa
 {
     public class WoopsaSubscriptionChannel : IDisposable
     {
+        // TODO: Delete subscription channels that aren't active after XX minutes
         public WoopsaSubscriptionChannel(int notificationQueueSize)
         {
             lock (_idLock)
@@ -120,8 +121,7 @@ namespace Woopsa
                         IWoopsaNotification notification;
                         if (_notifications.TryPeek(out notification))
                         {
-                            if (notification.Id <= lastNotificationId)
-                                _notifications.TryDequeue(out notification);
+                            _notifications.TryDequeue(out notification);
                             if (notification.Id == lastNotificationId)
                                 break;
                         }

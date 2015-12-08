@@ -18,10 +18,8 @@ namespace Woopsa
             }
         }
 
-        public abstract void Register(string path);
+        public abstract int Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval);
 
-        public abstract void Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval);
-
-        public abstract bool Unregister(string path);
+        public abstract bool Unregister(int id);
     }
 }
