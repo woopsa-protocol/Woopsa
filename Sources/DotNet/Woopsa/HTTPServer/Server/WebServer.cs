@@ -157,26 +157,37 @@ namespace Woopsa
             {
                 try
                 {
-                    // TODO : Make sure the stream is closed every time
-                    // in all cases
+                    // The HandleClient method will loop in case of
+                    // Keep-Alive connections.
+                    // The HandleClient method should NEVER close the stream
+                    // as this is done from the upper scope.
                     TcpClient client = _listener.AcceptTcpClient();
                     Stream clientStream = client.GetStream();
 
-                    foreach (PreRouteProcessor processor in PreRouteProcessors)
-                    {
-                        clientStream = processor.ProcessStream(clientStream);
-                    }
-
-                    if (clientStream == null)
-                        continue;
-
                     if (MultiThreaded)
                     {
-                        ThreadPool.QueueUserWorkItem((o) => HandleClient(clientStream));
+                        ThreadPool.QueueUserWorkItem(
+                            (o) => {
+                                try
+                                {
+                                    HandleClient(clientStream);
+                                }
+                                finally
+                                {
+                                    clientStream.Close();
+                                }
+                            });
                     }
                     else
                     {
-                        HandleClient(client.GetStream());
+                        try
+                        {
+                            HandleClient(clientStream);
+                        }
+                        finally
+                        {
+                            clientStream.Close();
+                        }
                     }
                 }
                 catch (SocketException e)
@@ -192,125 +203,140 @@ namespace Woopsa
 
         private void HandleClient(Stream stream)
         {
-            StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true);
-            bool leaveOpen = true;
-            stream.ReadTimeout = 2000;
-            HTTPResponse response = null;
-            HTTPRequest request = null;
-
             try
             {
-                while (leaveOpen && !_abort)
+                foreach (PreRouteProcessor processor in PreRouteProcessors)
                 {
-                    response = new HTTPResponse();
-                    /*
-                        * Parse the first line of the HTTP Request
-                        * Examples:
-                        *      GET / HTTP/1.1
-                        *      POST /submit HTTP/1.1
-                        */
-                    string requestString = null;
-                    try
+                    stream = processor.StartProcessStream(stream);
+                }
+
+                // The Stream Reader leaves the inner stream open!
+                StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true);
+                bool leaveOpen = true;
+                stream.ReadTimeout = 2000;
+                HTTPResponse response = null;
+                HTTPRequest request = null;
+
+                try
+                {
+                    while (leaveOpen && !_abort)
                     {
-                        requestString = reader.ReadLine();
-                    }
-                    catch (Exception)
-                    {
-                        leaveOpen = false;
-                        break;
-                    }
-                    if (requestString == null)
-                    {
-                        //Why does this happen?
-                        break;
-                    }
-
-
-                    string[] parts = requestString.Split(' ');
-                    if (parts.Length != 3)
-                    {
-                        throw new HandlingException(HTTPStatusCode.BadRequest, "Bad Request");
-                    }
-                    string method = parts[0].ToUpper();
-                    string url = parts[1];
-                    string version = parts[2].ToUpper();
-
-                    //Check if the version is what we expect
-                    if (version != "HTTP/1.1" && version != "HTTP/1.0")
-                    {
-                        throw new HandlingException(HTTPStatusCode.HttpVersionNotSupported, "HTTP Version Not Supported");
-                    }
-
-                    //Check if the method is supported
-                    if (!_supportedMethods.ContainsKey(method))
-                    {
-                        throw new HandlingException(HTTPStatusCode.NotImplemented, method + " Method Not Implemented");
-                    }
-                    HTTPMethod httpMethod = _supportedMethods[method];
-
-                    url = HttpUtility.UrlDecode(url);
-
-                    //Build the request object
-                    request = new HTTPRequest(httpMethod, url);
-
-                    //Add all headers to the request object
-                    FillHeaders(request, reader);
-
-                    //Handle encoding for this request
-                    Encoding clientEncoding = InferEncoding(request);
-
-                    //Extract all the data from the URL (base and query)
-                    ExtractQuery(request, clientEncoding);
-
-                    //Extract and decode all the POST data
-                    ExtractPOST(request, reader, clientEncoding);
-
-                    bool keepAlive = false;
-                    // According to spec, Keep-Alive is ON by default
-                    if (version == "HTTP/1.1")
-                        keepAlive = true;
-                    if (request.Headers.ContainsKey(HTTPHeader.Connection))
-                    {
-                        if (request.Headers[HTTPHeader.Connection].ToLower().Equals("close"))
+                        response = new HTTPResponse();
+                        /*
+                            * Parse the first line of the HTTP Request
+                            * Examples:
+                            *      GET / HTTP/1.1
+                            *      POST /submit HTTP/1.1
+                            */
+                        string requestString = null;
+                        try
                         {
-                            keepAlive = false;
+                            requestString = reader.ReadLine();
+                        }
+                        catch (Exception)
+                        {
+                            leaveOpen = false;
+                            break;
+                        }
+                        if (requestString == null)
+                        {
+                            //Why does this happen?
+                            break;
+                        }
+
+
+                        string[] parts = requestString.Split(' ');
+                        if (parts.Length != 3)
+                        {
+                            throw new HandlingException(HTTPStatusCode.BadRequest, "Bad Request");
+                        }
+                        string method = parts[0].ToUpper();
+                        string url = parts[1];
+                        string version = parts[2].ToUpper();
+
+                        //Check if the version is what we expect
+                        if (version != "HTTP/1.1" && version != "HTTP/1.0")
+                        {
+                            throw new HandlingException(HTTPStatusCode.HttpVersionNotSupported, "HTTP Version Not Supported");
+                        }
+
+                        //Check if the method is supported
+                        if (!_supportedMethods.ContainsKey(method))
+                        {
+                            throw new HandlingException(HTTPStatusCode.NotImplemented, method + " Method Not Implemented");
+                        }
+                        HTTPMethod httpMethod = _supportedMethods[method];
+
+                        url = HttpUtility.UrlDecode(url);
+
+                        //Build the request object
+                        request = new HTTPRequest(httpMethod, url);
+
+                        //Add all headers to the request object
+                        FillHeaders(request, reader);
+
+                        //Handle encoding for this request
+                        Encoding clientEncoding = InferEncoding(request);
+
+                        //Extract all the data from the URL (base and query)
+                        ExtractQuery(request, clientEncoding);
+
+                        //Extract and decode all the POST data
+                        ExtractPOST(request, reader, clientEncoding);
+
+                        bool keepAlive = false;
+                        // According to spec, Keep-Alive is ON by default
+                        if (version == "HTTP/1.1")
+                            keepAlive = true;
+                        if (request.Headers.ContainsKey(HTTPHeader.Connection))
+                        {
+                            if (request.Headers[HTTPHeader.Connection].ToLower().Equals("close"))
+                            {
+                                keepAlive = false;
+                                response.SetHeader(HTTPHeader.Connection, "close");
+                            }
+                        }
+
+                        //Keep-Alive can only work on a multithreaded server!
+                        if (!keepAlive || !MultiThreaded)
+                        {
+                            leaveOpen = false;
                             response.SetHeader(HTTPHeader.Connection, "close");
                         }
+                        //Pass this on to the route solver
+                        _routeSolver.HandleRequest(request, response, stream);
+                        OnLog(request, response);
                     }
-
-                    //Keep-Alive can only work on a multithreaded server!
-                    if (!keepAlive || !MultiThreaded)
+                }
+                catch (HandlingException e)
+                {
+                    if (response != null)
                     {
-                        leaveOpen = false;
-                        response.SetHeader(HTTPHeader.Connection, "close");
+                        response.WriteError(e.Status, e.ErrorMessage);
+                        response.Respond(stream);
+                        OnLog(request, response);
                     }
-                    //Pass this on to the route solver
-                    _routeSolver.HandleRequest(request, response, stream);
-                    OnLog(request, response);
                 }
-            }
-            catch (HandlingException e)
-            {
-                if ( response != null )
+                catch (Exception e)
                 {
-                    response.WriteError(e.Status, e.ErrorMessage);
-                    response.Respond(stream);
-                    OnLog(request, response);
+                    if (response != null)
+                    {
+                        response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
+                        response.Respond(stream);
+                        OnLog(request, response);
+                    }
                 }
-            }
-            catch (Exception e)
-            {
-                if (response != null)
+                finally
                 {
-                    response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
-                    response.Respond(stream);
-                    OnLog(request, response);
+                    reader.Close();
                 }
             }
             finally
             {
-                reader.Close();
-                stream.Close();
+                foreach (PreRouteProcessor processor in PreRouteProcessors.Reverse<PreRouteProcessor>())
+                {
+                    processor.EndProcessStream(stream);
+                }
             }
         }
 

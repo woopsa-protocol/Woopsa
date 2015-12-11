@@ -40,7 +40,7 @@ namespace Woopsa
             return WoopsaValueFromResponse(response);
         }
 
-        public WoopsaValue Invoke(string path, NameValueCollection arguments, int timeout)
+        public WoopsaValue Invoke(string path, NameValueCollection arguments, TimeSpan timeout)
         {
             string response = Request("invoke" + path, arguments, timeout);
             return WoopsaValueFromResponse(response);
@@ -48,7 +48,7 @@ namespace Woopsa
 
         public WoopsaValue Invoke(string path, NameValueCollection arguments)
         {
-            return Invoke(path, arguments, (int)DefaultRequestTimeout.TotalMilliseconds);
+            return Invoke(path, arguments, DefaultRequestTimeout);
         }
 
         public WoopsaMetaResult Meta(string path)
@@ -63,8 +63,10 @@ namespace Woopsa
         {
             var serializer = new JavaScriptSerializer();
             WoopsaReadResult result = serializer.Deserialize<WoopsaReadResult>(response);
+            // At this stage, the read result's type is still a string -- make it a WoopsaValueType
+            WoopsaValueType valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
 
-            if ((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type) == WoopsaValueType.JsonData)
+            if (valueType == WoopsaValueType.JsonData)
             {
                 if (result.TimeStamp == null)
                     return new WoopsaValue(result.Value);
@@ -74,13 +76,13 @@ namespace Woopsa
             else
             {
                 if (result.TimeStamp == null)
-                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));// result.Value.ToWoopsaValue((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));
+                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));
                 else
-                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), DateTime.Parse(result.TimeStamp)); //result.Value.ToWoopsaValue((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), true, DateTime.Parse(result.TimeStamp));
+                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), DateTime.Parse(result.TimeStamp));
             }
         }
         
-        private string Request(string path, NameValueCollection postData, int timeout)
+        private string Request(string path, NameValueCollection postData, TimeSpan timeout)
         {
             HttpWebRequest request = (HttpWebRequest)WebRequest.Create(_url + path);
 
@@ -89,7 +91,7 @@ namespace Woopsa
                 request.Credentials = new NetworkCredential(Username, Password);
             }
 
-            request.Timeout = timeout;
+            request.Timeout = (int)timeout.TotalMilliseconds;
             if (postData != null)
             {
                 request.Method = "POST";
@@ -123,20 +125,23 @@ namespace Woopsa
             }
             catch (WebException exception) 
             {
+                // This could be an HTTP error, in which case
+                // we actually have a response (with the HTTP 
+                // status and error)
                 response = (HttpWebResponse)exception.Response;
                 if (response == null)
                 {
                     // Sometimes, we can make the request, but the server dies
                     // before we get a reply - in that case the Response
                     // is null, so we re-throw the exception
-                    throw exception;
+                    throw;
                 }
             }
 
-            string result;
+            string resultString;
             using ( var reader = new StreamReader(response.GetResponseStream()) )
             {
-                result = reader.ReadToEnd();
+                resultString = reader.ReadToEnd();
             }
 
             if (response.StatusCode != HttpStatusCode.OK)
@@ -144,8 +149,10 @@ namespace Woopsa
                 if (response.ContentType == MIMETypes.Application.JSON)
                 {
                     var serializer = new JavaScriptSerializer();
-                    WoopsaErrorResult error = serializer.Deserialize<WoopsaErrorResult>(result);
+                    WoopsaErrorResult error = serializer.Deserialize<WoopsaErrorResult>(resultString);
 
+                    // Generate one of the possible Woopsa exceptions based
+                    // on the JSON-serialized error 
                     if (error.Type == typeof(WoopsaNotFoundException).Name)
                         throw new WoopsaNotFoundException(error.Message);
                     else if (error.Type == typeof(WoopsaNotificationsLostException).Name)
@@ -162,7 +169,7 @@ namespace Woopsa
                 else
                     throw new WoopsaException(response.StatusDescription);
             }
-            return result;
+            return resultString;
         }
 
         private string Request(string path)
@@ -172,7 +179,7 @@ namespace Woopsa
 
         private string Request(string path, NameValueCollection postData)
         {
-            return Request(path, postData, (int)DefaultRequestTimeout.TotalMilliseconds);
+            return Request(path, postData, DefaultRequestTimeout);
         }
 
         private string _url;

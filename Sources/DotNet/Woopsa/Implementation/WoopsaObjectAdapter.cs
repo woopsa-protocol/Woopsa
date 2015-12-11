@@ -312,7 +312,7 @@ namespace Woopsa
                         if (e.InnerException != null)
                             throw e.InnerException;
                         else
-                            throw e;
+                            throw;
                     }
                 });
             }

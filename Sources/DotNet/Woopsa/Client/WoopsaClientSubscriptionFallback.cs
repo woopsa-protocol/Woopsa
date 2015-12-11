@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    internal class WoopsaClientSubscriptionChannelFallback : WoopsaClientSubscriptionChannelBase
+    internal class WoopsaClientSubscriptionChannelFallback : WoopsaClientSubscriptionChannelBase, IDisposable
     {
         public WoopsaClientSubscriptionChannelFallback(WoopsaClientObject client)
         {
@@ -41,5 +41,19 @@ namespace Woopsa
 
         private SubscriptionService _service;
         private WoopsaClientSubscriptionChannel _channel;
+
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
+        {
+            _client.Dispose();
+            _service.Dispose();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion IDisposable
     }
 }

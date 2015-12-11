@@ -24,7 +24,8 @@ namespace Woopsa
     /// </summary>
     public abstract class PreRouteProcessor 
     {
-        public abstract Stream ProcessStream(Stream input);
+        public abstract Stream StartProcessStream(Stream input);
+        public abstract void EndProcessStream(Stream input);
     }
 
     /// <summary>
