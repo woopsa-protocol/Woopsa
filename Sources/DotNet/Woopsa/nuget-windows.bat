@@ -1,0 +1,1 @@
+nuget pack Woopsa.csproj -Build -Prop Configuration=Release -Symbols -OutputDirectory .\bin\Release
