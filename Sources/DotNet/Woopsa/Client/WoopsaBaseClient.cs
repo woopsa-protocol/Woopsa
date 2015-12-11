@@ -63,11 +63,12 @@ namespace Woopsa
         {
             var serializer = new JavaScriptSerializer();
             WoopsaReadResult result = serializer.Deserialize<WoopsaReadResult>(response);
-            // At this stage, the read result's type is still a string -- make it a WoopsaValueType
-            WoopsaValueType valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
 
             if(result == null)
                 return WoopsaValue.Null;
+
+            // At this stage, the read result's type is still a string -- make it a WoopsaValueType
+            WoopsaValueType valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
 
             if (valueType == WoopsaValueType.JsonData)
             {
