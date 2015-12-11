@@ -10,7 +10,7 @@ using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
-    internal class WoopsaClientSubscriptionChannel : WoopsaClientSubscriptionChannelBase
+    internal class WoopsaClientSubscriptionChannel : WoopsaClientSubscriptionChannelBase, IDisposable
     {
         public const int DefaultNotificationQueueSize = 200;
         private readonly TimeSpan WaitNotificationTimeout = TimeSpan.FromSeconds(10);
@@ -226,6 +226,14 @@ namespace Woopsa
                 arguments.Add(publishInterval); 
                 IWoopsaValue result = _registerSubscription.Invoke(arguments);
                 return result.ToInt32();
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _listenStarted = false;
             }
         }
     }

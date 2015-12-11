@@ -195,6 +195,13 @@ namespace Woopsa
         private bool? _hasSubscriptionService = null;
 
         private IWoopsaContainer _root;
+
+        #region IDisposable
+        protected override void Dispose(bool disposing)
+        {
+            _subscriptionChannel.Dispose();
+        }
+        #endregion
     }
 
     public class WoopsaClientProperty : WoopsaProperty

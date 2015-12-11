@@ -43,17 +43,12 @@ namespace Woopsa
         private WoopsaClientSubscriptionChannel _channel;
 
         #region IDisposable
-        protected virtual void Dispose(bool disposing)
+        protected override void Dispose(bool disposing)
         {
             _client.Dispose();
             _service.Dispose();
         }
 
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
         #endregion IDisposable
     }
 }
