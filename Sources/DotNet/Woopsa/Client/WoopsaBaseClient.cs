@@ -64,6 +64,9 @@ namespace Woopsa
             var serializer = new JavaScriptSerializer();
             WoopsaReadResult result = serializer.Deserialize<WoopsaReadResult>(response);
 
+            if(result == null)
+                return WoopsaValue.Null;
+
             if ((WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type) == WoopsaValueType.JsonData)
             {
                 if (result.TimeStamp == null)
