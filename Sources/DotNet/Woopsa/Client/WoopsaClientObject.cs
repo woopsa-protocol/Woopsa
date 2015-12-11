@@ -17,7 +17,6 @@ namespace Woopsa
                 _root = this;
             else
                 _root = root;
-            //_client.PropertyChange += _client_PropertyChange;
         }
 
         public delegate void PropertyChanged(IWoopsaNotification value);
@@ -116,16 +115,14 @@ namespace Woopsa
         }
 
         #region Subscription Service
-        public event EventHandler<WoopsaNotificationsEventArgs> PropertyChange;
-
         public int Subscribe(string path, PropertyChanged propertyChangedHandler, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
+            // Only create the subscription channel on subscription
+            // to the first property.
             if (_subscriptionChannel == null)
             {
-                // TODO: fallback if no subscription service 
                 if (!_hasSubscriptionService.HasValue)
                 {
-                    //_hasSubscriptionService = false;
                     _hasSubscriptionService = this.Items.ByNameOrNull(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName) != null;
                 }
                 if (_hasSubscriptionService == true)
@@ -193,12 +190,18 @@ namespace Woopsa
         private WoopsaBaseClient _client = null;
         private WoopsaMetaResult _meta = null;
         private Dictionary<int, PropertyChanged> _subscriptionsDictionary = new Dictionary<int, PropertyChanged>();
-        //private Dictionary<string, PropertyChanged> _subscriptionsCache = new Dictionary<string, PropertyChanged>();
 
         private WoopsaClientSubscriptionChannelBase _subscriptionChannel;
         private bool? _hasSubscriptionService = null;
 
         private IWoopsaContainer _root;
+
+        #region IDisposable
+        protected override void Dispose(bool disposing)
+        {
+            _subscriptionChannel.Dispose();
+        }
+        #endregion
     }
 
     public class WoopsaClientProperty : WoopsaProperty
@@ -297,7 +300,11 @@ namespace Woopsa
 
         public void UnsubscribeToChanges(int subscriptionId)
         {
-            
+            if (_subscriptions.ContainsKey(subscriptionId))
+            {
+                _container.Unsubscribe(subscriptionId);
+                _subscriptions.Remove(subscriptionId);
+            }
         }
 
         public event EventHandler<WoopsaNotificationEventArgs> Change
@@ -318,9 +325,11 @@ namespace Woopsa
                     {
                         if (subscription.Value == value)
                         {
+                            // First remove the Event handler
                             _subscriptions.Remove(subscription.Key);
+                            // Then remove the subscription on the server
+                            // if this fails, an exception will be thrown
                             _container.Unsubscribe(subscription.Key);
-                            return;
                         }
                     }
                 }
@@ -336,9 +345,6 @@ namespace Woopsa
             }
         }
 
-        // Subscriptions using custom parameters (publish/monitor interval)
-        // are more quickly refered to by their subscription ID, because the
-        // SubscribeToChanges function returns an integer
         private Dictionary<int, EventHandler<WoopsaNotificationEventArgs>> _subscriptions;
         private WoopsaClientObject _container;
     }
