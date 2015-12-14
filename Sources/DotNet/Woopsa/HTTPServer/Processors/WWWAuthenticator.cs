@@ -22,7 +22,7 @@ namespace Woopsa
         {
             if ( DoCheck == null )
             {
-                throw new NotImplementedException("No DoCheck delegate was specified. What am I supposed to do?");
+                throw new NotImplementedException("No DoCheck delegate was specified for WWWAuthenticator.");
             }
 
             if ( !request.Headers.ContainsKey(HTTPHeader.Authorization) )

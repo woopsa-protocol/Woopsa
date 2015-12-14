@@ -31,6 +31,9 @@ namespace Woopsa
 
         public bool AllowCrossOrigin { get; set; }
 
+        public delegate bool CheckCacheDelegate(string path);
+        public CheckCacheDelegate CheckCache { get; set; }
+
         /// <summary>
         /// Creates an instance of the Woopsa server with a new Reflector for the object 
         /// passed to it. 
@@ -77,6 +80,7 @@ namespace Woopsa
             _root = adapter;
             _selfCreatedServer = true;
             _routePrefix = routePrefix;
+            CheckCache = (p) => (true);
             WebServer = new WebServer(port, true);
             AddRoutes(WebServer, routePrefix);
             new WoopsaMultiRequestHandler(adapter, this);
@@ -160,6 +164,7 @@ namespace Woopsa
         /// </param>
         public WoopsaServer(IWoopsaContainer root, WebServer server, string routePrefix = DefaultServerPrefix)
         {
+            CheckCache = (p) => (true);
             _root = root;
             WebServer = server;
             _routePrefix = routePrefix;
@@ -407,7 +412,8 @@ namespace Woopsa
                         else if (elem is IWoopsaContainer)
                             elem = (elem as IWoopsaContainer).Items.ByName(toFind);
 
-                        _pathCache.Add(currentPath, elem);
+                        if(CheckCache(currentPath))
+                            _pathCache.Add(currentPath, elem);
                     }
                     pathAt++;
                 }

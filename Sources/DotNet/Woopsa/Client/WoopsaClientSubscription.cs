@@ -10,7 +10,7 @@ using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
-    internal class WoopsaClientSubscriptionChannel : WoopsaClientSubscriptionChannelBase
+    internal class WoopsaClientSubscriptionChannel : WoopsaClientSubscriptionChannelBase, IDisposable
     {
         public const int DefaultNotificationQueueSize = 200;
         private readonly TimeSpan WaitNotificationTimeout = TimeSpan.FromSeconds(10);
@@ -44,8 +44,8 @@ namespace Woopsa
             {
                 _listenThread = new Thread(DoWaitNotification);
                 _listenThread.Name = "WoopsaClientSubscription_Thread";
-                _listenThread.Start();
                 _listenStarted = true;
+                _listenThread.Start();
             }
             return subscription.Id;
         }
@@ -60,6 +60,8 @@ namespace Woopsa
                     {
                         bool result = subscription.Unregister();
                         _subscriptions.Remove(subscription);
+                        if (!_subscriptions.Any())
+                            _listenStarted = false;
                         return result;
                     }
                 }
@@ -81,7 +83,7 @@ namespace Woopsa
 
         private void DoWaitNotification()
         {
-            while (true)
+            while (_listenStarted)
             {
                 if (_subscriptions.Count > 0)
                 {
@@ -147,7 +149,6 @@ namespace Woopsa
             arguments.Add(lastNotificationId);
             IWoopsaValue val = _waitNotification.Invoke(arguments);
             WoopsaJsonData results = ((WoopsaValue)val).JsonData;
-            //WoopsaJsonData results = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaWaitNotification, arguments, (int)WaitNotificationTimeout.TotalMilliseconds).JsonData;
             WoopsaNotifications notificationsList = new WoopsaNotifications();
             int count = 0;
             for (int i = 0; i < results.Length; i++ )
@@ -172,7 +173,6 @@ namespace Woopsa
             List<WoopsaValue> arguments = new List<WoopsaValue>();
             arguments.Add(notificationQueueSize);
             IWoopsaValue result = _createSubscriptionChannel.Invoke(arguments);
-            //IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel, arguments);
             ChannelId = result.ToInt32();
         }
 
@@ -203,9 +203,9 @@ namespace Woopsa
             public bool Unregister()
             {
                 List<WoopsaValue> arguments = new List<WoopsaValue>();
+                arguments.Add(_channel.ChannelId);
                 arguments.Add(Id);
                 IWoopsaValue result = _unregisterSubscription.Invoke(arguments);
-                //IWoopsaValue result = _client.Invoke(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription, arguments);
                 return result.ToBool();
             }
 
@@ -225,8 +225,15 @@ namespace Woopsa
                 arguments.Add(monitorInterval);
                 arguments.Add(publishInterval); 
                 IWoopsaValue result = _registerSubscription.Invoke(arguments);
-                //IWoopsaValue result = _client.Invoke(WoopsaConst.WoopsaRootPath + SubscriptionService + WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription, arguments);
                 return result.ToInt32();
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                _listenStarted = false;
             }
         }
     }

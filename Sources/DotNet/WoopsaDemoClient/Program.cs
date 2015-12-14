@@ -18,7 +18,7 @@ namespace WoopsaDemoClient
                 serverUrl = "http://localhost/woopsa";
 
             WoopsaClient client = new WoopsaClient(serverUrl);
-
+            
             Console.WriteLine("Woopsa client created on URL: {0}", serverUrl);
             
             // Display all properties and their values
@@ -83,6 +83,7 @@ namespace WoopsaDemoClient
             // Leave the DOS window open
             Console.WriteLine("Press any key to exit...");
             Console.ReadLine();
+            client.Dispose();
         }
 
         static void property_Change(object sender, WoopsaNotificationEventArgs e)
