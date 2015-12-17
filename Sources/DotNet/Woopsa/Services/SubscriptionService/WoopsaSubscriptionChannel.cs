@@ -33,8 +33,8 @@ namespace Woopsa
         /// old events will be "forgotten"
         /// </summary>
         public int NotificationQueueSize { get; set; }
-        
-        public int RegisterSubscription(IWoopsaContainer container, IWoopsaValue woopsaPropertyLink, int monitorInterval, int publishInterval)
+
+        public int RegisterSubscription(IWoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             WoopsaSubscription newSubscription;
             lock (_idLock)

@@ -162,31 +162,39 @@ namespace Woopsa
                     // The HandleClient method should NEVER close the stream
                     // as this is done from the upper scope.
                     TcpClient client = _listener.AcceptTcpClient();
-                    Stream clientStream = client.GetStream();
 
                     if (MultiThreaded)
                     {
-                        ThreadPool.QueueUserWorkItem(
-                            (o) => {
-                                try
+                        try
+                        {
+                            ThreadPool.QueueUserWorkItem(
+                                (o) =>
                                 {
-                                    HandleClient(clientStream);
-                                }
-                                finally
-                                {
-                                    clientStream.Close();
-                                }
-                            });
+                                    try
+                                    {
+                                        HandleClient(client);
+                                    }
+                                    finally
+                                    {
+                                        client.Close();
+                                    }
+                                });
+                        }
+                        catch (Exception)
+                        {
+                            client.Close();
+                            throw;
+                        }
                     }
                     else
                     {
                         try
                         {
-                            HandleClient(clientStream);
+                            HandleClient(client);
                         }
                         finally
                         {
-                            clientStream.Close();
+                            client.Close();
                         }
                     }
                 }
@@ -201,13 +209,14 @@ namespace Woopsa
             _listener.Stop();
         }
 
-        private void HandleClient(Stream stream)
+        private void HandleClient(TcpClient client)
         {
+            Stream stream = client.GetStream();
             try
             {
                 foreach (PreRouteProcessor processor in PreRouteProcessors)
                 {
-                    stream = processor.StartProcessStream(stream);
+                    stream = processor.ProcessStream(stream);
                 }
 
                 // The Stream Reader leaves the inner stream open!
@@ -333,10 +342,7 @@ namespace Woopsa
             }
             finally
             {
-                foreach (PreRouteProcessor processor in PreRouteProcessors.Reverse<PreRouteProcessor>())
-                {
-                    processor.EndProcessStream(stream);
-                }
+                stream.Dispose();
             }
         }
 

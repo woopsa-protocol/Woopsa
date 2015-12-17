@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using Woopsa;
 
@@ -31,7 +32,7 @@ namespace WoopsaDemoServer
 
         public TimeSpan TimeSinceLastRain { get; set; }
 
-        public Thermostat Thermostat { get; private set; }
+        public List<Thermostat> Thermostats { get; private set; }
 
         public WeatherStation()
         {
@@ -42,7 +43,9 @@ namespace WoopsaDemoServer
             City = "Geneva";
             Time = DateTime.Now;
             TimeSinceLastRain = TimeSpan.FromDays(3);
-            Thermostat = new Thermostat();
+            Thermostats = new List<Thermostat>();
+            Thermostats.Add(new Thermostat());
+            Thermostats.Add(new Thermostat());
         }
 
         public string GetWeatherAtDate(DateTime date)
