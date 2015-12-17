@@ -40,7 +40,7 @@ namespace WoopsaDemoClient
             foreach (WoopsaClientProperty property in obj.Properties)
             {
                 Console.WriteLine(indentString + " * {0} : {1} = {2}", property.Name, property.Type, property.Value);
-                if (property.Name == "Counter")
+                if (property.Name == "Altitude")
                 {
                     // Create a subscription for example's sake
                     Console.WriteLine(indentString + "  => Creating a subscription");
