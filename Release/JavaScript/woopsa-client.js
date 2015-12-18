@@ -149,21 +149,106 @@
 		var subscriptionChannel = null;
 		var errorCallbacks = [];
 		
+		var WoopsaXHR = function (options){
+			var innerXHR = $.ajax(options);
+			this.done = function (callback){
+				innerXHR.done(callback);
+				return this;
+			}
+			this.fail = function (callback){
+				innerXHR.fail(callback);
+				return this;
+			}
+			this.then = function (done, fail){
+				innerXHR.then(done);
+				innerXHR.fail(fail);
+				return this;
+			}
+			this.always = function (callback){
+				innerXHR.always(callback);
+				return this;
+			}
+		}
+		
+		var WoopsaDeferredXHR = function (options){
+			var doneCallbacks = [];
+			var failCallbacks = [];
+			var alwaysCallbacks = [];
+			var options = options || {};
+			var innerXHR = null;
+			this.done = function (callback){
+				doneCallbacks.push(callback);
+				return this;
+			}
+			this.fail = function (callback){
+				failCallbacks.push(callback);
+				return this;
+			}
+			this.then = function (done, fail){
+				doneCallbacks.push(done);
+				failCallbacks.push(fail);
+				return this;
+			}
+			this.always = function (callback){
+				alwaysCallbacks.push(callback);
+				return this;
+			}
+			this.execute = function (){
+				innerXHR = new WoopsaXHR(options);
+				for(var i = 0; i < doneCallbacks.length; i++)
+					innerXHR.done(doneCallbacks[i]);
+				for(var i = 0; i < failCallbacks.length; i++)
+					innerXHR.fail(failCallbacks[i]);
+				for(var i = 0; i < alwaysCallbacks.length; i++)
+					innerXHR.always(alwaysCallbacks[i]);
+				return innerXHR;
+			}
+		}
+		
+		var xhrQueue = [];
+		
+		var WoopsaAjax = function(options, useQueue){
+			if ( !useQueue ){
+				return new WoopsaXHR(options);
+			} else {
+				var newXHR = new WoopsaDeferredXHR(options);
+				newXHR.always(function (){
+					xhrQueue.splice(0,1);
+					if ( xhrQueue.length > 0 )
+						xhrQueue[0].execute();
+				})
+				xhrQueue.push(newXHR);
+				if(xhrQueue.length == 1)
+					newXHR.execute();
+				return newXHR;
+			}
+		}
+		
 		if ( url.lastIndexOf('/') == url.length-1 ) {
 			this.url = url;
 		} else {
 			this.url = url + "/";
 		}
 		
+		// If your Woopsa server requires authentication, set these
+		// two fields.
 		this.username = null,
 		this.password = null;
 		
+		// If your Woopsa server runs on an embedded platform like the
+		// arduino, it won't be able to process multiple requests at the
+		// same time and you may get some "Connection Refused" errors on
+		// pages with a lot of parallel requests. Setting this to true will
+		// activate a request queue on this client and make sure that all
+		// requests are done one-at-a-time.
+		this.useRequestQueue = false;
+		
 		this.read = function (path, callback) {
-			return $.ajax({
+			return WoopsaAjax({
 				type: 'GET',
 				url: this.url + "read" + path,
 				beforeSend: authenticateHeaders.bind(this)
-			})
+			}, this.useRequestQueue)
 			.done(function (data) {
 				callback(data.Value, path);
 			})
@@ -173,12 +258,12 @@
 		};
 		
 		this.write = function (path, value, callback) {
-			return $.ajax({
+			return WoopsaAjax({
 				type: 'POST',
 				url: this.url + 'write' + path,
 				beforeSend: authenticateHeaders.bind(this),
 				data: {value: value}
-			})
+			}, this.useRequestQueue)
 			.done(function (data) {
 				callback(true, path);
 			})
@@ -188,11 +273,11 @@
 		};
 	
 		this.meta = function (path, callback) {
-			return $.ajax({
+			return WoopsaAjax({
 				type: 'GET',
 				url: this.url + "meta" + path,
 				beforeSend: authenticateHeaders.bind(this),
-			})
+			}, this.useRequestQueue)
 			.done(function (data) {
 				callback(data, path);
 			})
@@ -205,14 +290,14 @@
 			timeout = timeout || 10000;
 			arguments = arguments || {};
 			callback = callback || (function (){});
-			return $.ajax({
+			return WoopsaAjax({
 				type: 'POST',
 				timeout: timeout,
 				beforeSend: authenticateHeaders.bind(this),
 				url: this.url + "invoke" + path,
 				data: arguments,
 				dataType: "text"
-			})
+			}, this.useRequestQueue)
 			.done(function (data){
 				if ( data == "" )
 					callback();
