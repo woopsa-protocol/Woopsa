@@ -66,3 +66,4 @@ A build/release script is coming soon!
 Woopsa has been tested and works on:
  * .NET Framework 4.5
  * Mono 4.0+
+ 
