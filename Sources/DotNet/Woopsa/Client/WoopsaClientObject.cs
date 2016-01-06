@@ -324,7 +324,7 @@ namespace Woopsa
             {
                 lock (_subscriptions)
                 {
-                    foreach (var subscription in _subscriptions)
+                    foreach (var subscription in _subscriptions.ToList())
                     {
                         if (subscription.Value == value)
                         {
