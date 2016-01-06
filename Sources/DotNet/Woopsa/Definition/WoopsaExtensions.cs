@@ -28,7 +28,9 @@ namespace Woopsa
                         case WoopsaValueType.TimeSpan:
                             return new WoopsaValue((TimeSpan)value);
                         case WoopsaValueType.Text:
-                            return new WoopsaValue(value.ToString());
+                            if (string.IsNullOrEmpty((string)value))
+                                return new WoopsaValue(string.Empty);
+                            return new WoopsaValue(value?.ToString());
                         default:
                             return WoopsaValue.CreateUnchecked(value.ToString(), type);
                     }
