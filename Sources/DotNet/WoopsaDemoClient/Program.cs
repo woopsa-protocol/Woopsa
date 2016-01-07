@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Woopsa;
 
 namespace WoopsaDemoClient
@@ -11,11 +12,22 @@ namespace WoopsaDemoClient
             Console.WriteLine(" *** Welcome to the Woopsa Demo Client! *** ");
             Console.WriteLine(" Note: read the source code to understand what's happening behind the scenes!");
             Console.WriteLine("");
-            Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
 
-            string serverUrl = Console.ReadLine();
-            if (serverUrl == "")
-                serverUrl = "http://localhost/woopsa";
+            string serverUrl;
+
+            if (File.Exists("url.config"))
+            {
+                serverUrl = File.ReadAllText("url.config");
+                Console.WriteLine("Using url.config");
+            }
+            else
+            {
+                Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
+                serverUrl = Console.ReadLine(); 
+                if (serverUrl == "")
+                    serverUrl = "http://localhost/woopsa";
+            
+            }
 
             WoopsaClient client = new WoopsaClient(serverUrl);
             
@@ -49,6 +61,12 @@ namespace WoopsaDemoClient
                     // Actually change the value
                     Console.WriteLine(indentString + "  => Changing value to 1");
                     property.Value = new WoopsaValue(1);
+                }
+                if (property.Type == WoopsaValueType.Text)
+                {
+                    Console.WriteLine("Writing a long string...");
+                    string demo = File.ReadAllText(@"MS5637-02BA03.xml");
+                    property.Value = new WoopsaValue(demo);
                 }
             }
 

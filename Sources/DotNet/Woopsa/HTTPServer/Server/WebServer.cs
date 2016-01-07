@@ -420,8 +420,19 @@ namespace Woopsa
                     }
                     if (request.Headers[HTTPHeader.ContentType].StartsWith(MIMETypes.Application.XWWWFormUrlEncoded))
                     {
+                        // We might still be receiving client data at this point,
+                        // which means that the reader.Read call will not always
+                        // be able to read -all- of the data. So we loop until all
+                        // the content is received!
                         char[] requestBody = new char[contentLength];
-                        reader.Read(requestBody, 0, contentLength);
+                        int charsRead = 0;
+                        while (charsRead < contentLength)
+                        {
+                            int amountOfCharsRead = reader.Read(requestBody, charsRead, contentLength - charsRead);
+                            charsRead += amountOfCharsRead;
+                            if (amountOfCharsRead == 0 && charsRead != contentLength)
+                                throw new HandlingException(HTTPStatusCode.BadRequest, "Wrong Content-Length");
+                        }
                         string bodyAsString = new String(requestBody);
                         NameValueCollection body = HttpUtility.ParseQueryString(bodyAsString, clientEncoding);
                         request.Body = body;
