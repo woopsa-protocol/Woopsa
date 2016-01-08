@@ -1,10 +1,11 @@
 var utils = require('./utils');
 var exceptions = require('./exceptions');
-var reflector = require('./reflector');
 var types = require('./types')
+var adapter = require('./adapter');
 
 var http = require('http');
 var express = require('express');
+var bodyParser = require('body-parser');
 
 var Server = function Server(element, options){
 	var defaultOptions = {
@@ -27,18 +28,19 @@ var Server = function Server(element, options){
 
 	// Add some pre-processors
 	expressApp.use(options.pathPrefix, this.addHeaders.bind(this));
+	var urlencodedParser = bodyParser.urlencoded({extended: false});
 
 	// Create our 4 basic Woopsa routes
 	expressApp.get(new RegExp(options.pathPrefix + "meta/(.*)"), this.handleRequest.bind(this, "meta"));
 	expressApp.get(new RegExp(options.pathPrefix + "read/(.*)"), this.handleRequest.bind(this, "read"));
-	expressApp.post(new RegExp(options.pathPrefix + "write/(.*)"), this.handleRequest.bind(this, "write"));
-	expressApp.post(new RegExp(options.pathPrefix + "invoke/(.*)"), this.handleRequest.bind(this, "invoke"));
+	expressApp.post(new RegExp(options.pathPrefix + "write/(.*)"), urlencodedParser, this.handleRequest.bind(this, "write"));
+	expressApp.post(new RegExp(options.pathPrefix + "invoke/(.*)"), urlencodedParser, this.handleRequest.bind(this, "invoke"));
 };
 
 Server.prototype.handleRequest = function (type, req, res){
 	var path = "/" + req.params[0];
 	try{
-		var element = getByPath(this.element, path);
+		var element = adapter.getByPath(this.element, path);
 		if ( typeof element === 'undefined' ){
 			throw new exceptions.WoopsaNotFoundException("Woopsa Element not found");
 		}
@@ -48,7 +50,7 @@ Server.prototype.handleRequest = function (type, req, res){
 		else if ( type === "read" )
 			result = this.handleRead(element);
 		else if ( type === "write" )
-			result = this.handleWrite(element, "");
+			result = this.handleWrite(element, req.body.value);
 		else if ( type === "invoke" )
 			result = this.handleInvoke(element, {});
 		res.json(result);
@@ -71,18 +73,23 @@ Server.prototype.handleMeta = function (element){
 	if ( typeof elementType !== 'undefined' ){
 		throw new exceptions.WoopsaInvalidOperationException("Cannot get metadata for a WoopsaElement of type %s", elementType);
 	}
-	if ( element.constructor.name !== 'WoopsaObject' )
-		return reflector.generateMetaDataFromObject(element);
-	else
-		return element;
+	return adapter.generateMetaDataObject(element);
 };
 
 Server.prototype.handleRead = function (element){
-	var path = "/" + req.params[0];
+	var elementType = utils.inferWoopsaType(element);
+	if ( typeof elementType === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot read non-WoopsaValue %s", elementType);
+	}
+	return adapter.readValue(element);
 };
 
 Server.prototype.handleWrite = function (element, value){
-	var path = "/" + req.params[0];
+	var elementType = utils.inferWoopsaType(element);
+	if ( typeof elementType === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot write non-WoopsaValue %s", elementType);
+	}
+	return adapter.write(element, value);
 };
 
 Server.prototype.handleInvoke = function (element, arguments){
@@ -97,37 +104,6 @@ Server.prototype.addHeaders = function (req, res, next){
 	var maxAge = 20;
 	res.setHeader("Access-Control-Max-Age", maxAge * 24 * 3600);
 	next();
-}
-
-// Gets an object or a property of an element
-// from a path
-var getByPath = function (element, path){
-	var pathParts = path.split("/");
-	if ( pathParts[0] == "" )
-		pathParts.splice(0, 1);
-	if ( pathParts[pathParts.length-1] == "" )
-		pathParts.splice(pathParts.length-1, 1);
-
-	var returnElement = element;
-
-	if ( pathParts.length == 0 ){
-		return element;
-	}else{
-		function getByPathArray(element, pathArray){
-			var key = pathArray[0];
-			if ( typeof element[key] !== 'undefined' ){
-				if ( pathArray.length === 1 ){
-					return element[key];
-				}else{
-					return getByPathArray(element[key], pathArray.slice(1));
-				}
-			}else{
-				return undefined;
-			}
-		}
-
-		return getByPathArray(returnElement, pathParts);
-	}
 }
 
 exports.Server = Server;
@@ -154,11 +130,10 @@ var weatherStation = {
 }
 
 var testObj = new types.WoopsaObject("Something");
-testObj.addProperty("Someshit", "Real", false);
-testObj.addProperty("Someothershit", "Text", false);
+testObj.addProperty("Someshit", "Real", function (){return 3.14});
+testObj.addProperty("Someothershit", "Text", function (){return "Hello"});
 var innerObj = new types.WoopsaObject("SomethingElse");
 innerObj.addProperty("Sometoughassshit", "DateTime", false);
 testObj.addItem(innerObj);
 
 var server = new Server(testObj, {port: 80});
-console.log("AAA " + server.constructor.name);

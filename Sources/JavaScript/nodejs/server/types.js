@@ -1,33 +1,42 @@
 var exceptions = require('./exceptions')
 
 var WoopsaObject = function WoopsaObject(name){
-	this.Properties = {};
-	this.Methods = {};
-	this.Items = {};
+	this.Properties = [];
+	this.Methods = [];
+	this.Items = [];
 	this.Name = name;
 }
 
+function hasElement(list, elementName){
+	for ( var i in list )
+		if ( list[i].Name === elementName )
+			return true;
+	return false;
+}
+
 WoopsaObject.prototype.addProperty = function (name, type, readOnly){
-	if ( typeof this.Properties[name] === 'undefined' ){
-		this.Properties[name] = new WoopsaProperty(name, type, readOnly);
-		return this.Properties[name];
+	if ( !hasElement(this.Properties, name) ){
+		var newProperty = new WoopsaProperty(name, type, readOnly);
+		this.Properties.push(newProperty);
+		return newProperty;
 	}else{
 		throw new exceptions.WoopsaException("Tried to add a property with duplicate name " + name);
 	}
 }
 
 WoopsaObject.prototype.addMethod = function (name, returnType){
-	if ( typeof this.Methods[name] === 'undefined' ){
-		this.Methods[name] = new WoopsaMethod(name, ReturnType);
-		return this.Methods[name];
+	if ( !hasElement(this.Methods, name) ){
+		var newMethod = new WoopsaMethod(name, returnType);
+		this.Methods.push(newMethod);
+		return newMethod;
 	}else{
 		throw new exceptions.WoopsaException("Tried to add a method with duplicate name " + name);
 	}
 }
 
-WoopsaObject.prototype.addItem = function (name, item){
-	if ( typeof this.Items[name] === 'undefined' ){
-		this.Items[name] = item;
+WoopsaObject.prototype.addItem = function (item){
+	if ( !hasElement(this.Items, item.Name) ){
+		this.Items.push(item);
 		return item;
 	}else{
 		throw new exceptions.WoopsaException("Tried to add an item with duplicate name " + name);
@@ -52,9 +61,10 @@ var WoopsaMethod = function WoopsaMethod(name, returnType){
 }
 
 WoopsaMethod.prototype.addMethodArgument = function (name, type){
-	if ( typeof this.Arguments[name] === 'undefined' ){
-		this.Arguments[name] = new WoopsaMethodArgumentInfo(name, type);
-		return this.Arguments[name];
+	if ( !hasElement(this.Arguments, name) ){
+		var newArgument = new WoopsaMethodArgumentInfo(name, type);
+		this.Arguments.push(newArgument);
+		return newArgument;
 	}else{
 		throw new exceptions.WoopsaException("Tried to add a method argument with duplicate name " + name + " in method " + this.Name);
 	}
