@@ -62,6 +62,7 @@ namespace Woopsa
         private WoopsaValue WoopsaValueFromResponse(string response)
         {
             var serializer = new JavaScriptSerializer();
+            serializer.MaxJsonLength = int.MaxValue;
             WoopsaReadResult result = serializer.Deserialize<WoopsaReadResult>(response);
 
             if(result == null)

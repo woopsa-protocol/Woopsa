@@ -8,7 +8,7 @@ namespace Woopsa
 {
     public class WoopsaSubscription : IDisposable
     {
-        public WoopsaSubscription(IWoopsaContainer container, int id, IWoopsaValue propertyLink, int monitorInterval, int publishInterval)
+        public WoopsaSubscription(IWoopsaContainer container, int id, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             Id = id;
             PropertyLink = propertyLink;
@@ -17,28 +17,82 @@ namespace Woopsa
 
             //Get the property from the link
             string server, path;
+            string channelContainerPath = null;
             propertyLink.DecodeWoopsaLink(out server, out path);
             if ( server == null )
             {
-                var elem = container.ByPath(path);
-                if (elem is IWoopsaProperty)
+                // Are there any Subscription Services up to this path?
+                string[] pathParts = path.TrimStart(WoopsaConst.WoopsaPathSeparator).Split(WoopsaConst.WoopsaPathSeparator);
+                string searchPath = WoopsaConst.WoopsaRootPath + pathParts[0] + WoopsaConst.WoopsaPathSeparator;
+                for (int i = 1; i < pathParts.Length; i++)
                 {
-                    _watchedProperty = elem as IWoopsaProperty;
+                    if (_subscriptionChannels.ContainsKey(searchPath))
+                    {
+                        _subscriptionChannel = _subscriptionChannels[searchPath];
+                    }
+                    else
+                    {
+                        try
+                        {
+                            IWoopsaObject subscriptionService = (IWoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+                            channelContainerPath = subscriptionService.Owner.GetPath();
+                            _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
+                            break;
+                        }
+                        catch (WoopsaNotFoundException) { }
+                        searchPath += pathParts[i] + WoopsaConst.WoopsaPathSeparator;
+                    }
                 }
-                else
-                    throw new WoopsaException(String.Format("Can only create a subscription to an IWoopsaProperty. Attempted path={0}", path));
+
+                if (_subscriptionChannel == null)
+                {
+                    var elem = container.ByPath(path);
+                    if (elem is IWoopsaProperty)
+                    {
+                        _watchedProperty = elem as IWoopsaProperty;
+                    }
+                    else
+                        throw new WoopsaException(String.Format("Can only create a subscription to an IWoopsaProperty. Attempted path={0}", path));
+                }
             }
             else
                 throw new WoopsaException("Creating a subscription on another server is not yet supported.");
 
-            _monitorTimer = new LightWeightTimer(monitorInterval);
-            _monitorTimer.Elapsed += _monitorTimer_Elapsed;
+            // If we found a subscription service along the way, use that instead of polling
+            if (_subscriptionChannel != null)
+            {
+                string subscribePath = path;
+                if (subscribePath.StartsWith(channelContainerPath))
+                    subscribePath = subscribePath.Substring(channelContainerPath.Length);
+                _subscriptionId = _subscriptionChannel.Register(subscribePath, monitorInterval, publishInterval);
+                _subscriptionChannel.ValueChange += subscriptionChannel_ValueChange;
+            }
+            else
+            {
+                _monitorTimer = new LightWeightTimer((int)monitorInterval.TotalMilliseconds);
+                _monitorTimer.Elapsed += _monitorTimer_Elapsed;
 
-            _publishTimer = new LightWeightTimer(publishInterval);
-            _publishTimer.Elapsed += _publishTimer_Elapsed;
+                _publishTimer = new LightWeightTimer((int)publishInterval.TotalMilliseconds);
+                _publishTimer.Elapsed += _publishTimer_Elapsed;
 
-            _monitorTimer.Enabled = true;
-            _publishTimer.Enabled = true;
+                _monitorTimer.Enabled = true;
+                _publishTimer.Enabled = true;
+            }
+        }
+
+        void subscriptionChannel_ValueChange(object sender, WoopsaNotificationsEventArgs e)
+        {
+            bool hasNotifications = false;
+            foreach (IWoopsaNotification notification in e.Notifications.Notifications)
+            {
+                if (notification.SubscriptionId == _subscriptionId)
+                {
+                    _notifications.Enqueue(notification);
+                    hasNotifications = true;
+                }
+            }
+            if ( hasNotifications )
+                DoPublish();
         }
 
         void _publishTimer_Elapsed(object sender, EventArgs e)
@@ -67,13 +121,13 @@ namespace Woopsa
         /// The Monitoring Interval is the interval at which this
         /// subscription checks the monitored value for changes.
         /// </summary>
-        public int MonitorInterval { get; private set; }
+        public TimeSpan MonitorInterval { get; private set; }
 
         /// <summary>
         /// The Publish Interval is the minimum time between each
         /// notification between the server and the client.
         /// </summary>
-        public int PublishInterval { get; private set; }
+        public TimeSpan PublishInterval { get; private set; }
 
         public IWoopsaValue PropertyLink { get; private set; }
 
@@ -100,6 +154,12 @@ namespace Woopsa
         private LightWeightTimer _monitorTimer;
         private LightWeightTimer _publishTimer;
 
+        // This is set if we are subscribing to an inner subscription Channel
+        // In the case of server daisy-chaining
+        private WoopsaClientSubscriptionChannel _subscriptionChannel = null;
+        private int? _subscriptionId = null;
+        private static Dictionary<string, WoopsaClientSubscriptionChannel> _subscriptionChannels = new Dictionary<string, WoopsaClientSubscriptionChannel>();
+
         private void DoPublish()
         {
             if (Publish != null)
@@ -118,8 +178,16 @@ namespace Woopsa
         {
             if (disposing)
             {
-                _monitorTimer.Dispose();
-                _publishTimer.Dispose();
+                if (_subscriptionChannel != null)
+                {
+                    _subscriptionChannel.ValueChange -= subscriptionChannel_ValueChange;
+                    _subscriptionChannel.Unregister(_subscriptionId.Value);
+                }
+                else
+                {
+                    _monitorTimer.Dispose();
+                    _publishTimer.Dispose();
+                }
             }
         }
 

@@ -477,7 +477,7 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		// It's not, so we try to handle it with the handleRequest func pointer
 		if (server->handleRequest != NULL) {
 			*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, &contentLengthPosition, CONTENT_TYPE_HTML);
-			contentLength = server->handleRequest(buffer, isPost, outputBuffer, outputBufferLength);
+			contentLength = server->handleRequest(buffer, isPost, outputBuffer + *responseLength, outputBufferLength - *responseLength);
 			if (contentLength == 0) {
 				*responseLength = PrepareError(outputBuffer, outputBufferLength, HTTP_CODE_NOT_FOUND, HTTP_TEXT_NOT_FOUND);
 				return WOOPSA_CLIENT_REQUEST_ERROR;

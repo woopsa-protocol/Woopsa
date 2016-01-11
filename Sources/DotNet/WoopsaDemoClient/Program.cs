@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using Woopsa;
 
 namespace WoopsaDemoClient
@@ -11,46 +12,73 @@ namespace WoopsaDemoClient
             Console.WriteLine(" *** Welcome to the Woopsa Demo Client! *** ");
             Console.WriteLine(" Note: read the source code to understand what's happening behind the scenes!");
             Console.WriteLine("");
-            Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
 
-            string serverUrl = Console.ReadLine();
-            if (serverUrl == "")
-                serverUrl = "http://localhost/woopsa";
+            string serverUrl;
+
+            if (File.Exists("url.config"))
+            {
+                serverUrl = File.ReadAllText("url.config");
+                Console.WriteLine("Using url.config");
+            }
+            else
+            {
+                Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
+                serverUrl = Console.ReadLine(); 
+                if (serverUrl == "")
+                    serverUrl = "http://localhost/woopsa";
+            
+            }
 
             WoopsaClient client = new WoopsaClient(serverUrl);
             
             Console.WriteLine("Woopsa client created on URL: {0}", serverUrl);
-            
-            // Display all properties and their values
-            Console.WriteLine("Properties and their values:");
-            foreach (WoopsaClientProperty property in client.Root.Properties)
-            {
-                Console.WriteLine(" * {0} : {1} = {2}", property.Name, property.Type, property.Value);
 
-                // As an example, if we find a PropertyInteger value (like in the demo server),
-                // we change its value to 1. That way you can see how it's done using the
-                // standard client
+            ExploreItem(client.Root);
+
+            // Leave the DOS window open
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadLine();
+            client.Dispose();
+        }
+
+        static void ExploreItem(WoopsaClientObject obj, int indent = 0)
+        {
+            // Display all properties and their values
+            string indentString = "";
+            for (int i = 0; i < indent; i++)
+                indentString += "  ";
+            Console.WriteLine(indentString + "{0}", obj.Name);
+            Console.WriteLine(indentString + "Properties and their values:");
+            foreach (WoopsaClientProperty property in obj.Properties)
+            {
+                Console.WriteLine(indentString + " * {0} : {1} = {2}", property.Name, property.Type, property.Value);
                 if (property.Name == "Altitude")
                 {
                     // Create a subscription for example's sake
-                    Console.WriteLine("  => Creating a subscription");
+                    Console.WriteLine(indentString + "  => Creating a subscription");
                     property.Change += property_Change;
 
                     // Actually change the value
-                    Console.WriteLine("  => Changing value to 1");
+                    Console.WriteLine(indentString + "  => Changing value to 1");
                     property.Value = new WoopsaValue(1);
+                }
+                if (property.Type == WoopsaValueType.Text)
+                {
+                    Console.WriteLine("Writing a long string...");
+                    string demo = File.ReadAllText(@"MS5637-02BA03.xml");
+                    property.Value = new WoopsaValue(demo);
                 }
             }
 
             // Display methods and their arguments
-            Console.WriteLine("Methods and their arguments:");
-            foreach (WoopsaMethod method in client.Root.Methods)
+            Console.WriteLine(indentString + "Methods and their arguments:");
+            foreach (WoopsaMethod method in obj.Methods)
             {
                 // Display the method
-                Console.WriteLine(" * {0} : {1}", method.Name, method.ReturnType);
+                Console.WriteLine(indentString + " * {0} : {1}", method.Name, method.ReturnType);
                 foreach (WoopsaMethodArgumentInfo argumentInfo in method.ArgumentInfos)
                 {
-                    Console.WriteLine("  * {0} : {1}", argumentInfo.Name, argumentInfo.Type);
+                    Console.WriteLine(indentString + "  * {0} : {1}", argumentInfo.Name, argumentInfo.Type);
                 }
 
                 // As an example, if we find a SayHello method (like in the demo server),
@@ -58,32 +86,20 @@ namespace WoopsaDemoClient
                 // client!
                 if (method.Name == "GetWeatherAtDate")
                 {
-                    Console.WriteLine("  => GetWeatherAtDate found! Calling it now...");
-					Console.WriteLine("  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
+                    Console.WriteLine(indentString + "  => GetWeatherAtDate found! Calling it now...");
+                    Console.WriteLine(indentString + "  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
 						{
 							new WoopsaValue(DateTime.Now)
 						})
-					);
+                    );
                 }
             }
 
-            // Display embedded items and display its properties
-            Console.WriteLine("Items:");
-            foreach (WoopsaClientObject item in client.Root.Items)
+            Console.WriteLine(indentString + "Items:");
+            foreach (WoopsaClientObject item in obj.Items)
             {
-                // Display the item
-                Console.WriteLine(" * {0}", item.Name);
-
-                foreach(WoopsaClientProperty property in item.Properties)
-                {
-                    Console.WriteLine("  * {0} : {1} = {2}", property.Name, property.Type, property.Value);
-                }
+                ExploreItem(item, indent+1);
             }
-
-            // Leave the DOS window open
-            Console.WriteLine("Press any key to exit...");
-            Console.ReadLine();
-            client.Dispose();
         }
 
         static void property_Change(object sender, WoopsaNotificationEventArgs e)

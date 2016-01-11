@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Net.Sockets;
 using Woopsa;
 
@@ -66,10 +67,6 @@ namespace WoopsaDemoServer
             {
                 WeatherStation root = new WeatherStation();
                 WoopsaServer woopsaServer = new WoopsaServer(root, 80);
-                woopsaServer.WebServer.Routes.Add("/static/", HTTPMethod.GET, new RouteHandlerFileSystem(@"C:\test\"));
-                woopsaServer.WebServer.Routes.Add("/sayhello", HTTPMethod.GET, delegate(HTTPRequest request, HTTPResponse response) {
-                    response.WriteString("Hello");
-                });
 
                 Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
                 Console.WriteLine("Some examples of what you can do directly from your browser:");

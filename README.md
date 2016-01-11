@@ -42,7 +42,7 @@ WOOPSA_END
 ## Getting the library
 The latest release is part of the git repository, in the well-named **Release** directory. It contains the .NET and JavaScript versions of the Woopsa library, as well as a few examples to get started!
 
-You can of course also go to the Releases tab of this project, to get version 1.0 here: https://github.com/woopsa-protocol/Woopsa/releases/tag/v1.0
+You can of course also go to the Releases tab of this project, to get version 1.1 here: https://github.com/woopsa-protocol/Woopsa/releases/tag/v1.1
 
 ## Getting started
 Our [Getting Started](http://www.woopsa.org/get-started/) tutorial allows you to get started quickly with Woopsa. It's really easy and we promise you'll be convinced!
@@ -66,3 +66,4 @@ A build/release script is coming soon!
 Woopsa has been tested and works on:
  * .NET Framework 4.5
  * Mono 4.0+
+ 

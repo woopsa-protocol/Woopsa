@@ -67,7 +67,7 @@ namespace Woopsa
             int channelId = subscriptionChannel.ToInt32();
             if (_channels.ContainsKey(channelId))
             {
-                return new WoopsaValue(_channels[channelId].RegisterSubscription(Container, woopsaPropertyLink, (int)monitorInterval.ToTimeSpan().TotalMilliseconds, (int)publishInterval.ToTimeSpan().TotalMilliseconds));
+                return new WoopsaValue(_channels[channelId].RegisterSubscription(Container, woopsaPropertyLink, monitorInterval.ToTimeSpan(), publishInterval.ToTimeSpan()));
             }
             else
                 throw new WoopsaException(String.Format("Tried to register a subscription on channel with id={0} that does not exist", subscriptionChannel.ToInt32()));

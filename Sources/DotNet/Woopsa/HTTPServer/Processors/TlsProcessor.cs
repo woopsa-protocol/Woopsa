@@ -16,9 +16,9 @@ namespace Woopsa
             _certificate = new X509Certificate2(certificateLocation, certificatePassword);
         }
 
-        public override Stream StartProcessStream(Stream input)
+        public override Stream ProcessStream(Stream input)
         {
-            SslStream secureStream = new SslStream(input, true);
+            SslStream secureStream = new SslStream(input, false);
             try
             {
                 secureStream.AuthenticateAsServer(_certificate, false, System.Security.Authentication.SslProtocols.Tls, true);
@@ -28,11 +28,6 @@ namespace Woopsa
                 return null;
             }
             return secureStream;
-        }
-
-        public override void EndProcessStream(Stream input)
-        {
-            (input as SslStream).Close();
         }
 
         private X509Certificate2 _certificate;
