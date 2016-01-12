@@ -2,6 +2,7 @@ var utils = require('./utils');
 var exceptions = require('./exceptions');
 var types = require('./types')
 var adapter = require('./adapter');
+var reflector = require('./reflector');
 
 var http = require('http');
 var express = require('express');
@@ -24,11 +25,20 @@ var Server = function Server(element, options){
 		})
 	}
 
-	this.element = element;
+	if ( element instanceof types.WoopsaObject )
+		this.element = element;
+	else
+		this.element = new reflector.Reflector(element);
 
 	// Add some pre-processors
 	expressApp.use(options.pathPrefix, this.addHeaders.bind(this));
 	var urlencodedParser = bodyParser.urlencoded({extended: false});
+
+	// TODO remove (only debug)
+	expressApp.use(function (req, res, next){
+		console.log(req.method + " " + req.path);
+		next();
+	})
 
 	// Create our 4 basic Woopsa routes
 	expressApp.get(new RegExp(options.pathPrefix + "meta/(.*)"), this.handleRequest.bind(this, "meta"));
@@ -39,6 +49,8 @@ var Server = function Server(element, options){
 
 Server.prototype.handleRequest = function (type, req, res){
 	var path = "/" + req.params[0];
+	path = utils.removeExtraSlashes(path);
+
 	try{
 		var element = adapter.getByPath(this.element, path);
 		if ( typeof element === 'undefined' ){
@@ -50,9 +62,9 @@ Server.prototype.handleRequest = function (type, req, res){
 		else if ( type === "read" )
 			result = this.handleRead(element);
 		else if ( type === "write" )
-			result = this.handleWrite(element, req.body.value);
+			result = this.handleWrite(element, (typeof req.body.Value !== 'undefined')?req.body.Value:req.body.value);
 		else if ( type === "invoke" )
-			result = this.handleInvoke(element, {});
+			result = this.handleInvoke(element, req.body);
 		res.json(result);
 	}catch (e){
 		var statusCode;
@@ -62,6 +74,9 @@ Server.prototype.handleRequest = function (type, req, res){
 			statusCode = 400; // 400 Bad request
 		}else{
 			statusCode = 500; // 500 Internal server error
+			res.writeHead(statusCode, e.message, {'Content-Type': 'application/json'});
+			res.end(JSON.stringify(e));
+			throw e; // TODO: remove - only for debug
 		}
 		res.writeHead(statusCode, e.message, {'Content-Type': 'application/json'});
 		res.end(JSON.stringify(e));
@@ -69,31 +84,33 @@ Server.prototype.handleRequest = function (type, req, res){
 };
 
 Server.prototype.handleMeta = function (element){
-	var elementType = utils.inferWoopsaType(element);
-	if ( typeof elementType !== 'undefined' ){
-		throw new exceptions.WoopsaInvalidOperationException("Cannot get metadata for a WoopsaElement of type %s", elementType);
+	if ( typeof element.getItems === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot get metadata for a non-WoopsaObject " + property.getName());
 	}
-	return adapter.generateMetaDataObject(element);
+	return adapter.generateMetaObject(element);
 };
 
-Server.prototype.handleRead = function (element){
-	var elementType = utils.inferWoopsaType(element);
-	if ( typeof elementType === 'undefined' ){
-		throw new exceptions.WoopsaInvalidOperationException("Cannot read non-WoopsaValue %s", elementType);
+Server.prototype.handleRead = function (property){
+	if ( typeof property.read === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot read non-WoopsaProperty " + property.getName());
 	}
-	return adapter.readValue(element);
+	return adapter.readProperty(property);
 };
 
-Server.prototype.handleWrite = function (element, value){
-	var elementType = utils.inferWoopsaType(element);
-	if ( typeof elementType === 'undefined' ){
-		throw new exceptions.WoopsaInvalidOperationException("Cannot write non-WoopsaValue %s", elementType);
+Server.prototype.handleWrite = function (property, value){
+	console.log(value);
+	if ( typeof property.read === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot write non-WoopsaProperty " + property.getName());
 	}
-	return adapter.write(element, value);
+	return adapter.writeProperty(property, value);
 };
 
-Server.prototype.handleInvoke = function (element, arguments){
-	var path = "/" + req.params[0];
+Server.prototype.handleInvoke = function (method, arguments){
+	console.log(arguments);
+	if ( typeof method.invoke === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot invoke non-WoopsaMethod " + method.getName());
+	}
+	return adapter.invokeMethod(method, arguments);
 };
 
 Server.prototype.addHeaders = function (req, res, next){
@@ -118,8 +135,8 @@ var weatherStation = {
   Altitude: 430,
   City: "Geneva",
   Time: new Date(),
-  GetWeatherAtDate: function (date){
-    return "sunny";
+  EchoString: function (text){
+    return text;
   },
   Thermostat: {
   	SetPoint: 24.0,
@@ -132,8 +149,12 @@ var weatherStation = {
 var testObj = new types.WoopsaObject("Something");
 testObj.addProperty("Someshit", "Real", function (){return 3.14});
 testObj.addProperty("Someothershit", "Text", function (){return "Hello"});
+var method = testObj.addMethod("SomeMethod", "Text", function (someArgument){
+	return "Hey this is me and someArgument = " + someArgument;
+});
+method.addMethodArgumentInfo("someArgument", "Text");
 var innerObj = new types.WoopsaObject("SomethingElse");
 innerObj.addProperty("Sometoughassshit", "DateTime", false);
 testObj.addItem(innerObj);
 
-var server = new Server(testObj, {port: 80});
+var server = new Server(weatherStation, {port: 80});

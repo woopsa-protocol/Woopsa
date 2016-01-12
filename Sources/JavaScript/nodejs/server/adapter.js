@@ -3,7 +3,6 @@ var exceptions = require('./exceptions');
 var utils = require('./utils');
 
 exports.getByPath = function (element, path){
-		// This works with regular JavaScript objects
 	var pathParts = path.split("/");
 	if ( pathParts[0] == "" )
 		pathParts.splice(0, 1);
@@ -15,34 +14,31 @@ exports.getByPath = function (element, path){
 	if ( pathParts.length == 0 ){
 		return element;
 	}else{
-		if ( element.constructor.name === 'WoopsaObject' ){
-			// This works with WoopsaObjects
-			return getByPathArrayOnWoopsaObject(returnElement, pathParts);
-		}else{
-			return getByPathArrayOnObject(returnElement, pathParts);
-		}
-	}	
+		return getByPathArray(returnElement, pathParts);
+	}
 }
 
-function getByPathArrayOnWoopsaObject(element, pathArray){
+function getByPathArray(element, pathArray){
 	var key = pathArray[0];
 
 	var foundItem = null;
-	for ( var i in element.Items )
-		if ( element.Items[i].Name === key )
-			foundItem = element.Items[i];
+	var items = element.getItems();
+	for ( var i in items )
+		if ( items[i].getName() === key )
+			foundItem = items[i];
 
 	if ( foundItem !== null ){
 		if ( pathArray.length === 1 ){
 			return foundItem;
 		}else{
-			return getByPathArrayOnWoopsaObject(foundItem, pathArray.slice(1));
+			return getByPathArray(foundItem, pathArray.slice(1));
 		}
 	}else{
 		var foundProperty = null;
-		for ( var i in element.Properties )
-			if ( element.Properties[i].Name === key )
-				foundProperty = element.Properties[i];
+		var properties = element.getProperties();
+		for ( var i in properties )
+			if ( properties[i].getName() === key )
+				foundProperty = properties[i];
 
 		if ( foundProperty !== null ){
 			if ( pathArray.length === 1 ){
@@ -52,9 +48,10 @@ function getByPathArrayOnWoopsaObject(element, pathArray){
 			}
 		}else{
 			var foundMethod = null;
-			for ( var i in element.Methods )
-				if ( element.Methods[i].Name === key )
-					foundProperty = element.Methods[i];
+			var methods = element.getMethods();
+			for ( var i in methods )
+				if ( methods[i].getName() === key )
+					foundMethod = methods[i];
 
 			if ( foundMethod !== null ){
 				if ( pathArray.length === 1 ){
@@ -69,91 +66,86 @@ function getByPathArrayOnWoopsaObject(element, pathArray){
 	return undefined;
 }
 
-function getByPathArrayOnObject(element, pathArray){
-	var key = pathArray[0];
-	if ( typeof element[key] !== 'undefined' ){
-		if ( pathArray.length === 1 ){
-			return element[key];
-		}else{
-			return getByPathArrayOnObject(element[key], pathArray.slice(1));
-		}
-	}else{
-		return undefined;
-	}
-}
-
-exports.generateMetaDataObject = function (element){
-	if ( element.constructor.name === 'WoopsaObject' )
-		return element;
-
-	var result = {
-		"Name": element.constructor.name,
-		"Properties": []
+exports.generateMetaObject = function (element){
+	var metaObject = {
+		Name: element.getName(),
+		Properties: [],
+		Methods: [],
+		Items: []
 	};
-	for (var key in element){
-		var value = element[key];
-		var type = utils.inferWoopsaType(value);
-		// Methods
-		if ( typeof value === 'function' ){
-			if ( typeof result["Methods"] === 'undefined' ){
-				result["Methods"] = [];
+	var items = element.getItems();
+	for ( var i in items ){
+		metaObject.Items.push(items[i].getName());
+	}
+	var properties = element.getProperties();
+	for ( var i in properties ){
+		var property = properties[i];
+		metaObject.Properties.push({
+			Name: property.getName(),
+			Type: (typeof property.getType !== 'undefined')?property.getType():utils.inferWoopsaType(property.read()),
+			ReadOnly: (typeof property.write === 'undefined')?true:false
+		})
+	}
+	var methods = element.getMethods();
+	for ( var i in methods ){
+		var method = methods[i];
+		var newMethod = {
+			Name: method.getName(),
+			ReturnType: method.getReturnType(),
+			ArgumentInfos: []
+		}
+		var argumentInfos = method.getArgumentInfos();
+		for ( var j in argumentInfos ){
+			newMethod.ArgumentInfos.push({
+				Name: argumentInfos[j].getName(),
+				Type: argumentInfos[j].getType()
+			})
+		}
+		metaObject.Methods.push(newMethod);
+	}
+	return metaObject;
+}
+
+exports.readProperty = function (property){
+	var readResult = property.read();
+	return {
+		Value: readResult,
+		Type: (typeof property.getType !== 'undefined')?property.getType():utils.inferWoopsaType(readResult)
+	};
+}
+
+exports.writeProperty = function (property, value){
+	if ( typeof property.write === 'undefined' ){
+		throw new exceptions.WoopsaInvalidOperationException("Cannot write to read-only property " + element.getName());
+	}else{
+		// TODO : basic type checking
+		property.write(value);
+		var readResult = property.read(value);
+		return {
+			Value: readResult,
+			Type: (typeof property.getType !== 'undefined')?property.getType():utils.inferWoopsaType(readResult)
+		};
+	}
+}
+
+exports.invokeMethod = function (method, arguments){
+	// Convert the name-value pair arguments into a simple array in the right order
+	var argumentInfos = method.getArgumentInfos();
+	var args = [];
+	for ( var i in argumentInfos ){
+		var argInfo = argumentInfos[i];
+		for ( var key in arguments ){
+			if ( argInfo.getName() === key ){
+				args.push(arguments[key]);
 			}
-			result["Methods"].push({
-				"Name": key,
-				"Arguments": [],
-				"ReturnType": 'Text' // We can never know the return type of a function in JS
-			});
-		}else if ( typeof type === 'undefined' ){
-			// If the type is undefined, it's a Woopsa Object
-			if ( typeof result["Items"] === 'undefined' )
-				result["Items"] = [];
-			result["Items"].push(key);
-		}else{
-			// Just a regular old WoopsaProperty!
-			result["Properties"].push({
-				"Name": key,
-				"Type": type,
-				"ReadOnly": false // There is no such thing as read-only in JS
-			});
 		}
 	}
-	return result;
-}
-
-exports.readValue = function (element){
-	if ( typeof element.read !== 'undefined' ){
-		var readResult = element.read();
-		return {
-			"Value": readResult,
-			"Type": (typeof element.Type !== 'undefined')?element.Type:utils.inferWoopsaType(readResult)
-		};
-	}else{
-		return {
-			"Value": element,
-			"Type": utils.inferWoopsaType(element)
-		};
+	if ( args.length != method.getArgumentInfos().length ){
+		throw new exceptions.WoopsaInvalidOperationException("Wrong parameters for WoopsaMethod " + method.getName());
 	}
-}
-
-exports.writeValue = function (element, value){
-	if ( typeof element.write !== 'undefined' ){
-		element.write(value);
-		var readResult = element.read(value);
-		return {
-			"Value": readResult,
-			"Type": (typeof element.Type !== 'undefined')?element.Type:utils.inferWoopsaType(readResult)
-		};
-	}else{
-		var elementType = utils.inferWoopsaType(element);
-		var valueType = utils.inferWoopsaType(element);
-		if ( elementType === valueType ){
-			element = value;
-			return {
-				"Value": element,
-				"Type": utils.inferWoopsaType(element)
-			};
-		}else{
-			throw new exceptions.WoopsaInvalidOperationException("Cannot typecast " + valueType + " to " + elementType);
-		}
+	var invokeResult = method.invoke(args);
+	return {
+		Value: invokeResult,
+		Type: method.getReturnType()
 	}
 }

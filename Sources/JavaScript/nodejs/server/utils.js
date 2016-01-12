@@ -6,6 +6,10 @@ exports.defaults = function (options, defaultOptions){
   return result;
 }
 
+exports.removeExtraSlashes = function (value){
+	return value.replace(/\/+/g,"/");
+}
+
 // This functions uses JavaScript's various
 // features to try and find out the type of a 
 // value. 
