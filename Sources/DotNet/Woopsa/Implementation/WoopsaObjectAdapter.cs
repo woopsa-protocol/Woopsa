@@ -63,6 +63,7 @@ namespace Woopsa
             }
         }
 
+        // TODO CJI From CJI : Make it work.
         public void ClearCache()
         {
             _typesCache = new Dictionary<Type, TypeCache>();
