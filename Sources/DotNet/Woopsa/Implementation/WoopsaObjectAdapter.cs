@@ -63,9 +63,15 @@ namespace Woopsa
             }
         }
 
-        // TODO CJI From CJI : Make it work.
         public void ClearCache()
         {
+            // Clear all items and all the children of each item.
+            Clear();
+
+            // Clear the properties and the methods of the current object.
+            ClearProperties();
+            ClearMethods();
+
             _typesCache = new Dictionary<Type, TypeCache>();
         }
 
