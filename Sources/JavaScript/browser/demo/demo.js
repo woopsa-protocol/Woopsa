@@ -18,7 +18,7 @@
 			woopsa.onChange($("#subscribePath").val(), function (value){
 				console.log("Received notification, new value = " + value);
 				$("#variableValue").html(value);
-			},0.1,0.1);
+			},1,1);
 			
 			$("input, textarea").each(function (){
 				$(this).removeAttr("disabled");

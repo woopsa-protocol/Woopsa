@@ -1,70 +1,6 @@
 var types = require('./types');
 var exceptions = require('./exceptions');
-var utils = require('./utils');
-
-exports.getByPath = function (element, path){
-    var pathParts = path.split("/");
-    if ( pathParts[0] == "" )
-        pathParts.splice(0, 1);
-    if ( pathParts[pathParts.length-1] == "" )
-        pathParts.splice(pathParts.length-1, 1);
-
-    var returnElement = element;
-
-    if ( pathParts.length == 0 ){
-        return element;
-    }else{
-        return getByPathArray(returnElement, pathParts);
-    }
-}
-
-function getByPathArray(element, pathArray){
-    var key = pathArray[0];
-
-    var foundItem = null;
-    var items = element.getItems();
-    for ( var i in items )
-        if ( items[i].getName() === key )
-            foundItem = items[i];
-
-    if ( foundItem !== null ){
-        if ( pathArray.length === 1 ){
-            return foundItem;
-        }else{
-            return getByPathArray(foundItem, pathArray.slice(1));
-        }
-    }else{
-        var foundProperty = null;
-        var properties = element.getProperties();
-        for ( var i in properties )
-            if ( properties[i].getName() === key )
-                foundProperty = properties[i];
-
-        if ( foundProperty !== null ){
-            if ( pathArray.length === 1 ){
-                return foundProperty;
-            }else{
-                return undefined; 
-            }
-        }else{
-            var foundMethod = null;
-            var methods = element.getMethods();
-            for ( var i in methods )
-                if ( methods[i].getName() === key )
-                    foundMethod = methods[i];
-
-            if ( foundMethod !== null ){
-                if ( pathArray.length === 1 ){
-                    return foundMethod;
-                }else{
-                    return undefined; 
-                }
-            }
-        }
-    }
-
-    return undefined;
-}
+var woopsaUtils = require('./woopsa-utils');
 
 exports.generateMetaObject = function (element){
     var metaObject = {
@@ -119,7 +55,7 @@ exports.writeProperty = function (property, value){
         throw new exceptions.WoopsaInvalidOperationException("Cannot write to read-only property " + element.getName());
     }else{
         // TODO : basic type checking
-        value = utils.convertTo(value, property.getType())
+        value = woopsaUtils.convertTo(value, property.getType())
         property.write(value);
         var readResult = property.read();
         return {
@@ -132,7 +68,7 @@ exports.writeProperty = function (property, value){
 exports.invokeMethod = function (response, method, arguments, done){
     var processedArguments = processArguments(method, arguments);
     if ( typeof method.invokeAsync !== 'undefined' ){
-        method.invokeAsync(processedArguments, function (result){
+        method.invokeAsync(processedArguments, function (result, error){
             done({
                 Value: result,
                 Type: method.getReturnType()
@@ -156,12 +92,12 @@ function processArguments(method, arguments){
         var argInfo = argumentInfos[i];
         for ( var key in arguments ){
             if ( argInfo.getName() === key ){
-                value = utils.convertTo(arguments[key], argInfo.getType())
+                value = woopsaUtils.convertTo(arguments[key], argInfo.getType())
                 args.push(value);
             }
         }
     }
-    if ( args.length != method.getArgumentInfos().length ){
+    if ( args.length != argumentInfos.length ){
         throw new exceptions.WoopsaInvalidOperationException("Wrong parameters for WoopsaMethod " + method.getName());
     }
     return args;

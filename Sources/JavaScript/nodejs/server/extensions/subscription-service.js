@@ -1,5 +1,5 @@
-var types = require('./tdypes');
-var exceptions = require('./exceptions');
+var types = require('../types');
+var exceptions = require('../exceptions');
 var subscriptionChannel = require('./subscription-channel');
 
 var RANGE_SUBSCRIPTION_CHANNEL_ID = 10000;

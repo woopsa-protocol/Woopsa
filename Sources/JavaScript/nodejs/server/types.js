@@ -1,13 +1,21 @@
 var exceptions = require('./exceptions')
+var util = require('util');
 
 var WoopsaObject = function WoopsaObject(name){
     this._properties = [];
     this._methods = [];
     this._items = [];
     this._name = name;
+    this._container = null;
 }
 
 WoopsaObject.prototype = {
+    getContainer: function (){
+        return this._container;
+    },
+    setContainer: function (value){
+        this._container = value;
+    },
     getProperties: function (){
         return this._properties;
     },
@@ -24,6 +32,8 @@ WoopsaObject.prototype = {
         if ( !hasElement(this._properties, name) ){
             var newProperty = new WoopsaProperty(name, type, readOnly);
             this._properties.push(newProperty);
+            if ( typeof newProperty.setContainer !== 'undefined' )
+                newProperty.setContainer(this);
             return newProperty;
         }else{
             throw new exceptions.WoopsaException("Tried to add a property with duplicate name " + name);
@@ -33,24 +43,28 @@ WoopsaObject.prototype = {
         if ( !hasElement(this._methods, name) ){
             var newMethod = new WoopsaMethod(name, returnType, method);
             this._methods.push(newMethod);
+            if ( typeof newMethod.setContainer !== 'undefined' )
+                newMethod.setContainer(this);
             return newMethod;
         }else{
             throw new exceptions.WoopsaException("Tried to add a method with duplicate name " + name);
         }
     },
     addItem: function (item){
-        if ( !hasElement(this._items, item.name) ){
+        if ( !hasElement(this._items, item.getName()) ){
             this._items.push(item);
+            if ( typeof item.setContainer !== 'undefined' )
+                item.setContainer(this);
             return item;
         }else{
-            throw new exceptions.WoopsaException("Tried to add an item with duplicate name " + name);
+            throw new exceptions.WoopsaException("Tried to add an item with duplicate name " + item.getName());
         }
     }
 }
 
 function hasElement(list, elementname){
     for ( var i in list )
-        if ( list[i].name === elementname )
+        if ( list[i].getName() === elementname )
             return true;
     return false;
 }
@@ -62,9 +76,16 @@ var WoopsaProperty = function WoopsaProperty(name, type, read, write){
     if ( typeof write !== 'undefined' ){
         this.write = write;     
     }
+    this._container = null;
 }
 
 WoopsaProperty.prototype = {
+    getContainer: function (){
+        return this._container;
+    },
+    setContainer: function (value){
+        this._container = value;
+    },
     getName: function (){
         return this._name;
     },
@@ -87,9 +108,16 @@ var WoopsaMethod = function WoopsaMethod(name, returnType, method, argumentInfos
             }
         }
     }
+    this._container = null;
 }
 
 WoopsaMethod.prototype = {
+    getContainer: function (){
+        return this._container;
+    },
+    setContainer: function (value){
+        this._container = value;
+    },
     getArgumentInfos: function (){
         return this._argumentInfos;
     },
@@ -113,6 +141,19 @@ WoopsaMethod.prototype = {
     }
 }
 
+var WoopsaMethodAsync = function WoopsaMethodAsync(name, returnType, method, argumentInfos){
+    WoopsaMethodAsync.super_.call(this, name, returnType, method, argumentInfos);
+}
+
+util.inherits(WoopsaMethodAsync, WoopsaMethod);
+
+WoopsaMethodAsync.prototype.invokeAsync = function (arguments, done){
+    return this._method.apply(this, arguments.concat([done]));
+};
+WoopsaMethodAsync.prototype.invoke = function(arguments) {
+    throw new exceptions.WoopsaException("Tried to synchronously call an asynchronous WoopsaMethod " + this._name);
+};
+
 var WoopsaMethodArgumentInfo = function WoopsaMethodArgumentInfo(name, type){
     this._name = name;
     this._type = type;
@@ -130,4 +171,5 @@ WoopsaMethodArgumentInfo.prototype = {
 exports.WoopsaObject = WoopsaObject;
 exports.WoopsaProperty = WoopsaProperty;
 exports.WoopsaMethod = WoopsaMethod;
+exports.WoopsaMethodAsync = WoopsaMethodAsync;
 exports.WoopsaMethodArgumentInfo = WoopsaMethodArgumentInfo;
