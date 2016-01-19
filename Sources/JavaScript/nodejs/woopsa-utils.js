@@ -1,5 +1,13 @@
 var exceptions = require('./exceptions');
 
+/**
+ * Creates an object based on its default values.
+ * @param  {Object} options        Any object with key/value pairs
+ * @param  {Object} defaultOptions The default key/value pairs
+ * @return {Object}                An object with the default key/value pairs
+ *                                 if the key/value pair in not present in
+ *                                 options
+ */
 exports.defaults = function (options, defaultOptions){
   var result = typeof options !== 'undefined' ? options : defaultOptions;
   for(var key in defaultOptions){
@@ -8,16 +16,31 @@ exports.defaults = function (options, defaultOptions){
   return result;
 }
 
+/**
+ * Simple helper method to remove double slashes in a path
+ * @param  {String} value The string in which to remove slashes
+ * @return {String}       A string with extra slashes removed
+ */
 exports.removeExtraSlashes = function (value){
     return value.replace(/\/+/g,"/");
 }
 
-// This functions uses JavaScript's various
-// features to try and find out the type of a 
-// value. 
-// Returns a string representation of the Woopsa type
-// or undefined if it seems like a regular object
-// (and should thus probably be a WoopsaObject)
+/**
+ * Try to guess (infer) the WoopsaType of a given
+ * value. Obviously, because of JavaScript's dynamic
+ * nature, this isn't always accurate.
+ * This means that we can only reliably detect the 
+ * following types:
+ *  - Real
+ *  - Logical
+ *  - Text
+ *  - DateTime
+ * Anything else will just return undefined, meaning
+ * this value is probably a WoopsaObject.
+ * @param  {*} value The value to check
+ * @return {[type]}  A string, or undefined if
+ *                   the type is unkown
+ */
 exports.inferWoopsaType = function (value){
     var type = typeof value;
     if ( type === 'number' )
@@ -33,6 +56,15 @@ exports.inferWoopsaType = function (value){
             return undefined;
 }
 
+/**
+ * Tries to convert a given value to another type
+ * based on the passed WoopsaType.
+ * @param  {*} value      The value to try and convert
+ * @param  {String} type  The WoopsaType string representation
+ *                        to convert the value to.
+ * @return {*}            The converted value, or the passed value
+ *                        if there is nothing to do.
+ */
 exports.convertTo = function (value, type){
     if ( type === 'Integer' ){
         if ( isNaN(parseInt(value)) )
@@ -54,7 +86,7 @@ exports.convertTo = function (value, type){
     }else if ( type === 'JsonData' ){
         return JSON.parse(value);
     }else if ( type === 'DateTime' ){
-        var parsedDate = Date.parse(value);
+        var parsedDate = new Date(value);
         if ( isNaN(parsedDate) ) // Warning: might not be consistent across implementations
             throw new exceptions.WoopsaInvalidOperationException("Cannot convert value " + value + " to type " + type);
         else
@@ -64,6 +96,13 @@ exports.convertTo = function (value, type){
     }
 }
 
+/**
+ * Gets a WoopsaElement from a specified path, relative to another
+ * WoopsaElement passed as the first argument.
+ * @param  {Object} element The WoopsaObject to search in
+ * @param  {String} path    The slashes-delimited path to search for
+ * @return {Object}         The found object, or undefined if not found
+ */
 exports.getByPath = function (element, path){
     var pathParts = path.split("/");
     if ( pathParts[0] == "" )
@@ -128,6 +167,15 @@ function getByPathArray(element, pathArray){
     return undefined;
 }
 
+/**
+ * Converts the serialized representation of a WoopsaLink to
+ * a more usable object.
+ * @param  {String} woopsaLink A pound(#)-delimited string consisting of
+ *                             {server-address}#{woopsa-path}
+ * @return {Object}            The decoded link, containing:
+ *                                 - {String} server    The URL of the server or null if not present
+ *                                 - {String} path      The Woopsa path of the element
+ */
 exports.decodeWoopsaLink = function(woopsaLink){
     var parts = woopsaLink.split("#");
     if ( parts.length == 1 ){
@@ -143,6 +191,12 @@ exports.decodeWoopsaLink = function(woopsaLink){
     }
 }
 
+/**
+ * Tries to get the WoopsaPath of a WoopsaElement by traversing
+ * their containers using getContainer() until it returns null.
+ * @param  {Object} element The element for which to get the path
+ * @return {String}         The calculated Woopsa path.
+ */
 exports.getPath = function (element){
     var path = "";
     if ( element.getContainer() !== null )

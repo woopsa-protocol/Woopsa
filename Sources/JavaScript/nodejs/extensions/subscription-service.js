@@ -1,11 +1,23 @@
-var types = require('./tdypes');
-var exceptions = require('./exceptions');
+var types = require('../types');
+var exceptions = require('../exceptions');
 var subscriptionChannel = require('./subscription-channel');
 
+/**
+ * The maximum ID a Subscription Channel can be attributed.
+ * The Subscription Channel ID is random so as to prevent
+ * edge cases when servers crash or are rebooted and clients
+ * try to get Notifications for subscription channels that
+ * don't exist anymore.
+ * @type {Number}
+ */
 var RANGE_SUBSCRIPTION_CHANNEL_ID = 10000;
-// The interval, in minutes, at which to check
-// and remove inactive subscription channels
-var CLEANUP_INTERVAL = 1;
+
+/**
+ * The interval, in minutes, at which to check
+ * and remove inactive subscription channels.
+ * @type {Number}
+ */
+var CLEANUP_INTERVAL = 20;
 
 var SubscriptionService = function SubscriptionService(woopsaObject){
     this._createSubscriptionChannel = new types.WoopsaMethod("CreateSubscriptionChannel", "Integer", createSubscriptionChannel.bind(this), [
@@ -62,7 +74,7 @@ var SubscriptionService = function SubscriptionService(woopsaObject){
 
     function waitNotification(subscriptionChannel, lastNotificationId, done){
         if ( typeof subscriptionChannels[subscriptionChannel] === 'undefined' ){
-           throw new exceptions.WoopsaInvalidSubscriptionChannelException("Tried to call UnregisterSubscription on channel with id=" + subscriptionChannel + " that does not exist.");
+           throw new exceptions.WoopsaInvalidSubscriptionChannelException("Tried to call WaitNotification on channel with id=" + subscriptionChannel + " that does not exist.");
         }
         var channel = subscriptionChannels[subscriptionChannel];
         return channel.waitNotification(lastNotificationId, done);
@@ -74,7 +86,6 @@ var SubscriptionService = function SubscriptionService(woopsaObject){
             if ( subscriptionChannels[i].isActive() === false ){
                 subscriptionChannels[i].dispose();
                 delete subscriptionChannels[i];
-                console.log("Deleting inactive subscription channel " + i);
             }
         }
     }

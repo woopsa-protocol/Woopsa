@@ -65,22 +65,26 @@ exports.writeProperty = function (property, value){
     }
 }
 
-exports.invokeMethod = function (response, method, arguments, done){
+exports.invokeMethod = function (method, arguments, done){
     var processedArguments = processArguments(method, arguments);
     if ( typeof method.invokeAsync !== 'undefined' ){
         method.invokeAsync(processedArguments, function (result, error){
-            done({
-                Value: result,
-                Type: method.getReturnType()
-            });
+            if ( typeof error === 'undefined' ){
+                done({
+                    Value: result,
+                    Type: method.getReturnType()
+                });
+            }else{
+                done(null, error);
+            }
         });
         return undefined;
     }else{
         var invokeResult = method.invoke(processedArguments);
-        return {
+        done({
             Value: invokeResult,
             Type: method.getReturnType()
-        }        
+        });     
     }
 }
 

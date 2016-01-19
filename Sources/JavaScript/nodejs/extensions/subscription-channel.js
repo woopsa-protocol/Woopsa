@@ -1,12 +1,26 @@
 var woopsaUtils = require('../woopsa-utils');
 var exceptions = require('../exceptions')
 
-// Default timeout for the WaitNotification method
-// in milliseconds (normally it is 5000)
+/**
+ * Default timeout for the WaitNotification method in 
+ * milliseconds (normally it is 5000)
+ * @type {Number}
+ */
 var DEFAULT_WAIT_NOTIFICATION_TIMEOUT = 5000;
-// The amount of time, in minutes, before a subscription
-// channel is considered dead and gone
+
+/**
+ * The amount of time, in minutes, before a subscription
+ * channel is considered dead, and we delete it.
+ * @type {Number}
+ */
 var INACTIVE_TIME = 1;
+
+/**
+ * The maximum value for a Notification's ID. After that,
+ * the ID will be 1 again.
+ * @type {Number}
+ */
+var MAX_NOTIFICATION_ID = 1000000000;
 
 var SubscriptionChannel = function SubscriptionChannel(notificationsQueueSize){
     this._subscriptions = {};
@@ -66,6 +80,8 @@ SubscriptionChannel.prototype = {
     onPublish: function (notifications){
         for ( var i in notifications ){
             notifications[i].Id = this._lastNotificationId++;
+            if ( this._lastNotificationId > MAX_NOTIFICATION_ID )
+                this._lastNotificationId = 1;
             this._notifications.push(notifications[i]);
             if ( this._notifications.length >= this._notificationsQueueSize ){
                 // If the queue is full, raise the notificationsLost flag

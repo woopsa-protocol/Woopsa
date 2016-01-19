@@ -4,17 +4,65 @@ var types = require('./types')
 var adapter = require('./adapter');
 var reflector = require('./reflector');
 var subscriptionService = require('./extensions/subscription-service');
+var multiRequest = require('./extensions/multi-request');
 
 var http = require('http');
 var express = require('express');
 var bodyParser = require('body-parser');
 
+/**
+ * Constructor for a Woopsa Server using a specified element and the
+ * passed options.
+ * Because Woopsa uses Express 4.0, you can give this constructor an
+ * already existing Express server and it will just add its own routes
+ * to your app.
+ * The available options are:
+ *  - {Object} expressApp       (optional) An already existing express app
+ *                              onto which the Woopsa server will add its
+ *                              routes. 
+ *                              If not present, the Woopsa server will create
+ *                              an express app itself. 
+ *                              Default: null
+ *  - {Number} port             The port to run the Woopsa server on, if
+ *                              expressApp is not specified. Otherwise this
+ *                              is ignored. 
+ *                              Default: 80.
+ *  - {String} pathPrefix       The path with which all Woopsa paths will 
+ *                              start. For example, specifying /woopsa/ will
+ *                              make the Woopsa server available on
+ *                              /woopsa/meta/
+ *                              /woopsa/read/... and so on.
+ *                              Default: /woopsa/
+ *  - {Function} typer          A function that accepts two parameters:
+ *                              path and inferredType. If present, this
+ *                              method will be called every time the Woopsa
+ *                              object reflector needs to know the type of
+ *                              a WoopsaElement, including method arguments.
+ *                              This function MUST always return a value. You
+ *                              can simply return inferredType if you want to
+ *                              let the object reflector take a guess.
+ *                              Default: null
+ *  - {Function} listenCallback A function to be called when the express app
+ *                              is created and the underlying HTTP server is
+ *                              listening.
+ * @param {Object} element The element to publish through the Woopsa protocol.
+ *                         If there is no getItems() function on this object,
+ *                         then it means you are trying to publish a regular
+ *                         JavaScript object. In that case, the Woopsa server
+ *                         will automatically create an Object Reflector, which
+ *                         converts any JavaScript object into a WoopsaObject!
+ *                         On the other hand, if the getItems() function is 
+ *                         available on this object, then the server will consider
+ *                         it a WoopsaObject. 
+ * @param {Object} options The options (see above)
+ */
 var Server = function Server(element, options){
     var defaultOptions = {
         port: 80,
         pathPrefix: '/woopsa/',
         expressApp: null,
         typer: null,
+        listenCallback: nop
     }
     options = woopsaUtils.defaults(options, defaultOptions);
 
@@ -22,9 +70,10 @@ var Server = function Server(element, options){
     var expressApp = options.expressApp;
     if ( expressApp === null ){
         expressApp = express();
-        expressApp.listen(options.port, function (){
-            console.log("Woopsa server running on port %d", options.port);
-        })
+        this.httpServer = expressApp.listen(options.port, options.listenCallback);
+    }else{
+        // We have no way of knowing the inner node HTTP server
+        this.httpServer = null;
     }
 
     // Is this already a WoopsaObject?
@@ -38,6 +87,7 @@ var Server = function Server(element, options){
     }
 
     this.element.addItem(new subscriptionService.SubscriptionService(this.element));
+    new multiRequest.MultiRequestHandler(this.element);
 
     // Add some pre-processors
     expressApp.use(options.pathPrefix, this.addHeaders.bind(this));
@@ -48,9 +98,11 @@ var Server = function Server(element, options){
     expressApp.get(new RegExp(options.pathPrefix + "read/(.*)"), this.handleRequest.bind(this, "read"));
     expressApp.post(new RegExp(options.pathPrefix + "write/(.*)"), urlencodedParser, this.handleRequest.bind(this, "write"));
     expressApp.post(new RegExp(options.pathPrefix + "invoke/(.*)"), urlencodedParser, this.handleRequest.bind(this, "invoke"));
+
+    this.options = options;
 };
 
-var i = 0;
+function nop(){ }
 
 Server.prototype.handleRequest = function (type, req, res){
     var path = "/" + req.params[0];
@@ -61,7 +113,7 @@ Server.prototype.handleRequest = function (type, req, res){
         if ( typeof element === 'undefined' ){
             throw new exceptions.WoopsaNotFoundException("WoopsaElement not found");
         }
-        var result = {};
+        var result = undefined;
         if ( type === "meta" ){
             result = this.handleMeta(element);
         }else if ( type === "read" ){
@@ -72,20 +124,20 @@ Server.prototype.handleRequest = function (type, req, res){
             req.on("close", function (){
                 req.cancelled = true;
             });
-            result = this.handleInvoke(res, element, req.body, function (result, error){
+            this.handleInvoke(element, req.body, function (result, error){
                 if ( req.cancelled === true ){
                     return;
                 }
-                if ( error === true ){
+                if ( typeof error !== 'undefined' ){
                     // If error is true, then result should be a WoopsaException
-                    res.writeHead(500, result.Message, {'Content-Type': 'application/json'});
-                    res.end(JSON.stringify(result));
+                    res.writeHead(500, error.Message);
+                    res.end(JSON.stringify(error));
                 }else{
                     res.json(result);
                 }
             });
         }
-        // Necessary for asynchronous methods
+        // Necessary for methods
         if ( typeof result !== 'undefined' )
             res.json(result);
     }catch (e){
@@ -96,11 +148,11 @@ Server.prototype.handleRequest = function (type, req, res){
             statusCode = 400; // 400 Bad request
         }else{
             statusCode = 500; // 500 Internal server error
-            res.writeHead(statusCode, e.message, {'Content-Type': 'application/json'});
+            res.writeHead(statusCode, e.message);
             res.end(JSON.stringify(e));
             throw e; // TODO: remove - only for debug
         }
-        res.writeHead(statusCode, e.message, {'Content-Type': 'application/json'});
+        res.writeHead(statusCode, e.message);
         res.end(JSON.stringify(e));
     }
 };
@@ -126,14 +178,16 @@ Server.prototype.handleWrite = function (property, value){
     return adapter.writeProperty(property, value);
 };
 
-Server.prototype.handleInvoke = function (response, method, arguments, done){
+Server.prototype.handleInvoke = function (method, arguments, done){
     if ( typeof method.invoke === 'undefined' ){
         throw new exceptions.WoopsaInvalidOperationException("Cannot invoke non-WoopsaMethod " + method.getName());
     }
-    return adapter.invokeMethod(response, method, arguments, done);
+    return adapter.invokeMethod(method, arguments, done);
 };
 
 Server.prototype.addHeaders = function (req, res, next){
+    // Woopsa is always in json
+    res.setHeader("Content-Type", "application/json");
     res.setHeader("Access-Control-Allow-Headers", "Authorization");
     res.setHeader("Access-Control-Allow-Origin", "*");
     res.setHeader("Access-Control-Allow-Credentials", "true");
@@ -144,51 +198,3 @@ Server.prototype.addHeaders = function (req, res, next){
 }
 
 exports.Server = Server;
-
-////////////////////////////////////////////////////
-
-// this is just to test
-var weatherStation = {
-    Temperature: 24.2,
-    IsRaining: false,
-    Sensitivity: 0.5,
-    Altitude: 430,
-    City: "Geneva",
-    Time: new Date(),
-    EchoString: function (text){
-        return text;
-    },
-    Thermostat: {
-        SetPoint: 24.0,
-        Embedded: {
-            SomeString: "Hello?"
-        }
-    },
-    Stuffs: [
-        {
-            Something: "Hehe",
-            OtherThing: 2
-        },
-        {
-            SomethingElse: "Hoho",
-            OtherThing: 2
-        }
-    ]
-}
-
-var testObj = new types.WoopsaObject("Something");
-testObj.addProperty("SomeReal", "Real", function (){return 3.14});
-testObj.addProperty("SomeText", "Text", function (){return "Hello"});
-var method = testObj.addMethod("SomeMethod", "Text", function (someArgument){
-    return "Hey this is me and SomeArgument = " + someArgument;
-}, [
-    {SomeArgument: "Text"}
-]);
-var innerObj = new types.WoopsaObject("SomethingElse");
-innerObj.addProperty("SomeDate", "DateTime", function (){return new Date()});
-testObj.addItem(innerObj);
-var server = new Server(testObj, {port: 80});
-
-setInterval(function (){
-    weatherStation.Temperature += Math.random() - 0.5;
-}, 20);

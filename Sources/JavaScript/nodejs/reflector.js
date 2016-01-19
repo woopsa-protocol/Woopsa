@@ -1,6 +1,7 @@
 var woopsaUtils = require('./woopsa-utils');
 var exceptions = require('./exceptions');
 var getParameterNames = require('get-parameter-names');
+var types = require('./types');
 
 var DEFAULT_METHOD_RETURN_TYPE = 'Text'; 
 var DEFAULT_METHOD_ARGUMENT_TYPE = 'Text';
@@ -8,6 +9,7 @@ var DEFAULT_METHOD_ARGUMENT_TYPE = 'Text';
 var Reflector = function Reflector(container, element, name, typerFunction){
     this._container = container;
     this._extraItems =  [];
+    this._extraMethods = [];
     this._element = element;
 
     if ( typeof name === 'undefined' || name === null )
@@ -106,7 +108,7 @@ Reflector.prototype = {
                 });
             }
         }
-        return result;
+        return result.concat(this._extraMethods);
     },
     getItems: function (){
         var result = [];
@@ -128,6 +130,23 @@ Reflector.prototype = {
     },
     getName: function (){
         return this._name;
+    },
+    addMethod: function (method){
+        var isFound = false;
+        for ( var i in this._extraMethods ){
+            if ( this._extraMethods[i].getName() === method.getName() ){
+                isFound = true;
+                break;
+            }
+        }
+        if ( !isFound && typeof this._element[method.getName()] === 'undefined' ){
+            this._extraMethods.push(method);
+            if ( typeof method.setContainer !== 'undefined' )
+                method.setContainer(this);
+            return method;
+        }else{
+            throw new exceptions.WoopsaException("Tried to add a method with duplicate name " + name);
+        }
     },
     addItem: function (item){
         var isFound = false;

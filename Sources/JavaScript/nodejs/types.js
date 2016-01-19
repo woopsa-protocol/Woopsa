@@ -28,26 +28,24 @@ WoopsaObject.prototype = {
     getName: function (){
         return this._name;
     },
-    addProperty: function (name, type, readOnly){
-        if ( !hasElement(this._properties, name) ){
-            var newProperty = new WoopsaProperty(name, type, readOnly);
-            this._properties.push(newProperty);
-            if ( typeof newProperty.setContainer !== 'undefined' )
-                newProperty.setContainer(this);
-            return newProperty;
+    addProperty: function (property){
+        if ( !hasElement(this._properties, property.getName()) ){
+            this._properties.push(property);
+            if ( typeof property.setContainer !== 'undefined' )
+                property.setContainer(this);
+            return property;
         }else{
-            throw new exceptions.WoopsaException("Tried to add a property with duplicate name " + name);
+            throw new exceptions.WoopsaException("Tried to add a property with duplicate name " + property.getName());
         }
     },
-    addMethod: function (name, returnType, method){
-        if ( !hasElement(this._methods, name) ){
-            var newMethod = new WoopsaMethod(name, returnType, method);
-            this._methods.push(newMethod);
-            if ( typeof newMethod.setContainer !== 'undefined' )
-                newMethod.setContainer(this);
-            return newMethod;
+    addMethod: function (method){
+        if ( !hasElement(this._methods, method.getName()) ){
+            this._methods.push(method);
+            if ( typeof method.setContainer !== 'undefined' )
+                method.setContainer(this);
+            return method;
         }else{
-            throw new exceptions.WoopsaException("Tried to add a method with duplicate name " + name);
+            throw new exceptions.WoopsaException("Tried to add a method with duplicate name " + property.getName());
         }
     },
     addItem: function (item){
@@ -103,7 +101,8 @@ var WoopsaMethod = function WoopsaMethod(name, returnType, method, argumentInfos
         for ( var i in argumentInfos ){
             var argInfo = argumentInfos[i];
             for ( var k in argInfo ){
-                this.addMethodArgumentInfo(k, argInfo[k]);
+                var newArgumentInfo = new WoopsaMethodArgumentInfo(k, argInfo[k]);
+                this.addMethodArgumentInfo(newArgumentInfo);
                 break;
             }
         }
@@ -127,13 +126,12 @@ WoopsaMethod.prototype = {
     getReturnType: function (){
         return this._returnType;
     },
-    addMethodArgumentInfo: function (name, type){
-        if ( !hasElement(this._arguments, name) ){
-            var newArgument = new WoopsaMethodArgumentInfo(name, type);
-            this._argumentInfos.push(newArgument);
-            return newArgument;
+    addMethodArgumentInfo: function (argumentInfo){
+        if ( !hasElement(this._argumentInfos, argumentInfo.getName()) ){
+            this._argumentInfos.push(argumentInfo);
+            return argumentInfo;
         }else{
-            throw new exceptions.WoopsaException("Tried to add a method argument with duplicate name " + name + " in method " + this._name);
+            throw new exceptions.WoopsaException("Tried to add a method argument with duplicate name " + argumentInfo.getName() + " in method " + this._name);
         }
     },
     invoke: function (arguments){
