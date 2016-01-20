@@ -145,18 +145,19 @@ var Subscription = function Subscription(id, woopsaObject, propertyLink, monitor
     var oldValue = undefined;
 
     function monitor(){
-        var currentValue = this._property.read();
-        if ( currentValue != oldValue ){
-            oldValue = currentValue;
-            this._notifications.push({
-                Value: {
-                    Value: currentValue,
-                    Type: this._property.getType(),
-                    TimeStamp: new Date()
-                },
-                SubscriptionId: this._id
-            })
-        }
+        this._property.read(function (currentValue){
+            if ( currentValue != oldValue ){
+                oldValue = currentValue;
+                this._notifications.push({
+                    Value: {
+                        Value: currentValue,
+                        Type: this._property.getType(),
+                        TimeStamp: new Date()
+                    },
+                    SubscriptionId: this._id
+                });
+            }
+        }.bind(this));
     }
 
     function publish(){

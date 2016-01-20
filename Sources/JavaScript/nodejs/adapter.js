@@ -42,61 +42,53 @@ exports.generateMetaObject = function (element){
     return metaObject;
 }
 
-exports.readProperty = function (property){
-    var readResult = property.read();
-    return {
-        Value: readResult,
-        Type: property.getType()
-    };
+exports.readProperty = function (property, done){
+    property.read(function (readResult){
+        done({
+            Value: readResult,
+            Type: property.getType()
+        });
+    });
 }
 
-exports.writeProperty = function (property, value){
+exports.writeProperty = function (property, value, done){
     if ( typeof property.write === 'undefined' ){
         throw new exceptions.WoopsaInvalidOperationException("Cannot write to read-only property " + element.getName());
     }else{
-        // TODO : basic type checking
         value = woopsaUtils.convertTo(value, property.getType())
-        property.write(value);
-        var readResult = property.read();
-        return {
-            Value: readResult,
-            Type: property.getType()
-        };
-    }
-}
-
-exports.invokeMethod = function (method, arguments, done){
-    var processedArguments = processArguments(method, arguments);
-    if ( typeof method.invokeAsync !== 'undefined' ){
-        method.invokeAsync(processedArguments, function (result, error){
-            if ( typeof error === 'undefined' ){
-                done({
-                    Value: result,
-                    Type: method.getReturnType()
-                });
-            }else{
-                done(null, error);
-            }
+        property.write(value, function (writeResult){
+            done({
+                Value: writeResult,
+                Type: property.getType()
+            });
         });
-        return undefined;
-    }else{
-        var invokeResult = method.invoke(processedArguments);
-        done({
-            Value: invokeResult,
-            Type: method.getReturnType()
-        });     
+        
     }
 }
 
-function processArguments(method, arguments){
-    // Convert the name-value pair arguments into a simple array in the right order
+exports.invokeMethod = function (method, args, done){
+    var processedArguments = processArguments(method, args);
+    method.invoke(processedArguments, function (result, error){
+        if ( typeof error === 'undefined' ){
+            done({
+                Value: result,
+                Type: method.getReturnType()
+            });
+        }else{
+            done(null, error);
+        }
+    });
+}
+
+function processArguments(method, methodArguments){
+    // Convert the name-value pair methodArguments into a simple array in the right order
     var argumentInfos = method.getArgumentInfos();
     var args = [];
     for ( var i in argumentInfos ){
         var argInfo = argumentInfos[i];
-        for ( var key in arguments ){
+        for ( var key in methodArguments ){
             if ( argInfo.getName() === key ){
-                value = woopsaUtils.convertTo(arguments[key], argInfo.getType())
+                value = woopsaUtils.convertTo(methodArguments[key], argInfo.getType())
                 args.push(value);
             }
         }

@@ -3,6 +3,14 @@ var types = require('../types');
 var exceptions = require('../exceptions');
 var woopsaUtils = require('../woopsa-utils');
 
+/**
+ * @class A service that allows clients to make multiple requests
+ * at the same time.
+ * @param {WoopsaObject} woopsaObject The WoopsaObject that this
+ *                                    method will be added to.
+ *                                    This should be your root 
+ *                                    object.
+ */
 var MultiRequestHandler = function MultiRequestHandler(woopsaObject){
     this._multiRequest = new types.WoopsaMethodAsync("MultiRequest", "JsonData", multiRequest.bind(this), [
         {"Requests": "JsonData"}
@@ -17,43 +25,23 @@ var MultiRequestHandler = function MultiRequestHandler(woopsaObject){
         var countAsync = 0;
         var doneAsync = 0;
         for ( var i in requests ){
-            if ( requests[i].Action === 'invoke' ){
+            if ( requests[i].Action !== 'meta' ){
                 countAsync++;
             }
         }
         for ( var i in requests ){
             var request = requests[i];
             var element = woopsaUtils.getByPath(woopsaObject, request.Path);
-            if ( request.Action === 'read' ){
-                results.push({
-                    Id: request.Id,
-                    Result: adapter.readProperty(element)
-                });
+            var newResult = {Id: request.id};
+            results.push(newResult);
+            if ( request.Action === 'meta' ){
+                newResult.Result = adapter.generateMetaObject(element);
+            }else if ( request.Action === 'read' ){
+                adapter.readProperty(element, resultCallback.bind(this, results.length-1));
             }else if ( request.Action === 'write' ){
-                results.push({
-                    Id: request.Id,
-                    Result: adapter.writeProperty(element, request.Value)
-                });
-            }else if ( request.Action === 'meta' ){
-                results.push({
-                    Id: request.Id,
-                    Result: adapter.generateMetaObject(element)
-                })
+                adapter.writeProperty(element, request.Value, resultCallback.bind(this, results.length-1));
             }else if ( request.Action === 'invoke' ){
-                var newResult = {
-                    Id: request.Id
-                }
-                results.push(newResult);
-                adapter.invokeMethod(element, request.Arguments, function (resultIndex, value, error){
-                    doneAsync++;
-                    if ( typeof error !== 'undefined' )
-                        results[resultIndex].Result = error;
-                    else
-                        results[resultIndex].Result = value;
-                    if ( countAsync === doneAsync ){
-                        done(results);
-                    }
-                }.bind(this, results.length-1))
+                adapter.invokeMethod(element, request.Arguments, resultCallback.bind(this, results.length-1))
             }else{
                 throw new exceptions.WoopsaInvalidOperationException("Invalid MultiRequest action " + request.Action);
             }
@@ -64,6 +52,17 @@ var MultiRequestHandler = function MultiRequestHandler(woopsaObject){
             // Otherwise, the done callback will be called
             // when all invoke's are done.
             done(results);
+        }
+
+        function resultCallback(resultIndex, value, error){
+            doneAsync++;
+            if ( typeof error !== 'undefined' )
+                results[resultIndex].Result = error;
+            else
+                results[resultIndex].Result = value;
+            if ( countAsync === doneAsync ){
+                done(results);
+            }
         }
     }
 }

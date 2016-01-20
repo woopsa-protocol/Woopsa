@@ -6,10 +6,20 @@ var types = require('./types');
 var DEFAULT_METHOD_RETURN_TYPE = 'Text'; 
 var DEFAULT_METHOD_ARGUMENT_TYPE = 'Text';
 
+/** 
+ * @class  Allows to turn any JavaScript object into a WoopsaObject
+ * @param {WoopsaObject} container      An optional WoopsaObject as container
+ * @param {Object} element              The actual JavaScript object to reflect
+ * @param {string} [name]               The name to give this WoopsaObject. If not
+ *                                      present, will use the constructor name
+ * @param {Reflector~typer} [typer]     A function that helps determine the type
+ *                                      of the Woopsa Element specified by a path.
+ */
 var Reflector = function Reflector(container, element, name, typerFunction){
     this._container = container;
     this._extraItems =  [];
     this._extraMethods = [];
+    this._extraProperties = [];
     this._element = element;
 
     if ( typeof name === 'undefined' || name === null )
@@ -23,10 +33,13 @@ var Reflector = function Reflector(container, element, name, typerFunction){
         this._typerFunction = undefined;
 }
 
+/** @type {Reflector} */
 Reflector.prototype = {
+    /** Gets the WoopsaObject that contains it, or null if root */
     getContainer: function (){
         return this._container;
     },
+    /** Returns a list of WoopsaProperties */
     getProperties: function (){
         var result = [];
         for (var key in this._element){
@@ -50,17 +63,19 @@ Reflector.prototype = {
                             return woopsaUtils.inferWoopsaType(element[key]);
                         }   
                     }.bind(this, this._element, key),
-                    write: function (element, key, value){
+                    write: function (element, key, value, callback){
                         element[key] = value;
+                        callback(value);
                     }.bind(this, this._element, key),
-                    read: function (element, key){
-                        return element[key];
+                    read: function (element, key, callback){
+                        callback(element[key]);
                     }.bind(this, this._element, key)
                 });
             }
         }
         return result;
     },
+    /** Returns a list of WoopsaMethods */
     getMethods: function (){
         var result = [];
         for (var key in this._element){
@@ -102,14 +117,15 @@ Reflector.prototype = {
                         }
                         return argumentInfos;
                     }.bind(this, value, key),
-                    invoke: function (method, args){
-                        return method.apply(this, args);
+                    invoke: function (method, args, callback){
+                        callback(method.apply(this, args));
                     }.bind(this, value)
                 });
             }
         }
         return result.concat(this._extraMethods);
     },
+    /** Returns a list of WoopsaObjects (will be Reflectors) */
     getItems: function (){
         var result = [];
         for (var key in this._element){
@@ -128,9 +144,35 @@ Reflector.prototype = {
         return result.concat(this._extraItems);
 
     },
+    /** Gets the Woopsa name for this object. Will be deduced from its constructor */
     getName: function (){
         return this._name;
     },
+    /** 
+     * Adds an additional WoopsaProperty. Will not modify the underlying object
+     * @param {WoopsaProperty} property The property
+     */
+    addProperty: function (property){
+        var isFound = false;
+        for ( var i in this._extraProperties ){
+            if ( this._extraProperties[i].getName() === property.getName() ){
+                isFound = true;
+                break;
+            }
+        }
+        if ( !isFound && typeof this._element[property.getName()] === 'undefined' ){
+            this._extraProperties.push(property);
+            if ( typeof property.setContainer !== 'undefined' )
+                property.setContainer(this);
+            return property;
+        }else{
+            throw new exceptions.WoopsaException("Tried to add a property with duplicate name " + name);
+        }
+    },
+    /** 
+     * Adds an additional WoopsaMethod. Will not modify the underlying object
+     * @param {WoopsaMethod} method The method
+     */
     addMethod: function (method){
         var isFound = false;
         for ( var i in this._extraMethods ){
@@ -148,6 +190,10 @@ Reflector.prototype = {
             throw new exceptions.WoopsaException("Tried to add a method with duplicate name " + name);
         }
     },
+    /** 
+     * Adds an additional WoopsaObject. Will not modify the underlying object
+     * @param {WoopsaObject} item The item
+     */
     addItem: function (item){
         var isFound = false;
         for ( var i in this._extraItems ){
@@ -165,3 +211,19 @@ Reflector.prototype = {
 }
 
 exports.Reflector = Reflector;
+
+/**
+ * A method that allows to manually specify the Woopsa Type
+ * of a specific element when the reflector is unable to 
+ * determine it.
+ * Every time Woopsa needs to know the type of an element,
+ * this method will be called with the path as well as the 
+ * type that the Reflector tried to guess.
+ * You must return a Woopsa type in the form of a string.
+ * If you don't know the type, just return the inferredType.
+ * @callback Reflector~typer
+ * @param {String} path         The Woopsa path of the element
+ * @param {String} inferredType The inferred (guessed) type
+ *                              of the current element.
+ * @return {String}             A Woopsa type for this element
+ */

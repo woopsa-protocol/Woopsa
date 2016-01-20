@@ -19,6 +19,13 @@ var RANGE_SUBSCRIPTION_CHANNEL_ID = 10000;
  */
 var CLEANUP_INTERVAL = 20;
 
+/** 
+ * @class A service that allows clients to subscribe to property
+ * changes on the Woopsa object hierarchy. 
+ * @param {WoopsaObject} woopsaObject The object onto which to add
+ *                                    this service. This should be
+ *                                    your root object.
+ */
 var SubscriptionService = function SubscriptionService(woopsaObject){
     this._createSubscriptionChannel = new types.WoopsaMethod("CreateSubscriptionChannel", "Integer", createSubscriptionChannel.bind(this), [
         {"NotificationQueueSize": "Integer"}
@@ -77,7 +84,7 @@ var SubscriptionService = function SubscriptionService(woopsaObject){
            throw new exceptions.WoopsaInvalidSubscriptionChannelException("Tried to call WaitNotification on channel with id=" + subscriptionChannel + " that does not exist.");
         }
         var channel = subscriptionChannels[subscriptionChannel];
-        return channel.waitNotification(lastNotificationId, done);
+        channel.waitNotification(lastNotificationId, done);
     }
 
     function cleanupInactiveSubscriptionChannels(){

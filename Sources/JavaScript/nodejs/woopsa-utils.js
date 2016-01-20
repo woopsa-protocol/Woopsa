@@ -1,7 +1,12 @@
 var exceptions = require('./exceptions');
 
 /**
+ * @module Utils
+ */
+
+/**
  * Creates an object based on its default values.
+ * @memberof Utils
  * @param  {Object} options        Any object with key/value pairs
  * @param  {Object} defaultOptions The default key/value pairs
  * @return {Object}                An object with the default key/value pairs
@@ -38,7 +43,7 @@ exports.removeExtraSlashes = function (value){
  * Anything else will just return undefined, meaning
  * this value is probably a WoopsaObject.
  * @param  {*} value The value to check
- * @return {[type]}  A string, or undefined if
+ * @return {String}  The Woopsa Type, or undefined if
  *                   the type is unkown
  */
 exports.inferWoopsaType = function (value){

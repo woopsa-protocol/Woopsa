@@ -11,7 +11,7 @@ var express = require('express');
 var bodyParser = require('body-parser');
 
 /**
- * Constructor for a Woopsa Server using a specified element and the
+ * @class  Constructor for a WoopsaServer using a specified element and the
  * passed options.
  * Because Woopsa uses Express 4.0, you can give this constructor an
  * already existing Express server and it will just add its own routes
@@ -104,58 +104,67 @@ var Server = function Server(element, options){
 
 function nop(){ }
 
-Server.prototype.handleRequest = function (type, req, res){
-    var path = "/" + req.params[0];
+Server.prototype.handleRequest = function (type, request, response){
+    var path = "/" + request.params[0];
     path = woopsaUtils.removeExtraSlashes(path);
+
+    // Detect requests that were cancelled by the client,
+    // this happens frequently with subscriptions when the
+    // page is refreshed fro example.
+    request.on("close", function (){
+        request.cancelled = true;
+    });
 
     try{
         var element = woopsaUtils.getByPath(this.element, path);
         if ( typeof element === 'undefined' ){
             throw new exceptions.WoopsaNotFoundException("WoopsaElement not found");
         }
-        var result = undefined;
         if ( type === "meta" ){
-            result = this.handleMeta(element);
+            var result = this.handleMeta(element);
+            response.json(result);
         }else if ( type === "read" ){
-            result = this.handleRead(element);
+            result = this.handleRead(element, respond.bind(this, request, response));
         }else if ( type === "write" ){
-            result = this.handleWrite(element, (typeof req.body.Value !== 'undefined')?req.body.Value:req.body.value);
+            // Case-insensitive for value
+            var value = (typeof request.body.Value !== 'undefined')?request.body.Value:request.body.value;
+            result = this.handleWrite(element, value, respond.bind(this, request, response));
         }else if ( type === "invoke" ){
-            req.on("close", function (){
-                req.cancelled = true;
-            });
-            this.handleInvoke(element, req.body, function (result, error){
-                if ( req.cancelled === true ){
-                    return;
-                }
-                if ( typeof error !== 'undefined' ){
-                    // If error is true, then result should be a WoopsaException
-                    res.writeHead(500, error.Message);
-                    res.end(JSON.stringify(error));
-                }else{
-                    res.json(result);
-                }
-            });
+            this.handleInvoke(element, request.body, respond.bind(this, request, response));
         }
-        // Necessary for methods
-        if ( typeof result !== 'undefined' )
-            res.json(result);
     }catch (e){
-        var statusCode;
-        if ( e.Type === "WoopsaNotFoundException" ){
-            statusCode = 404; // 404 Not found
-        }else if ( e.Type == "WoopsaInvalidOperationException" ){
-            statusCode = 400; // 400 Bad request
-        }else{
-            statusCode = 500; // 500 Internal server error
-            res.writeHead(statusCode, e.message);
-            res.end(JSON.stringify(e));
-            throw e; // TODO: remove - only for debug
-        }
-        res.writeHead(statusCode, e.message);
-        res.end(JSON.stringify(e));
+        respondError(response, e);
     }
 };
+
+function respondError(response, exception){
+    var statusCode;
+    if ( exception.Type === "WoopsaNotFoundException" ){
+        statusCode = 404; // 404 Not found
+    }else if ( exception.Type == "WoopsaInvalidOperationException" ){
+        statusCode = 400; // 400 Bad request
+    }else{
+        statusCode = 500; // 500 Internal server error
+        // TODO: remove the next 3 lines - only for debug
+        response.writeHead(statusCode, exception.message);
+        response.end(JSON.stringify(exception));
+        throw exception; 
+    }
+    response.writeHead(statusCode, exception.message);
+    response.end(JSON.stringify(exception));    
+}
+
+function respond(request, response, result, error){
+    if ( request.cancelled === true ){
+        return;
+    }
+    if ( typeof error !== 'undefined' ){
+        // If error is true, then result should be a WoopsaException
+        respondError(response, error);
+    }else{
+        response.json(result);
+    }
+}
 
 Server.prototype.handleMeta = function (element){
     if ( typeof element.getItems === 'undefined' ){
@@ -164,25 +173,25 @@ Server.prototype.handleMeta = function (element){
     return adapter.generateMetaObject(element);
 };
 
-Server.prototype.handleRead = function (property){
+Server.prototype.handleRead = function (property, done){
     if ( typeof property.read === 'undefined' ){
         throw new exceptions.WoopsaInvalidOperationException("Cannot read non-WoopsaProperty " + property.getName());
     }
-    return adapter.readProperty(property);
+    return adapter.readProperty(property, done);
 };
 
-Server.prototype.handleWrite = function (property, value){
+Server.prototype.handleWrite = function (property, value, done){
     if ( typeof property.read === 'undefined' ){
         throw new exceptions.WoopsaInvalidOperationException("Cannot write non-WoopsaProperty " + property.getName());
     }
-    return adapter.writeProperty(property, value);
+    return adapter.writeProperty(property, value, done);
 };
 
-Server.prototype.handleInvoke = function (method, arguments, done){
+Server.prototype.handleInvoke = function (method, methodArguments, done){
     if ( typeof method.invoke === 'undefined' ){
         throw new exceptions.WoopsaInvalidOperationException("Cannot invoke non-WoopsaMethod " + method.getName());
     }
-    return adapter.invokeMethod(method, arguments, done);
+    return adapter.invokeMethod(method, methodArguments, done);
 };
 
 Server.prototype.addHeaders = function (req, res, next){
