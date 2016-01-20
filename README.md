@@ -22,6 +22,30 @@ WoopsaServer server = new WoopsaServer(station);
 station.Temperature = 42;
 ```
 
+**Example node Server**
+```javascript
+var woopsa = require('woopsa');
+var weatherStation = {
+    Temperature: 24.2,
+    IsRaining: false,
+    Sensitivity: 0.5,
+    Altitude: 430,
+    City: "Geneva",
+    Time: new Date(),
+    GetWeatherAtDate: function (date){
+        var date = new Date(date);
+        if ( date.getDay() === 1 )
+            return "rainy";
+        else
+            return "sunny";
+    },
+    Thermostat: {
+        SetPoint: 24.0
+    }
+}
+var server = new woopsa.Server(weatherStation, {port: 80});
+```
+
 **Example Embedded C Server (Arduino, others)**
 
 ```c
