@@ -74,6 +74,11 @@ namespace WoopsaDemoServer
                 Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
                 Console.WriteLine(" * Read the value of a property:");
                 Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+
+                Console.WriteLine("Press any key to exit.");
+                Console.ReadLine();
+
+                woopsaServer.Dispose();
             }
             catch (SocketException e)
             {
