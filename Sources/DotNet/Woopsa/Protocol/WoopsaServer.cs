@@ -277,7 +277,6 @@ namespace Woopsa
             if ((elem is IWoopsaProperty))
             {
                 IWoopsaProperty property = elem as IWoopsaProperty;
-                string value = property.Value.AsText;
                 return property.Value.Serialise();
             }
             else
