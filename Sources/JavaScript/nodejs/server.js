@@ -9,6 +9,7 @@ var multiRequest = require('./extensions/multi-request');
 var http = require('http');
 var express = require('express');
 var bodyParser = require('body-parser');
+var basicAuth = require('basic-auth');
 
 /**
  * @class  Constructor for a WoopsaServer using a specified element and the
@@ -45,6 +46,11 @@ var bodyParser = require('body-parser');
  *  - {Function} listenCallback A function to be called when the express app
  *                              is created and the underlying HTTP server is
  *                              listening.
+ *  - {Function} checkAuthenticate  A function to be called when you want to
+ *                                  enable authentication in Woopsa. It will
+ *                                  simply be called with two arguments: 
+ *                                  username and password. Return true if the
+ *                                  credentials are valid, or false otherwise.
  * @param {Object} element The element to publish through the Woopsa protocol.
  *                         If there is no getItems() function on this object,
  *                         then it means you are trying to publish a regular
@@ -62,7 +68,8 @@ var Server = function Server(element, options){
         pathPrefix: '/woopsa/',
         expressApp: null,
         typer: null,
-        listenCallback: nop
+        listenCallback: nop,
+        checkAuthenticate: null
     }
     options = woopsaUtils.defaults(options, defaultOptions);
 
@@ -91,6 +98,9 @@ var Server = function Server(element, options){
 
     // Add some pre-processors
     expressApp.use(options.pathPrefix, this.addHeaders.bind(this));
+    if ( options.checkAuthenticate !== null ){
+        expressApp.use(options.pathPrefix, this.authenticate.bind(this, options.checkAuthenticate));
+    }
     var urlencodedParser = bodyParser.urlencoded({extended: false});
 
     // Create our 4 basic Woopsa routes
@@ -103,6 +113,17 @@ var Server = function Server(element, options){
 };
 
 function nop(){ }
+
+Server.prototype.authenticate = function (checkAuthenticate, request, response, next){
+    var credentials = basicAuth(request);
+    if ( credentials && checkAuthenticate(credentials.name, credentials.pass) ){
+        next();
+    }else{
+        response.set('WWW-Authenticate', 'Basic realm="Woopsa authentication"');
+        response.sendStatus(401);
+        return;
+    }
+}
 
 Server.prototype.handleRequest = function (type, request, response){
     var path = "/" + request.params[0];
