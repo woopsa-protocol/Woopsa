@@ -145,10 +145,6 @@ function respondError(response, exception){
         statusCode = 400; // 400 Bad request
     }else{
         statusCode = 500; // 500 Internal server error
-        // TODO: remove the next 3 lines - only for debug
-        response.writeHead(statusCode, exception.message);
-        response.end(JSON.stringify(exception));
-        throw exception; 
     }
     response.writeHead(statusCode, exception.message);
     response.end(JSON.stringify(exception));    

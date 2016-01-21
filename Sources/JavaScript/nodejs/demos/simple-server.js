@@ -9,9 +9,6 @@ var weatherStation = {
     City: "Geneva",
     Time: new Date(),
     GetWeatherAtDate: function (date){
-        // Because we are using the reflector, arguments are
-        // always passed as strings
-        //var date = new Date(date);
         if ( date.getDay() === 1 )
             return "rainy";
         else
