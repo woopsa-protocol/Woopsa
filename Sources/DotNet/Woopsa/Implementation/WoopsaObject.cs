@@ -133,8 +133,8 @@ namespace Woopsa
         #endregion
     }
 
-	public delegate WoopsaValue WoopsaPropertyGet(object sender);
-	public delegate void WoopsaPropertySet(object sender, IWoopsaValue value);
+	public delegate WoopsaValue WoopsaPropertyGet(IWoopsaProperty property);
+	public delegate void WoopsaPropertySet(IWoopsaProperty property, IWoopsaValue value);
 
 	public class WoopsaProperty : WoopsaElement, IWoopsaProperty
 	{
