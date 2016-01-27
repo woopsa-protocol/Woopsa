@@ -51,6 +51,7 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="UnitTestWoopsaClient.cs" />
     <Compile Include="UnitTestWoopsaObject.cs" />
     <Compile Include="UnitTestWoopsaProtocol.cs" />
     <Compile Include="UnitTestWoopsaValue.cs" />
