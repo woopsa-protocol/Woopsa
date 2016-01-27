@@ -38,7 +38,7 @@ On the client-side, just get the Woopsa jQuery/browser library on http://www.woo
 ````js
 var woopsa = new WoopsaClient("http://{ip-of-your-server}/woopsa", jQuery);
 woopsa.read("/Temperature", function(result){
-//result = 42
+//result = 24.2
 });
 woopsa.invoke("/GetWeatherAtDate", {date: new Date(2016,0,1)}, function(result){
 //result = sunny (jan. 1st of 2016 was not a monday)
