@@ -35,12 +35,12 @@
 #define WOOPSA_REAL_TO_STRING(value, string, max_length)			snprintf(string, max_length, "%f", value)
 
 #define WOOPSA_STRING_TO_INTEGER(value, string)						(value = atoi(string))
-#define WOOPSA_STRING_TO_FLOAT(value, string)						(value = atof(string))
+#define WOOPSA_STRING_TO_FLOAT(value, string)						(value = (float)atof(string))
 
 #define WOOPSA_STRING_POSITION(haystack, needle)					strstr(haystack, needle)
 #define WOOPSA_STRING_EQUAL(string1, string2)						(strcmp(string1, string2) == 0)
 #define WOOPSA_STRING_LENGTH(string)								strlen(string)
-#define WOOPSA_CHAR_TO_LOWER(character)								tolower(character)
+#define WOOPSA_CHAR_TO_LOWER(character)								(WoopsaChar8)tolower(character)
 #define WOOPSA_STRING_COPY(destination, source)						strcpy(destination, source)
 #define WOOPSA_STRING_N_COPY(destination, source, n)				strncpy(destination, source, n)
 
