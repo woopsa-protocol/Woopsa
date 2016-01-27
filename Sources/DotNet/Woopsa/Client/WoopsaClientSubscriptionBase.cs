@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -18,6 +14,7 @@ namespace Woopsa
 
         #region Public Events
 
+        // TODO CJI From CJI : Why this event is virtual? What is the need behind this?
         public virtual event EventHandler<WoopsaNotificationsEventArgs> ValueChange;
 
         protected virtual void DoValueChanged(IWoopsaNotifications notifications)
