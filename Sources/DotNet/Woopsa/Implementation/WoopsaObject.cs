@@ -79,8 +79,7 @@ namespace Woopsa
         #endregion
 
         protected virtual void PopulateContainer(IList<WoopsaContainer> items)
-		{
-		}
+		{}
 
 		protected void DoPopulate()
 		{
@@ -148,7 +147,8 @@ namespace Woopsa
 			IsReadOnly = set == null;
 			if (!IsReadOnly)
 				_set = set;
-			container.Add(this);
+            if (container != null)
+			    container.Add(this);
 		}
 
 		public WoopsaProperty(WoopsaObject container, string name, WoopsaValueType type, WoopsaPropertyGet get)
@@ -182,7 +182,8 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
 		{
-			((WoopsaObject)Container).Remove(this);
+            if (Container != null)
+			    ((WoopsaObject)Container).Remove(this);
 			base.Dispose(disposing);
 		}
 
@@ -229,7 +230,8 @@ namespace Woopsa
 			ReturnType = returnType;
 			ArgumentInfos = argumentInfos;
 			_methodInvoke = methodInvoke;
-			container.Add(this);
+            if (container != null)
+			    container.Add(this);
 		}
 
         #endregion
@@ -251,7 +253,8 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
 		{
-			((WoopsaObject)Container).Remove(this);
+            if (Container != null)
+			    ((WoopsaObject)Container).Remove(this);
 			base.Dispose(disposing);
 		}
 

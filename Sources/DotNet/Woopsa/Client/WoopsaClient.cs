@@ -17,7 +17,6 @@ namespace Woopsa
             _client = new WoopsaBaseClient(url);
             _container = container;
             _name = name;
-            // TODO CJI From CJI : Why do we check _container != null before calling Refresh while the Refresh method is public ?
             if (_container != null)
                 Refresh();
         }
@@ -52,7 +51,6 @@ namespace Woopsa
 
         #region Public Methods
 
-        // TODO CJI From CJI : Refresh method can be called while _container is null!
         public void Refresh()
         {
             WoopsaMetaResult meta = _client.Meta(WoopsaConst.WoopsaRootPath);

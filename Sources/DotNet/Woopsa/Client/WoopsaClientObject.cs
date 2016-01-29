@@ -68,17 +68,17 @@ namespace Woopsa
 
         public int Subscribe(string path, PropertyChanged propertyChangedHandler, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            // When we subscribe to a property that's within nested items,
-            // we need to navigate back to the root of this client to find
-            // the subscription service, and that's where we can subscribe
-            WoopsaClientObject rootObject = this;
-            while (rootObject.Container is WoopsaClientObject)
-                rootObject = (WoopsaClientObject)rootObject.Container;
-
             // Only create the subscription channel
             // on subscription to the first property.
             if (_subscriptionChannel == null)
             {
+                // When we subscribe to a property that's within nested items,
+                // we need to navigate back to the root of this client to find
+                // the subscription service, and that's where we can subscribe
+                WoopsaClientObject rootObject = this;
+                while (rootObject.Container is WoopsaClientObject)
+                    rootObject = (WoopsaClientObject)rootObject.Container;
+
                 if (HasSubscriptionService(rootObject))
                     _subscriptionChannel = new WoopsaClientSubscriptionChannel(rootObject);
                 else
@@ -152,7 +152,7 @@ namespace Woopsa
                     methodName,
                     (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), method.ReturnType),
                     argumentInfos,
-                    (args) => (Invoke(args, argumentInfos, methodName)));
+                    args => Invoke(args, argumentInfos, methodName));
             }
 
             foreach (string item in _meta.Items)
@@ -223,7 +223,9 @@ namespace Woopsa
         public WoopsaClientProperty(WoopsaClientObject container, string name, WoopsaValueType type, WoopsaPropertyGet get, WoopsaPropertySet set)
             : base(container, name, type, get, set)
         {
-            // TODO CJI From CJI : Why to keep the container in a local variable while the container is available inside the base class?
+            if (container == null)
+                throw new ArgumentNullException("container", string.Format("The argument '{0}' of the constructor cannot be null!", "container"));
+
             _container = container;
             _subscriptions = new Dictionary<int, EventHandler<WoopsaNotificationEventArgs>>();
         }
