@@ -1,12 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
-	class WoopsaServiceSubscriptionConst
+    public static class WoopsaServiceSubscriptionConst
 	{
 		public static readonly TimeSpan NotificationTimeoutInterval = TimeSpan.FromSeconds(5);
 		public static readonly TimeSpan SubscriptionChannelLifeTime = TimeSpan.FromMinutes(20);
