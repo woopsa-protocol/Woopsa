@@ -85,21 +85,22 @@ WOOPSA_END;
 #define BUFFER_SIZE 1024
 
 
-WoopsaUInt16 ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaUInt16 dataBufferSize) {
+WoopsaBufferUInt ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaBufferUInt dataBufferSize) {
 	strcpy(dataBuffer, "Hello world!");
-	return strlen("Hellow world!");
+	return (WoopsaBufferUInt)strlen("Hellow world!");
 }
 
 int main(int argc, char * argv[]) {
 	SOCKET sock, clientSock;
-	struct sockaddr_in addr, clientAddr;
+	struct sockaddr_in addr;
+	struct sockaddr clientAddr;
 	char buffer[BUFFER_SIZE];
 	int clientAddrSize = 0, readBytes = 0;
 	WoopsaServer server;
 	WoopsaBufferUInt responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
-	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, NULL);
+	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, ServeHTML);
 
 	printf("Woopsa C library v0.1 demo server.\n");
 
@@ -128,7 +129,7 @@ int main(int argc, char * argv[]) {
 
 	while (1) {
 		clientAddrSize = sizeof(struct sockaddr_in);
-		clientSock = accept(sock, (struct sockaddr*)&clientAddr, &clientAddrSize);
+		clientSock = accept(sock, &clientAddr, &clientAddrSize);
 		if (!CHECK_SOCKET(clientSock)) {
 			printf("Received an invalid client socket.\n");
 			EXIT_ERROR();

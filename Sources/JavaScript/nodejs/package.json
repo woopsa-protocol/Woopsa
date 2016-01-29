@@ -1,6 +1,6 @@
 {
   "name": "woopsa",
-  "version": "1.1.7",
+  "version": "1.1.8",
   "description": "Woopsa is the first fully open-source object-oriented protocol for automation and the Internet of Things",
   "main": "index.js",
   "scripts": {

@@ -70,10 +70,10 @@ typedef struct {
 	{
 
 #define WOOPSA_END \
-	{ (WoopsaChar8 *)NULL, { .data = (void*)NULL }, 0, 0, 0, 0 }};
+	{ (WoopsaChar8 *)NULL, { (void*)NULL }, 0, 0, 0, 0 }};
 
 #define WOOPSA_PROPERTY_CUSTOM(variable, type, readonly) \
-	{ #variable, { .data = &variable }, type, readonly, 0, sizeof variable },
+	{ #variable, { &variable }, type, readonly, 0, sizeof variable },
 
 #define WOOPSA_PROPERTY_READONLY(variable, type) \
 	WOOPSA_PROPERTY_CUSTOM(variable, type, 1)
@@ -83,7 +83,7 @@ typedef struct {
 
 #ifdef WOOPSA_ENABLE_METHODS
 	#define WOOPSA_METHOD(method, returnType) \
-{#method, { .function = (void*)method }, returnType, 0, 1, 0 },
+{#method, { (void*)method }, returnType, 0, 1, 0 },
 
 	#define WOOPSA_METHOD_VOID(method) \
 		WOOPSA_METHOD(method, WOOPSA_TYPE_NULL)

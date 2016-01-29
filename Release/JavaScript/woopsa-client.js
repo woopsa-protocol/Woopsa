@@ -151,23 +151,7 @@
         
         var WoopsaXHR = function (options){
             var innerXHR = $.ajax(options);
-            this.done = function (callback){
-                innerXHR.done(callback);
-                return this;
-            }
-            this.fail = function (callback){
-                innerXHR.fail(callback);
-                return this;
-            }
-            this.then = function (done, fail){
-                innerXHR.then(done);
-                innerXHR.fail(fail);
-                return this;
-            }
-            this.always = function (callback){
-                innerXHR.always(callback);
-                return this;
-            }
+			return innerXHR;
         }
         
         var WoopsaDeferredXHR = function (options){
@@ -177,27 +161,53 @@
             var options = options || {};
             var innerXHR = null;
             this.done = function (callback){
-                doneCallbacks.push(callback);
+				if ( innerXHR != null )
+					innerXHR.done(callback);
+				else
+					doneCallbacks.push(callback);
                 return this;
             }
             this.fail = function (callback){
-                failCallbacks.push(callback);
+				if ( innerXHR != null )
+					innerXHR.fail(callback);
+				else
+					failCallbacks.push(callback);
                 return this;
             }
             this.then = function (done, fail){
-                doneCallbacks.push(done);
-                failCallbacks.push(fail);
+				if ( innerXHR != null ){
+					innerXHR.done(callback);
+					innerXHR.fail(callback);
+				}else{
+					doneCallbacks.push(done);
+					failCallbacks.push(fail);
+				}
                 return this;
             }
             this.always = function (callback){
-                alwaysCallbacks.push(callback);
+				if ( innerXHR != null )
+					innerXHR.always(callback);
+				else
+					alwaysCallbacks.push(callback);
                 return this;
             }
             this.execute = function (){
                 innerXHR = new WoopsaXHR(options);
-                for(var i = 0; i < doneCallbacks.length; i++)
+				innerXHR.done(function (data, textStatus, jqXHR){
+					isDone = true;
+					doneData = data;
+					doneTextStatus = textStatus;
+					donejqXHR = jqXHR;
+				});
+				innerXHR.fail(function (jqXHR, textStatus, errorThrown){
+					isFail = true;
+					donejqXHR = jqXHR;
+					doneTextStatus = textStatus;
+					failErrorThrown = errorThrown;
+				});
+                for(var i = 0; i < doneCallbacks.length; i++){
                     innerXHR.done(doneCallbacks[i]);
-                for(var i = 0; i < failCallbacks.length; i++)
+                }for(var i = 0; i < failCallbacks.length; i++)
                     innerXHR.fail(failCallbacks[i]);
                 for(var i = 0; i < alwaysCallbacks.length; i++)
                     innerXHR.always(alwaysCallbacks[i]);
