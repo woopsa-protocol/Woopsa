@@ -57,10 +57,10 @@ int sockClose(SOCKET sock) {
 	return status;
 }
 
-float Temperature = 24.2;
+float Temperature = 24.2f;
 char IsRaining = 1;
 int Altitude = 430;
-float Sensitivity = 0.5;
+float Sensitivity = 0.5f;
 char City[20] = "Geneva";
 float TimeSinceLastRain = 11;
 
@@ -90,13 +90,13 @@ WoopsaUInt16 ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataB
 	return strlen("Hellow world!");
 }
 
-int main(int argc, char argv[]) {
+int main(int argc, char * argv[]) {
 	SOCKET sock, clientSock;
 	struct sockaddr_in addr, clientAddr;
 	char buffer[BUFFER_SIZE];
 	int clientAddrSize = 0, readBytes = 0;
 	WoopsaServer server;
-	WoopsaUInt16 responseLength;
+	WoopsaBufferUInt responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
 	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, NULL);
@@ -128,14 +128,14 @@ int main(int argc, char argv[]) {
 
 	while (1) {
 		clientAddrSize = sizeof(struct sockaddr_in);
-		clientSock = accept(sock, &clientAddr, &clientAddrSize);
+		clientSock = accept(sock, (struct sockaddr*)&clientAddr, &clientAddrSize);
 		if (!CHECK_SOCKET(clientSock)) {
 			printf("Received an invalid client socket.\n");
 			EXIT_ERROR();
 		}
 
 		while (1) {
-			readBytes = recv(clientSock, buffer + readBytes, sizeof(buffer), NULL);
+			readBytes = recv(clientSock, buffer + readBytes, sizeof(buffer), 0);
 
 			if (readBytes == SOCKET_ERROR) {
 				printf("Error %d", WSAGetLastError());
@@ -154,7 +154,7 @@ int main(int argc, char argv[]) {
 			}
 
 			if (WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength) >= WOOPSA_SUCCESS) {
-				send(clientSock, buffer, responseLength, NULL);
+				send(clientSock, buffer, responseLength, 0);
 			}
 			readBytes = 0;
 			memset(buffer, 0, sizeof(buffer));
