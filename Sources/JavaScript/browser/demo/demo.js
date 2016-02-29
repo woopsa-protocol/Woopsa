@@ -10,6 +10,8 @@
 			})
 		})
 		*/
+	
+		var subscriptionRegistered = null;
 		
 		$("#urlForm").submit(function (){
 			woopsa = new WoopsaClient($("#serverUrl").val(), jQuery);
@@ -18,7 +20,11 @@
 			woopsa.onChange($("#subscribePath").val(), function (value){
 				console.log("Received notification, new value = " + value);
 				$("#variableValue").html(value);
-			},1,1);
+			},1,1, function (subscription){
+				console.log("Created ok");
+				console.log(subscription);
+				subscriptionRegistered = subscription;
+			});
 			
 			$("input, textarea").each(function (){
 				$(this).removeAttr("disabled");
@@ -32,7 +38,7 @@
 			})
 			
 			return false;
-		})
+		});
 		
 		$("#readForm").submit(function (){
 			woopsa.read($("#readPath").val(), function(value){

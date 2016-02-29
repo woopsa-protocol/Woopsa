@@ -36,7 +36,7 @@
                 },
                 (function (result) {
                     this.subscriptionId = result;
-                    successCallback();
+                    successCallback(this);
                     if ( callback ){
                         callback(this);
                     }
@@ -60,9 +60,9 @@
         var channelLastNotificationId = 0;
         
         this.registerSubscription = function (path, onChangeCallback, successCallback, monitorInterval, publishInterval) {
-            var newSubscription = new Subscription(this, path, onChangeCallback, (function (){
+            var newSubscription = new Subscription(this, path, onChangeCallback, (function (subscription){
                 this.subscriptionsDictionary[newSubscription.subscriptionId] = newSubscription;
-                successCallback();
+                successCallback(subscription);
             }).bind(this), monitorInterval, publishInterval);
             this.subscriptions.push(newSubscription);
             if ( !this.listenStarted ) {
@@ -359,27 +359,32 @@
         
         var subscriptionChannelCreating = false;
         var queue = [];
-        this.onChange = function (path, callback, monitorInterval, publishInterval) {
+        this.onChange = function (path, callback, monitorInterval, publishInterval, successCallback) {
+            var successCB = successCallback;
+            if ( typeof monitorInterval === 'function' ){
+                successCB = monitorInterval;
+            }
             if ( subscriptionChannelCreating ){
                 queue.push({
                     path: path,
                     callback: callback,
                     monitorInterval: monitorInterval,
-                    publishInterval: publishInterval
+                    publishInterval: publishInterval,
+                    successCallback: successCB
                 });
                 return;
             }
             if ( subscriptionChannel == null && !subscriptionChannelCreating ) {
                 subscriptionChannelCreating = true;
                 this.createSubscriptionChannel(200, (function (){
-                    this.onChange(path, callback, monitorInterval, publishInterval);
+                    this.onChange(path, callback, monitorInterval, publishInterval, successCB);
                     subscriptionChannelCreating = false;
                     for(var i = queue.length-1; i >= 0; i--){
                         var elem = queue[i];
                         subscriptionChannel.registerSubscription(
                             elem.path,
                             elem.callback,
-                            nop,
+                            elem.successCallback,
                             elem.monitorInterval,
                             elem.publishInterval
                         );
@@ -387,7 +392,7 @@
                     }
                 }).bind(this))
             }else{
-                subscriptionChannel.registerSubscription(path, callback, nop, monitorInterval, publishInterval);
+                subscriptionChannel.registerSubscription(path, callback, successCallback, monitorInterval, publishInterval);
             }
         };
         

@@ -7,7 +7,7 @@ Woopsa allows you to share the complete object model of your application in a wa
 
 As a node module, Woopsa is very useful if you wish to quickly create a RESTful API. 
 
-On the server-side, just give Woopsa the library any JavaScript object with properties and functions, and the library will create a RESTful API allowing you to read/write properties and call functions:
+On the server-side, just give Woopsa any JavaScript object with properties and functions, and the library will create a RESTful API allowing you to read/write properties and call functions, automagically!
 
 ````js
 var woopsa = require('woopsa');

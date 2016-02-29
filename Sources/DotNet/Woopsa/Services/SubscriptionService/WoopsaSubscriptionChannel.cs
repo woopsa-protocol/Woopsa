@@ -78,6 +78,7 @@ namespace Woopsa
             if (_subscriptions.ContainsKey(subscriptionId))
             {
                 var subscription = _subscriptions[subscriptionId];
+                subscription.Dispose();
                 /*
                 if (  _monitors[subscription.MonitorInterval].RemoveSubscription(subscription) )
                 {
