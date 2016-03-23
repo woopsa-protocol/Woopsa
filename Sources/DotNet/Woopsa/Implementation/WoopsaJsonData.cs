@@ -49,14 +49,14 @@ namespace Woopsa
             }
         }
 
-        public WoopsaJsonData this[int key]
+        public WoopsaJsonData this[int index]
         {
             get
             {
                 if (IsArray)
                 {
                     var arr = (_data as object[]);
-                    return new WoopsaJsonData(arr[key]);
+                    return new WoopsaJsonData(arr[index]);
                 }
                 else
                     throw new InvalidOperationException("Integer indexer is only available on JsonDataof type Array.");
@@ -222,7 +222,7 @@ namespace Woopsa
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("UInt32", data.InternalObject.GetType().ToString()));
         }
-
+        
         public static UInt64 ToUInt64(this WoopsaJsonData data)
         {
             if (data.IsSimple)

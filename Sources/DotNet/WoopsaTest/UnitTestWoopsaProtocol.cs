@@ -35,10 +35,11 @@ namespace WoopsaTest
 					i++;
 				}
 				Console.WriteLine("Invocation duration : {0} ms", watch.Elapsed.TotalMilliseconds / 2 / i);
-				dynamicClient.Votes.Change += new EventHandler<WoopsaNotificationEventArgs>((o, e) => Console.WriteLine("Value : {0}", e.Value.ToInt32()));
-				Thread.Sleep(100);
-				dynamicClient.Votes = 15;
-				WoopsaClient client = new WoopsaClient("http://localhost/woopsa");
+                // TODO : Votes.Change does not work as Votes is a WoopsaValue does not contain Change !?!
+//				dynamicClient.Votes.Change += new EventHandler<WoopsaNotificationEventArgs>((o, e) => Console.WriteLine("Value : {0}", e.Value.ToInt32()));
+		//		Thread.Sleep(100);
+			//	dynamicClient.Votes = 15;
+	//			WoopsaClient client = new WoopsaClient("http://localhost/woopsa");
 //				int votes = client.Properties.ByName("Votes").Value.ToInt32();
 //				client.Properties.ByName("Votes");
 			}

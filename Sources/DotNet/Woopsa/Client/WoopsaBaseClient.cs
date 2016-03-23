@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Web;
@@ -37,7 +38,7 @@ namespace Woopsa
 
         public WoopsaValue Write(string path, string value)
         {
-            var arguments = new NameValueCollection {{WoopsaFormat.KeyValue, value}};
+            var arguments = new NameValueCollection { { WoopsaFormat.KeyValue, value } };
             string response = Request("write" + path, arguments);
             return WoopsaValueFromResponse(response);
         }
@@ -69,23 +70,24 @@ namespace Woopsa
         {
             var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
             var result = serializer.Deserialize<WoopsaReadResult>(response);
-
-            if (result == null)
-                return WoopsaValue.Null;
-
-            // At this stage, the read result's type is still a string -- make it a WoopsaValueType
-            var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
-
-            WoopsaValue resultWoopsaValue;
-
-            if (valueType == WoopsaValueType.JsonData)
-                resultWoopsaValue = result.TimeStamp == null ? new WoopsaValue(result.Value) : new WoopsaValue(result.Value, DateTime.Parse(result.TimeStamp));
+            if (result != null)
+            {
+                var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
+                WoopsaValue resultWoopsaValue;
+                DateTime? timeStamp;
+                if (result.TimeStamp != null)
+                    timeStamp = DateTime.Parse(result.TimeStamp, CultureInfo.InvariantCulture);
+                else
+                    timeStamp = null;
+                if (valueType == WoopsaValueType.JsonData)
+                    resultWoopsaValue = new WoopsaValue(new WoopsaJsonData(result.Value), timeStamp);
+                else
+                    resultWoopsaValue = WoopsaValue.CreateChecked(Convert.ToString(result.Value, CultureInfo.InvariantCulture),
+                        valueType, timeStamp);
+                return resultWoopsaValue;
+            }
             else
-                resultWoopsaValue = result.TimeStamp == null ?
-                    WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type)) :
-                    WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), DateTime.Parse(result.TimeStamp));
-
-            return resultWoopsaValue;
+                return WoopsaValue.Null;
         }
 
         private string Request(string path, NameValueCollection postData = null)

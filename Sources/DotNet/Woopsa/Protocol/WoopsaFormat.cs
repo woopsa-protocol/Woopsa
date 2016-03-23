@@ -8,16 +8,7 @@ namespace Woopsa
 {
 	public static class WoopsaFormat
 	{
-        public static string ToWoopsaDateTime(this DateTime dateTime)
-        {
-            return dateTime.ToUniversalTime().ToString("o");
-        }
-
-        public static string ToWoopsaTimeSpan(this TimeSpan timeSpan)
-        {
-            return timeSpan.TotalSeconds.ToStringWoopsa();
-        }
-
+       
         public static string WoopsaError(Exception e)
         {
             return String.Format(ErrorFormat, e.Message.JsonEscape(), e.GetType().Name);
@@ -30,6 +21,7 @@ namespace Woopsa
         /// <returns>A string with the following special characters handled, in this order: \ " \n \b \f \r \t</returns>
         public static string JsonEscape(this string value)
         {
+            // TODO : Optimize performance
             var s = new StringBuilder(value);
             return s
                 .Replace("\\", "\\\\")
@@ -96,7 +88,8 @@ namespace Woopsa
 
             if (value.TimeStamp.HasValue)
             {
-                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(), value.TimeStamp.Value.ToWoopsaDateTime());
+                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(), 
+                    value.TimeStamp.Value.ToStringWoopsa());
             }
             else
             {
