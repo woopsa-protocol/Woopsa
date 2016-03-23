@@ -272,8 +272,7 @@ namespace Woopsa
             else
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
                     (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject), property.Type, GetTimeStamp())),
-                    // TODO : transtypage vers WoopsaValue hypothétique
-                    (sender, value) => property.PropertyInfo.SetValue(TargetObject, ((WoopsaValue)value).ConvertTo(property.PropertyInfo.PropertyType))
+                    (sender, value) => property.PropertyInfo.SetValue(TargetObject, value.ConvertTo(property.PropertyInfo.PropertyType))
                 );
         }
 

@@ -215,6 +215,8 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaCastTypeExceptionMessage("TimeSpan", value.Type.ToString()));
         }
 
+
+
         public static void DecodeWoopsaLink(this IWoopsaValue value, out string woopsaServerUrl, out string woopsaItemPath)
         {
             if (value.Type == WoopsaValueType.WoopsaLink)

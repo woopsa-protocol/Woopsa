@@ -6,9 +6,9 @@ using System.Threading.Tasks;
 
 namespace Woopsa
 {
-	public static class WoopsaFormat
-	{
-       
+    public static class WoopsaFormat
+    {
+
         public static string WoopsaError(Exception e)
         {
             return String.Format(ErrorFormat, e.Message.JsonEscape(), e.GetType().Name);
@@ -26,11 +26,11 @@ namespace Woopsa
             return s
                 .Replace("\\", "\\\\")
                 .Replace("\"", "\\\"")
-                .Replace("\n","\\n")
-                .Replace("\b","\\b")
-                .Replace("\f","\\f")
-                .Replace("\r","\\r")
-                .Replace("\t","\\t")
+                .Replace("\n", "\\n")
+                .Replace("\b", "\\b")
+                .Replace("\f", "\\f")
+                .Replace("\r", "\\r")
+                .Replace("\t", "\\t")
                 .ToString();
         }
 
@@ -77,18 +77,18 @@ namespace Woopsa
         public static string Serialise(this IWoopsaValue value)
         {
             StringBuilder valueAsText = new StringBuilder();
-            if ( value.Type != WoopsaValueType.JsonData 
-                && value.Type != WoopsaValueType.Real
-                && value.Type != WoopsaValueType.Integer
-                && value.Type != WoopsaValueType.Logical
-                && value.Type != WoopsaValueType.TimeSpan )
+            if (value.Type != WoopsaValueType.JsonData &&
+                    value.Type != WoopsaValueType.Real &&
+                    value.Type != WoopsaValueType.Integer &&
+                    value.Type != WoopsaValueType.Logical &&
+                    value.Type != WoopsaValueType.TimeSpan)
                 valueAsText.Append(ValueEscapeCharacter).Append(value.AsText.JsonEscape()).Append(ValueEscapeCharacter);
             else
                 valueAsText.Append(value.AsText);
 
             if (value.TimeStamp.HasValue)
             {
-                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(), 
+                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(),
                     value.TimeStamp.Value.ToStringWoopsa());
             }
             else
@@ -126,7 +126,7 @@ namespace Woopsa
         {
             StringBuilder builder = new StringBuilder();
             bool first = true;
-            foreach(var elem in elements)
+            foreach (var elem in elements)
             {
                 if (!first)
                     builder.Append(MultipleElementsSeparator);
@@ -136,11 +136,11 @@ namespace Woopsa
                 {
                     builder.Append((elem as IWoopsaMethod).SerializeMetadata());
                 }
-                else if ( elem is IWoopsaProperty)
+                else if (elem is IWoopsaProperty)
                 {
                     builder.Append((elem as IWoopsaProperty).SerializeMetadata());
                 }
-                else if(elem is IWoopsaContainer)
+                else if (elem is IWoopsaContainer)
                 {
                     builder.Append((elem as IWoopsaContainer).SerializeMetadata(true));
                 }
@@ -178,42 +178,42 @@ namespace Woopsa
         {
             return String.Format(MetadataArgumentInfo, argumentInfo.Name.JsonEscape(), argumentInfo.Type);
         }
-        
-		public const string KeyValue            = "Value";
-		public const string KeyType             = "Type";
-		public const string KeyTimeStamp        = "TimeStamp";
-        public const string KeyName             = "Name";
-        public const string KeyReadOnly         = "ReadOnly";
-        public const string KeyArgumentInfos    = "ArgumentInfos";
-        public const string KeyReturnType       = "ReturnType";
-        public const string KeyProperties       = "Properties";
-        public const string KeyMethods          = "Methods";
-        public const string KeyItems            = "Items";
-        public const string KeyError            = "Error";
-        public const string KeyMessage          = "Message";
-        public const string KeySubscriptionId   = "SubscriptionId";
-        public const string KeyId               = "Id";
-        public const string KeyResult           = "Result";
 
-        const string NotificationFormat         = "{{\"" + KeyValue + "\":{0},\"" + KeySubscriptionId + "\":{1}, \"" + KeyId + "\": {2}}}";
+        public const string KeyValue = "Value";
+        public const string KeyType = "Type";
+        public const string KeyTimeStamp = "TimeStamp";
+        public const string KeyName = "Name";
+        public const string KeyReadOnly = "ReadOnly";
+        public const string KeyArgumentInfos = "ArgumentInfos";
+        public const string KeyReturnType = "ReturnType";
+        public const string KeyProperties = "Properties";
+        public const string KeyMethods = "Methods";
+        public const string KeyItems = "Items";
+        public const string KeyError = "Error";
+        public const string KeyMessage = "Message";
+        public const string KeySubscriptionId = "SubscriptionId";
+        public const string KeyId = "Id";
+        public const string KeyResult = "Result";
 
-        const string ValueFormatNoDate          = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\"}}";
-        const string ValueFormatWithDate        = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\",\"" + KeyTimeStamp + "\":\"{2}\"}}";
+        const string NotificationFormat = "{{\"" + KeyValue + "\":{0},\"" + KeySubscriptionId + "\":{1}, \"" + KeyId + "\": {2}}}";
 
-        const string MetadataContainer          = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyItems + "\":{1}}}";
-        const string MetadataObject             = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyItems + "\":{1},\"" + KeyProperties + "\":{2},\"" + KeyMethods + "\":{3}}}";
-        const string MetadataProperty           = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyType + "\":\"{1}\",\"" + KeyReadOnly + "\":{2}}}";
-        const string MetadataMethod             = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyReturnType + "\":\"{1}\",\"" + KeyArgumentInfos + "\":{2}}}";
-        const string MetadataArgumentInfo       = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyType + "\":\"{1}\"}}";
+        const string ValueFormatNoDate = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\"}}";
+        const string ValueFormatWithDate = "{{\"" + KeyValue + "\":{0},\"" + KeyType + "\":\"{1}\",\"" + KeyTimeStamp + "\":\"{2}\"}}";
 
-        const string ErrorFormat                = "{{\"" + KeyError + "\":true, \"" + KeyMessage + "\":\"{0}\", \"" + KeyType + "\":\"{1}\"}}";
+        const string MetadataContainer = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyItems + "\":{1}}}";
+        const string MetadataObject = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyItems + "\":{1},\"" + KeyProperties + "\":{2},\"" + KeyMethods + "\":{3}}}";
+        const string MetadataProperty = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyType + "\":\"{1}\",\"" + KeyReadOnly + "\":{2}}}";
+        const string MetadataMethod = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyReturnType + "\":\"{1}\",\"" + KeyArgumentInfos + "\":{2}}}";
+        const string MetadataArgumentInfo = "{{\"" + KeyName + "\":\"{0}\",\"" + KeyType + "\":\"{1}\"}}";
+
+        const string ErrorFormat = "{{\"" + KeyError + "\":true, \"" + KeyMessage + "\":\"{0}\", \"" + KeyType + "\":\"{1}\"}}";
 
         const string MultipleRequestResponseFormat = "{{\"" + KeyId + "\":{0}, \"" + KeyResult + "\":{1}}}";
 
-        const string MultipleElementsFormat     = "[{0}]";
-        const char MultipleElementsSeparator    = ',';
-        const string ObjectFormat               = "{{{0}}}";
-        const string StringFormat               = "\"{0}\"";
-        const char ValueEscapeCharacter         = '"';
-	}
+        const string MultipleElementsFormat = "[{0}]";
+        const char MultipleElementsSeparator = ',';
+        const string ObjectFormat = "{{{0}}}";
+        const string StringFormat = "\"{0}\"";
+        const char ValueEscapeCharacter = '"';
+    }
 }

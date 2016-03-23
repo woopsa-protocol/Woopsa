@@ -38,7 +38,7 @@ namespace Woopsa
         #region Private/Protected/Internal Members
         private List<RouteMapper> _routes;
         internal event EventHandler<RoutingErrorEventArgs> Error;
-        private object mutex = new object();
+        private object _lock = new object();
         #endregion
 
         #region public Methods
@@ -58,7 +58,7 @@ namespace Woopsa
         /// <param name="handlerMethod">A method delegate. See <see cref="HandleRequestDelegate"/> for usage.</param>
         public RouteMapper Add(string route, HTTPMethod methods, HandleRequestDelegate handlerMethod, bool acceptSubroutes = false)
         {
-            lock (mutex)
+            lock (_lock)
             {
                 RouteHandlerDelegate newHandler = new RouteHandlerDelegate(handlerMethod, acceptSubroutes);
                 RouteMapper mapper = new RouteMapper(route, methods, newHandler);
@@ -79,7 +79,7 @@ namespace Woopsa
         /// <param name="handler">An object which implements the <see cref="IHTTPRouteHandler"/> interface</param>
         public RouteMapper Add(string route, HTTPMethod methods, IHTTPRouteHandler handler)
         {
-            lock (mutex)
+            lock (_lock)
             {
                 RouteMapper mapper = new RouteMapper(route, methods, handler);
                 _routes.Add(mapper);
@@ -89,7 +89,7 @@ namespace Woopsa
 
         public bool Remove(string route)
         {
-            lock (mutex)
+            lock (_lock)
             {
                 foreach (var curRoute in _routes)
                 {
@@ -155,7 +155,7 @@ namespace Woopsa
                 {
                     response.WriteError(HTTPStatusCode.NotFound, "Not Found");
                     response.Respond(stream);
-                    OnError(new RoutingErrorEventArgs(RoutingErrorType.NO_MATCHES, "No route found for request", request));
+                    OnError(RoutingErrorType.NO_MATCHES, "No route found for request", request);
                 }
                 else 
                 {
@@ -167,16 +167,14 @@ namespace Woopsa
             {
                 response.WriteError(HTTPStatusCode.InternalServerError, String.Format("Internal Server Error {0}", e.Message));
                 response.Respond(stream);
-                OnError(new RoutingErrorEventArgs(RoutingErrorType.INTERNAL, "A RouteHandler threw an exception.", request));
+                OnError(RoutingErrorType.INTERNAL, "A RouteHandler threw an exception.", request);
             }
         }
 
-        protected virtual void OnError(RoutingErrorEventArgs args)
+        protected virtual void OnError(RoutingErrorType errorType, string message, HTTPRequest request)
         {
             if ( Error != null )
-            {
-                Error(this, args);
-            }
+                Error(this, new RoutingErrorEventArgs( errorType, message, request));
         }
         #endregion
     }
