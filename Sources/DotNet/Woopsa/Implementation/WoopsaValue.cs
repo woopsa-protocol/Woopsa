@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -35,20 +36,20 @@ namespace Woopsa
                 switch (type)
                 {
                     case WoopsaValueType.Integer:
-                        Int64.Parse(text);
+                        Int64.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.Real:
-                        Double.Parse(text);
+                        Double.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.Logical:
                         Boolean.Parse(text);
                         text = text.ToLower(); // .NET and JSON serialize booleans differently (.NET uses a capital first letter) :/
                         break;
                     case WoopsaValueType.DateTime:
-                        DateTime.Parse(text);
+                        DateTime.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.TimeSpan:
-                        Double.Parse(text);
+                        Double.Parse(text, CultureInfo.InvariantCulture);
                         break;
                 }
             }
@@ -107,7 +108,7 @@ namespace Woopsa
 		}
 
 		public WoopsaValue(string value)
-			: this(value.ToString(), WoopsaValueType.Text)
+			: this(value, WoopsaValueType.Text)
 		{
 		}
 
