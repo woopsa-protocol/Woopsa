@@ -331,9 +331,12 @@ namespace Woopsa
                             throw;
                     }
                 });
+            }            
+            catch (Exception)
+            {
+                // This can happen when methods are overloaded. This isn't supported in Woopsa.
+                // Ignore silently, the method won't be published
             }
-            // TODO : how to proceed?
-            catch (Exception) { } // This can happen when methods are overriden. This isn't supported in Woopsa.
         }
 
         private bool TestVisibility(PropertyCache property)

@@ -19,11 +19,21 @@ namespace Woopsa
         Invoke
     }
 
-	public class WoopsaServer : IDisposable
+    public class EventArgsCachePath : EventArgs
+    {
+        public string Path { get; set; }
+
+        public bool KeepInCache { get; set; }
+    }
+
+    public delegate bool CachePathDelegate(object sender, EventArgsCachePath args);
+
+    public class WoopsaServer : IDisposable
     {
         public const string DefaultServerPrefix = "/woopsa/";
         public const int DefaultPort = 80;
         public const int DefaultPortSsl = 443;
+        public const bool DefaultKeepPathInCache = true;
 
         public WebServer WebServer { get; private set; }
 
@@ -31,8 +41,7 @@ namespace Woopsa
 
         public bool AllowCrossOrigin { get; set; }
 
-        public delegate bool CheckCacheDelegate(string path);
-        public CheckCacheDelegate CheckCache { get; set; }
+        public event CachePathDelegate PathCaching;
 
         /// <summary>
         /// Creates an instance of the Woopsa server with a new Reflector for the object 
@@ -43,8 +52,9 @@ namespace Woopsa
         /// Multi-Requests.
         /// </summary>
         /// <param name="root">The root object that will be published via Woopsa.</param>
-        public WoopsaServer(object root) 
-            : this(root, DefaultPort, DefaultServerPrefix) { }
+        public WoopsaServer(object root)
+            : this(root, DefaultPort, DefaultServerPrefix)
+        { }
 
         /// <summary>
         /// Creates an instance of the Woopsa server with a new Reflector for the object 
@@ -56,8 +66,9 @@ namespace Woopsa
         /// </summary>
         /// <param name="root">The root object that will be published via Woopsa.</param>
         /// <param name="port">The port on which to run the web server</param>
-        public WoopsaServer(object root, int port) 
-            : this(root, port, DefaultServerPrefix) { }
+        public WoopsaServer(object root, int port)
+            : this(root, port, DefaultServerPrefix)
+        { }
 
         /// <summary>
         /// Creates an instance of the Woopsa server with a new Reflector for the object 
@@ -79,8 +90,7 @@ namespace Woopsa
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(null, root.GetType().Name, root);
             _root = adapter;
             _selfCreatedServer = true;
-            _routePrefix = routePrefix;
-            CheckCache = (p) => (true);
+            _routePrefix = routePrefix;            
             WebServer = new WebServer(port, true);
             AddRoutes(WebServer, routePrefix);
             new WoopsaMultiRequestHandler(adapter, this);
@@ -98,8 +108,8 @@ namespace Woopsa
         /// Multi-Requests.
         /// </summary>
         /// <param name="root">The root object that will be published via Woopsa.</param>
-        public WoopsaServer(IWoopsaContainer root) 
-            : this(root, new WebServer(80, true)) 
+        public WoopsaServer(IWoopsaContainer root)
+            : this(root, new WebServer(80, true))
         {
             _selfCreatedServer = true;
             WebServer.Start();
@@ -163,8 +173,7 @@ namespace Woopsa
         /// "myPrefix" will make the server available on http://server/myPrefix
         /// </param>
         public WoopsaServer(IWoopsaContainer root, WebServer server, string routePrefix = DefaultServerPrefix)
-        {
-            CheckCache = (p) => (true);
+        {            
             _root = root;
             WebServer = server;
             _routePrefix = routePrefix;
@@ -178,7 +187,18 @@ namespace Woopsa
                 (_root as WoopsaObjectAdapter).ClearCache();
         }
 
-        public WWWAuthenticator.Check CheckAuthenticate 
+        // TODO : a finir
+        protected virtual bool OnCachingPath(string path)
+        {
+            EventArgsCachePath args = new EventArgsCachePath();
+            args.Path = path;
+            args.KeepInCache = DefaultKeepPathInCache; 
+            if (PathCaching != null)
+                PathCaching(this, args);
+            return args.KeepInCache;
+        }
+
+        public WWWAuthenticator.Check CheckAuthenticate
         {
             get
             {
@@ -286,7 +306,7 @@ namespace Woopsa
         internal string WriteValue(string path, string value)
         {
             IWoopsaElement elem = FindByPath(path);
-			if ((elem is IWoopsaProperty))
+            if ((elem is IWoopsaProperty))
             {
                 IWoopsaProperty property = elem as IWoopsaProperty;
                 if (property.IsReadOnly)
@@ -411,7 +431,7 @@ namespace Woopsa
                         else if (elem is IWoopsaContainer)
                             elem = (elem as IWoopsaContainer).Items.ByName(toFind);
 
-                        if(CheckCache(currentPath))
+                        if (OnCachingPath(currentPath))
                             _pathCache.Add(currentPath, elem);
                     }
                     pathAt++;
