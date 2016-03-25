@@ -50,6 +50,7 @@
     <Compile Include="Client\WoopsaClientSubscriptionFallback.cs" />
     <Compile Include="Dynamic\WoopsaJsonDataDynamic.cs" />
     <Compile Include="HTTPServer\Processors\TlsProcessor.cs" />
+    <Compile Include="HTTPServer\Server\CustomThreadPool.cs" />
     <Compile Include="Implementation\WoopsaJsonData.cs" />
     <Compile Include="Dynamic\WoopsaDynamicClient.cs" />
     <Compile Include="Definition\WoopsaException.cs" />

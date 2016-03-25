@@ -20,7 +20,7 @@ namespace Woopsa
 
         #region Public Delegates
 
-        public delegate void PropertyChanged(IWoopsaNotification notification);
+        public delegate void PropertyChanged(object sender, IWoopsaNotification notification);
 
         #endregion
 
@@ -106,7 +106,7 @@ namespace Woopsa
             foreach (var notification in notifications.Notifications.Notifications)
             {
                 if (_subscriptionsDictionary.ContainsKey(notification.SubscriptionId))
-                    _subscriptionsDictionary[notification.SubscriptionId](notification);
+                    _subscriptionsDictionary[notification.SubscriptionId](this, notification);
             }
         }
 
@@ -236,6 +236,8 @@ namespace Woopsa
 
         #region Implicit Operators
 
+        // TODO : Move these implicit conversion to WoopsaProperty ?????
+/*
         public static implicit operator bool(WoopsaClientProperty property)
         {
             return property.Value.ToBool();
@@ -305,7 +307,7 @@ namespace Woopsa
         {
             return property.Value.AsText;
         }
-
+        */
         #endregion
 
         #region Public Methods
@@ -363,7 +365,7 @@ namespace Woopsa
 
         #region Private Handlers
 
-        private void PropertyChangedHandler(IWoopsaNotification notification)
+        private void PropertyChangedHandler(object sender, IWoopsaNotification notification)
         {
             lock (_subscriptions)
             {
@@ -389,7 +391,7 @@ namespace Woopsa
             Value = value;
         }
 
-        public IWoopsaValue Value { get; set; }
+        public IWoopsaValue Value { get; private set; }
     }
 
     public static class WoopsaClientExtensions

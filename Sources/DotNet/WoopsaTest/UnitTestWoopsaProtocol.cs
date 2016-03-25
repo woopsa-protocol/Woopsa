@@ -12,15 +12,59 @@ namespace WoopsaTest
     }
 
 
+
     [TestClass]
     public class UnitTestWoopsaProtocol
     {
+
+        [TestMethod]
+        public void TestWoopsaProtocol()
+        {
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    client.Root.Properties.ByName("Votes").Value = new WoopsaValue(11);
+                    Assert.AreEqual(objectServer.Votes, 11);
+                    var result = client.Root.Properties.ByName("Votes").Value;
+                    Assert.AreEqual(result.ToInt64(), 11);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestWoopsaProtocolPerformance()
+        {
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    WoopsaProperty property = client.Root.Properties.ByName("Votes");
+                    property.Value = new WoopsaValue(0);
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+
+                    for (int i = 0; i < 1000; i++)
+                    {
+                        property.Value = new WoopsaValue(i);
+                        Assert.AreEqual(objectServer.Votes, i);
+                        var result = property.Value;
+                        Assert.AreEqual(result.ToInt64(), i);
+                    }
+                    TimeSpan duration = watch.Elapsed;
+                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(1000));
+                }
+            }
+        }
+
         [TestMethod]
         public void TestWoopsaServerPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();
             using (WoopsaServer server = new WoopsaServer(objectServer))
-            {                
+            {
                 using (dynamic dynamicClient = new WoopsaDynamicClient("http://localhost/woopsa"))
                 {
                     Stopwatch watch = new Stopwatch();
@@ -32,6 +76,7 @@ namespace WoopsaTest
                     while (watch.Elapsed < TimeSpan.FromSeconds(1))
                     {
                         dynamicClient.Votes = i;
+                        Assert.AreEqual(objectServer.Votes, i);
                         Assert.AreEqual((int)dynamicClient.Votes, i);
                         i++;
                     }

@@ -6,47 +6,40 @@ using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
+using System.Diagnostics;
 
 namespace WoopsaTest
 {
     [TestClass]
     public class UnitTestWoopsaClient
-    {
-        public const string TemperaturePropertyName = "Temperature";
-
+    {         
         [TestMethod]
         public void TestWoopsaClientSubscriptionChannel()
         {
-            _isValueChanged = false;
-            ThreadPool.QueueUserWorkItem(ThreadTestSubscriptionChannel);
-
-            int count = 0, timeWait = 50;
-            while (!_isValueChanged && count < 10000)
+            bool isValueChanged = false;
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
             {
-                Thread.Sleep(timeWait);
-                count += timeWait;
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    int id = client.Root.Subscribe(nameof(TestObjectServer.Votes), 
+                        (sender, e) => { isValueChanged = true; }, 
+                        TimeSpan.FromMilliseconds(10.0), TimeSpan.FromMilliseconds(20.0));
+                    objectServer.Votes = 2;
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while (!isValueChanged && watch.Elapsed < TimeSpan.FromSeconds(5))
+                        Thread.Sleep(10);
+                    if (isValueChanged)
+                        Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No notification received");
+                    client.Root.Unsubscribe(id);
+                    Assert.AreEqual(true, isValueChanged);
+                }
             }
 
-            if (_isValueChanged)
-                Console.WriteLine("The value has changed correctly after {0} ms.", count);
-
-            Assert.AreEqual(true, _isValueChanged);
         }
 
-        private void ThreadTestSubscriptionChannel(object state)
-        {
-            var client = new WoopsaClient("http://demo.woopsa.org/woopsa");
-            int id = client.Root.Subscribe(TemperaturePropertyName, PropertyChangedHandler, TimeSpan.FromMilliseconds(10.0), TimeSpan.FromMilliseconds(30.0));
-            Thread.Sleep(TimeSpan.FromSeconds(12.0));
-            client.Root.Unsubscribe(id);
-            client.Dispose();
-        }
-
-        private void PropertyChangedHandler(IWoopsaNotification notification)
-        {
-            _isValueChanged = true;
-        }
-
-        private bool _isValueChanged;
     }
 }

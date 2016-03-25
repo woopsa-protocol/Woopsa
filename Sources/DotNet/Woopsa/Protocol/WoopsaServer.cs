@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Specialized;
 using System.Globalization;
+using System.Threading;
 
 namespace Woopsa
 {
@@ -26,7 +27,8 @@ namespace Woopsa
     {
         public const string DefaultServerPrefix = "/woopsa/";
         public const int DefaultPort = 80;
-        public const int DefaultPortSsl = 443;
+        public const int DefaultPortSsl = 443;        
+        public const ThreadPriority DefaultThreadPriority = ThreadPriority.Normal;
         public const bool DefaultKeepPathInCache = true;
         public const string WoopsaAuthenticationRealm = "Woopsa authentication";
 
@@ -78,8 +80,15 @@ namespace Woopsa
         /// The prefix to add to all routes for woopsa verbs. For example, specifying
         /// "myPrefix" will make the server available on http://server/myPrefix
         /// </param>
-        public WoopsaServer(IWoopsaContainer root, int port = DefaultPort, string routePrefix = DefaultServerPrefix)
-            : this(root, new WebServer(port, true), routePrefix)
+        /// <param name="threadPoolSize">
+        /// The maximum number of threads to be created. 
+        /// CustomThreadPool.DefaultThreadPoolSize means use default operating system value.</param>
+        /// <param name="priority">
+        /// The priority of the server threads.
+        /// </param>
+        public WoopsaServer(IWoopsaContainer root, int port = DefaultPort, string routePrefix = DefaultServerPrefix,
+            int threadPoolSize = CustomThreadPool.DefaultThreadPoolSize, ThreadPriority priority = DefaultThreadPriority)
+            : this(root, new WebServer(port, threadPoolSize, priority), routePrefix)
         {
             _isWebServerEmbedded = true;
             WebServer.Start();
