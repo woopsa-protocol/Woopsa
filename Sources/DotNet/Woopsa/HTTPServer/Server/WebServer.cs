@@ -1,18 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Woopsa
@@ -33,31 +26,10 @@ namespace Woopsa
     /// <item>HTTP Methods other than POST, GET, PUT, DELETE (must be handled manually)</item>
     /// </list>
     /// </remarks>
-    public class WebServer
+    public class WebServer: IDisposable
     {
         public const int DEFAULT_PORT_HTTP = 80;
         public const int DEFAULT_PORT_HTTPS = 443;
-
-        /// <summary>
-        /// Creates a WebServer that runs on port 80, single-threaded
-        /// </summary>
-        /// <remarks>
-        /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
-        /// <seealso cref="WebServer.WebServer(int port, bool multiThreaded)"/>
-        /// </remarks>
-        public WebServer() : this(DEFAULT_PORT_HTTP, false) { }
-
-        /// <summary>
-        /// Creates a WebServer that runs on the specified port, single-threaded
-        /// </summary>
-        /// <param name="port">
-        /// The port on which to run the server (default 80)
-        /// </param>
-        /// <remarks> 
-        /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
-        /// <seealso cref="WebServer.WebServer(int port, bool multiThreaded)"/>
-        /// </remarks>
-        public WebServer(int port) : this(port, false) { }
 
         /// <summary>
         /// Creates a WebServer that runs on the specified port and can be multithreaded
@@ -71,12 +43,12 @@ namespace Woopsa
         /// <remarks>
         /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
         /// </remarks>
-        public WebServer(int port, bool multithreaded)
+        public WebServer(int port = DEFAULT_PORT_HTTP, bool multithreaded = false)
         {
             Port = port;
             PreRouteProcessors = new List<PreRouteProcessor>();
-            _routeSolver = new RouteSolver();
-            _routeSolver.Error += _routeSolver_Error;
+            Routes = new RouteSolver();
+            Routes.Error += _routeSolver_Error;
             _listener = new TcpListener(IPAddress.Any, port);
             MultiThreaded = multithreaded;
             _listenerThread = new Thread(Listen);
@@ -88,13 +60,12 @@ namespace Woopsa
         /// <summary>
         /// The RouteSolver allows a user to configure routes on the web server. This member is created internally and as such is read-only.
         /// </summary>
-        public RouteSolver Routes { get { return _routeSolver; } }
+        public RouteSolver Routes { get; private set; }
 
         /// <summary>
-        /// This event is raised whenever an orrur occurs inside the web server. In most cases, the error can be ignored, but odd behavior might occur when there are multiple matching routes, for example.
+        /// This event is raised whenever an error occurs inside the web server. In most cases, the error can be ignored, but odd behavior might occur when there are multiple matching routes, for example.
         /// </summary>
-        public delegate void ErrorEventHandler(object sender, EventArgs e);
-        public event ErrorEventHandler Error;
+        public event EventHandler Error;
 
         public event EventHandler<LogEventArgs> Log;
 
@@ -112,7 +83,6 @@ namespace Woopsa
         #endregion
 
         #region Private Members
-        private RouteSolver _routeSolver;
         private TcpListener _listener;
         private Thread _listenerThread;
 
@@ -141,19 +111,41 @@ namespace Woopsa
         }
 
         /// <summary>
-        /// Stops the server and stops listening for TCP connexions. At this point, the server becomes completely unreachable.
+        /// Shutdowns the server and stops listening for TCP connexions. At this point, the server becomes completely unreachable.
+        /// It cannot be restarted.
         /// </summary>
-        public void Stop()
+        public void Shutdown()
         {
-            _listener.Stop();
-            _abort = true;
+            if (!_abort)
+            {
+                _listener.Stop();
+                _abort = true;
+            }
         }
         #endregion
+
+
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Shutdown();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+
 
         #region Private Methods
         private void Listen()
         {
-            while(!_abort && _started)
+            while (!_abort && _started)
             {
                 try
                 {
@@ -253,7 +245,6 @@ namespace Woopsa
                             break;
                         }
 
-
                         string[] parts = requestString.Split(' ');
                         if (parts.Length != 3)
                         {
@@ -313,7 +304,7 @@ namespace Woopsa
                             response.SetHeader(HTTPHeader.Connection, "close");
                         }
                         //Pass this on to the route solver
-                        _routeSolver.HandleRequest(request, response, stream);
+                        Routes.HandleRequest(request, response, stream);
                         OnLog(request, response);
                     }
                 }
@@ -325,6 +316,10 @@ namespace Woopsa
                         response.Respond(stream);
                         OnLog(request, response);
                     }
+                }
+                catch (ThreadAbortException)
+                {
+                    // Do nothing, server is terminating
                 }
                 catch (Exception e)
                 {
@@ -411,8 +406,8 @@ namespace Woopsa
                 {
                     throw new HandlingException(HTTPStatusCode.LengthRequired, "Length Required");
                 }
-                int contentLength =  Convert.ToInt32(request.Headers[HTTPHeader.ContentLength]);
-                if (contentLength != 0 )
+                int contentLength = Convert.ToInt32(request.Headers[HTTPHeader.ContentLength]);
+                if (contentLength != 0)
                 {
                     if (!request.Headers.ContainsKey(HTTPHeader.ContentType))
                     {
@@ -444,7 +439,7 @@ namespace Woopsa
                 }
             }
         }
-        
+
         void HTTPResponse_Error(object sender, HTTPResponseErrorEventArgs e)
         {
             OnError(e);
@@ -452,7 +447,7 @@ namespace Woopsa
 
         protected virtual void OnLog(HTTPRequest request, HTTPResponse response)
         {
-            if ( Log != null )
+            if (Log != null)
             {
                 Log(this, new LogEventArgs(request, response));
             }
@@ -460,7 +455,7 @@ namespace Woopsa
 
         protected virtual void OnError(EventArgs args)
         {
-            if ( Error != null )
+            if (Error != null)
             {
                 Error(this, args);
             }
@@ -487,12 +482,12 @@ namespace Woopsa
 
     public class LogEventArgs : EventArgs
     {
-        public HTTPRequest Request;
-        public HTTPResponse Response;
         public LogEventArgs(HTTPRequest request, HTTPResponse response)
         {
             Request = request;
             Response = response;
         }
+        public HTTPRequest Request { get; private set; }
+        public HTTPResponse Response { get; private set; }
     }
 }

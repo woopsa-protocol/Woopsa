@@ -86,16 +86,22 @@ namespace Woopsa
                 return mapper;
             }
         }
-
+        public bool Remove(RouteMapper routeMapper)
+        {
+            lock (_lock)
+            {
+                return _routes.Remove(routeMapper);
+            }
+        }
         public bool Remove(string route)
         {
             lock (_lock)
             {
-                foreach (var curRoute in _routes)
+                foreach (var item in _routes)
                 {
-                    if (curRoute.Route.Equals(route))
+                    if (item.Route.Equals(route))
                     {
-                        _routes.Remove(curRoute);
+                        _routes.Remove(item);
                         return true;
                     }
                 }
@@ -122,7 +128,7 @@ namespace Woopsa
                 RouteMapper mapper = null;
                 int i = 0;
 
-                for (; ; )
+                for (;;)
                 {
                     lock (_routes)
                     {
@@ -157,7 +163,7 @@ namespace Woopsa
                     response.Respond(stream);
                     OnError(RoutingErrorType.NO_MATCHES, "No route found for request", request);
                 }
-                else 
+                else
                 {
                     mapper.HandleRequest(request, response);
                     response.Respond(stream);
@@ -173,8 +179,8 @@ namespace Woopsa
 
         protected virtual void OnError(RoutingErrorType errorType, string message, HTTPRequest request)
         {
-            if ( Error != null )
-                Error(this, new RoutingErrorEventArgs( errorType, message, request));
+            if (Error != null)
+                Error(this, new RoutingErrorEventArgs(errorType, message, request));
         }
         #endregion
     }

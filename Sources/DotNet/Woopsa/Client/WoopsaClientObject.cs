@@ -68,8 +68,7 @@ namespace Woopsa
 
         public int Subscribe(string path, PropertyChanged propertyChangedHandler, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            // Only create the subscription channel
-            // on subscription to the first property.
+            // Create a subscription channel if not yet done
             if (_subscriptionChannel == null)
             {
                 // When we subscribe to a property that's within nested items,

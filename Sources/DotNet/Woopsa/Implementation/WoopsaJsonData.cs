@@ -9,15 +9,18 @@ namespace Woopsa
 {
     public class WoopsaJsonData
     {
-        public WoopsaJsonData(string serializedData)
+        public static WoopsaJsonData CreateFromText(string jsonText)
         {
             JavaScriptSerializer deserializer = new JavaScriptSerializer();
-            _data = deserializer.Deserialize<object>(serializedData);
-            _asDictionary = (_data as Dictionary<string, object>);
-            _asArray = _data as object[];
+            object deserializedData = deserializer.Deserialize<object>(jsonText);
+            return new WoopsaJsonData(deserializedData);
+        }
+        public static WoopsaJsonData CreateFromDeserializedData(object deserializedJson)
+        {
+            return new WoopsaJsonData(deserializedJson);
         }
 
-        public WoopsaJsonData(object deserializedData)
+        private WoopsaJsonData(object deserializedData)
         {
             _data = deserializedData;
             _asDictionary = (_data as Dictionary<string, object>);
@@ -88,19 +91,19 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("string", _data.GetType().ToString()));
         }
 
-        internal object InternalObject{ get { return _data; } }
+        internal object InternalObject { get { return _data; } }
 
         private object _data;
         private Dictionary<string, object> _asDictionary;
         private object[] _asArray;
 
         #region Static methods for type casting
-        public static implicit operator bool(WoopsaJsonData value)
+        public static implicit operator bool (WoopsaJsonData value)
         {
             return value.ToBool();
         }
 
-        public static implicit operator sbyte(WoopsaJsonData value)
+        public static implicit operator sbyte (WoopsaJsonData value)
         {
             return value.ToSByte();
         }
@@ -120,7 +123,7 @@ namespace Woopsa
             return value.ToInt64();
         }
 
-        public static implicit operator byte(WoopsaJsonData value)
+        public static implicit operator byte (WoopsaJsonData value)
         {
             return value.ToByte();
         }
@@ -140,17 +143,17 @@ namespace Woopsa
             return value.ToUInt64();
         }
 
-        public static implicit operator float(WoopsaJsonData value)
+        public static implicit operator float (WoopsaJsonData value)
         {
             return value.ToFloat();
         }
 
-        public static implicit operator double(WoopsaJsonData value)
+        public static implicit operator double (WoopsaJsonData value)
         {
             return value.ToDouble();
         }
 
-        public static implicit operator string(WoopsaJsonData value)
+        public static implicit operator string (WoopsaJsonData value)
         {
             return value.AsText();
         }
@@ -222,7 +225,7 @@ namespace Woopsa
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("UInt32", data.InternalObject.GetType().ToString()));
         }
-        
+
         public static UInt64 ToUInt64(this WoopsaJsonData data)
         {
             if (data.IsSimple)

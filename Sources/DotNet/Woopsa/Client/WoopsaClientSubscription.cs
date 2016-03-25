@@ -51,10 +51,10 @@ namespace Woopsa
                 _subscriptions.Add(subscription);
             }
 
-            if (!_listenStarted)
+            if (_listenThread== null)
             {
                 _listenThread = new Thread(DoWaitNotification) {Name = "WoopsaClientSubscription_Thread"};
-                _listenStarted = true;
+                _listening = true;
                 _listenThread.Start();
             }
 
@@ -72,7 +72,7 @@ namespace Woopsa
                         bool result = subscription.Unregister();
                         _subscriptions.Remove(subscription);
                         if (!_subscriptions.Any())
-                            _listenStarted = false;
+                            _listening = false;
                         return result;
                     }
                 }
@@ -80,7 +80,7 @@ namespace Woopsa
 
             return false;
         }
-
+                
         #endregion
 
         #region Private Helpers
@@ -94,7 +94,7 @@ namespace Woopsa
 
         private void DoWaitNotification()
         {
-            while (_listenStarted)
+            while (_listening)
             {
                 if (_subscriptions.Count > 0)
                 {
@@ -263,7 +263,7 @@ namespace Woopsa
         {
             if (disposing)
             {
-                _listenStarted = false;
+                _listening = false;
             }
         }
 
@@ -273,7 +273,7 @@ namespace Woopsa
 
         private readonly IWoopsaObject _client;
         private readonly List<WoopsaClientSubscription> _subscriptions = new List<WoopsaClientSubscription>();
-        private bool _listenStarted;
+        private bool _listening;
         private Thread _listenThread;
 
         private IWoopsaObject _subscriptionService;

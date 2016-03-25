@@ -28,7 +28,8 @@ namespace Woopsa
         #region IDisposable
 
         protected virtual void Dispose(bool disposing)
-        {}
+        {
+        }
 
         public void Dispose()
         {

@@ -12,7 +12,7 @@ namespace Woopsa
             _type = type;
             _timestamp = timestamp;
             if (type == WoopsaValueType.JsonData)
-                _jsonData = new WoopsaJsonData(text);
+                _jsonData = Woopsa.WoopsaJsonData.CreateFromText(text);
         }
 
         internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null)
@@ -347,7 +347,9 @@ namespace Woopsa
         private string _text;
         private WoopsaValueType _type;
         private DateTime? _timestamp;
-        private static readonly WoopsaValue _null = new WoopsaValue(string.Empty, WoopsaValueType.Null);
         private WoopsaJsonData _jsonData = null;
+
+        private static readonly WoopsaValue _null = new WoopsaValue(string.Empty, WoopsaValueType.Null);
+
     }
 }

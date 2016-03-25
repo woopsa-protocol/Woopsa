@@ -80,7 +80,7 @@ namespace Woopsa
                 else
                     timeStamp = null;
                 if (valueType == WoopsaValueType.JsonData)
-                    resultWoopsaValue = new WoopsaValue(new WoopsaJsonData(result.Value), timeStamp);
+                    resultWoopsaValue = new WoopsaValue(WoopsaJsonData.CreateFromDeserializedData(result.Value), timeStamp);
                 else
                     resultWoopsaValue = WoopsaValue.CreateChecked(Convert.ToString(result.Value, CultureInfo.InvariantCulture),
                         valueType, timeStamp);

@@ -59,7 +59,7 @@ namespace Woopsa
             _root = root;
             WebServer = server;
             _routePrefix = routePrefix;
-            AddRoutes(server, routePrefix);
+            AddRoutes();
         }
 
         /// <summary>
@@ -138,20 +138,20 @@ namespace Woopsa
             {
                 if (_authenticator != null)
                 {
-                    _prefixRoute.RemoveProcessor(_authenticator);
-                    _metaRoute.AddProcessor(_authenticator);
-                    _readRoute.AddProcessor(_authenticator);
-                    _writeRoute.AddProcessor(_authenticator);
-                    _invokeRoute.AddProcessor(_authenticator);
+                    _prefixRouteMapper.RemoveProcessor(_authenticator);
+                    _metaRouteMapper.AddProcessor(_authenticator);
+                    _readRouteMapper.AddProcessor(_authenticator);
+                    _writeRouteMapper.AddProcessor(_authenticator);
+                    _invokeRouteMapper.AddProcessor(_authenticator);
                     _authenticator = null;
                 }
                 if (value != null)
                 {
-                    _prefixRoute.AddProcessor(_authenticator);
-                    _metaRoute.AddProcessor(_authenticator);
-                    _readRoute.AddProcessor(_authenticator);
-                    _writeRoute.AddProcessor(_authenticator);
-                    _invokeRoute.AddProcessor(_authenticator);
+                    _prefixRouteMapper.AddProcessor(_authenticator);
+                    _metaRouteMapper.AddProcessor(_authenticator);
+                    _readRouteMapper.AddProcessor(_authenticator);
+                    _writeRouteMapper.AddProcessor(_authenticator);
+                    _invokeRouteMapper.AddProcessor(_authenticator);
                     _authenticator = value;
                 }
             }
@@ -160,23 +160,23 @@ namespace Woopsa
         private WWWAuthenticator _authenticator;
 
         #region Private Members
-        private void AddRoutes(WebServer server, string routePrefix)
+        private void AddRoutes()
         {
             AllowCrossOrigin = true;
-            _prefixRoute = server.Routes.Add(routePrefix, HTTPMethod.OPTIONS, (Request, response) => { }, true);
-            _prefixRoute.AddProcessor(_accessControlProcessor);
+            _prefixRouteMapper = WebServer.Routes.Add(_routePrefix, HTTPMethod.OPTIONS, (Request, response) => { }, true);
+            _prefixRouteMapper.AddProcessor(_accessControlProcessor);
             // meta route
-            _metaRoute = server.Routes.Add(routePrefix + "meta", HTTPMethod.GET, 
+            _metaRouteMapper = WebServer.Routes.Add(_routePrefix + "meta", HTTPMethod.GET, 
                 (request, response) => { HandleRequest(WoopsaVerb.Meta, request, response); }, true);
-            _metaRoute.AddProcessor(_accessControlProcessor);
+            _metaRouteMapper.AddProcessor(_accessControlProcessor);
             // read route
-            _readRoute = server.Routes.Add(routePrefix + "read", HTTPMethod.GET,
+            _readRouteMapper = WebServer.Routes.Add(_routePrefix + "read", HTTPMethod.GET,
                 (request, response) => { HandleRequest(WoopsaVerb.Read, request, response); }, true);
-            _readRoute.AddProcessor(_accessControlProcessor);
+            _readRouteMapper.AddProcessor(_accessControlProcessor);
             // write route
-            _writeRoute = server.Routes.Add(routePrefix + "write", HTTPMethod.POST, 
+            _writeRouteMapper = WebServer.Routes.Add(_routePrefix + "write", HTTPMethod.POST, 
                 (request, response) => { HandleRequest(WoopsaVerb.Write, request, response); }, true);
-            _writeRoute.AddProcessor(_accessControlProcessor);
+            _writeRouteMapper.AddProcessor(_accessControlProcessor);
             // POST is used here instead of GET for two main reasons:
             //  - The length of a GET query is limited in HTTP. There is no official limit but most
             //    implementations have a 2-8 KB limit, which is not good when we want to do large
@@ -184,9 +184,18 @@ namespace Woopsa
             //  - GET requestsList should not change the state of the server, as they can be triggered
             //    by crawlers and such. Invoking a function will, in most cases, change the state of
             //    the server.
-            _invokeRoute = server.Routes.Add(routePrefix + "invoke", HTTPMethod.POST,
+            _invokeRouteMapper = WebServer.Routes.Add(_routePrefix + "invoke", HTTPMethod.POST,
                 (request, response) => { HandleRequest(WoopsaVerb.Invoke, request, response); }, true);
-            _invokeRoute.AddProcessor(_accessControlProcessor);
+            _invokeRouteMapper.AddProcessor(_accessControlProcessor);
+        }
+
+        private void RemoveRoutes()
+        {
+            WebServer.Routes.Remove(_prefixRouteMapper);
+            WebServer.Routes.Remove(_metaRouteMapper);
+            WebServer.Routes.Remove(_readRouteMapper);
+            WebServer.Routes.Remove(_writeRouteMapper);
+            WebServer.Routes.Remove(_invokeRouteMapper);
         }
 
         private void HandleRequest(WoopsaVerb verb, HTTPRequest request, HTTPResponse response)
@@ -268,17 +277,11 @@ namespace Woopsa
         {
             IWoopsaElement item = FindByPath(path);
             if (item is IWoopsaObject)
-            {
                 return (item as IWoopsaObject).SerializeMetadata();
-            }
             else if (item is IWoopsaContainer)
-            {
                 return (item as IWoopsaContainer).SerializeMetadata();
-            }
             else
-            {
                 throw new WoopsaInvalidOperationException(String.Format("Cannot get metadata for a WoopsaElement of type {0}", item.GetType()));
-            }
         }
         internal string InvokeMethod(string path, NameValueCollection arguments)
         {
@@ -314,17 +317,8 @@ namespace Woopsa
         private Dictionary<string, IWoopsaElement> _pathCache = new Dictionary<string, IWoopsaElement>();
         private AccessControlProcessor _accessControlProcessor = new AccessControlProcessor();
 
-        private RouteMapper _prefixRoute, _readRoute, _writeRoute, _metaRoute, _invokeRoute;
-
-        private void Stop()
-        {
-            WebServer.Routes.Remove(_routePrefix + "meta");
-            WebServer.Routes.Remove(_routePrefix + "read");
-            WebServer.Routes.Remove(_routePrefix + "write");
-            WebServer.Routes.Remove(_routePrefix + "invoke");
-            if (_isWebServerEmbedded)
-                WebServer.Stop();
-        }
+        private RouteMapper _prefixRouteMapper, _readRouteMapper, _writeRouteMapper, 
+            _metaRouteMapper, _invokeRouteMapper;
 
         private IWoopsaElement FindByPath(string path)
         {
@@ -374,7 +368,9 @@ namespace Woopsa
         {
             if (disposing)
             {
-                Stop();
+                RemoveRoutes();
+                if (_isWebServerEmbedded)
+                    WebServer.Dispose();
             }
         }
 

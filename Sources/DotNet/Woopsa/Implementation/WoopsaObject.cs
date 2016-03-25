@@ -118,10 +118,7 @@ namespace Woopsa
         protected override void Dispose(bool disposing)
         {
             if (Container != null)
-            {
                 Container.Remove(this);
-                // TODO Container = null;
-            }
             base.Dispose(disposing);
         }
 
