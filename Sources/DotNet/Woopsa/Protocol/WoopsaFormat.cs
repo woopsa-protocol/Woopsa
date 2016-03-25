@@ -33,7 +33,6 @@ namespace Woopsa
                 .Replace("\t", "\\t")
                 .ToString();
         }
-
         public static string Serialize(this IEnumerable<MultipleRequestResponse> responses)
         {
             StringBuilder builder = new StringBuilder();
@@ -71,10 +70,10 @@ namespace Woopsa
 
         public static string Serialize(this IWoopsaNotification notification)
         {
-            return String.Format(NotificationFormat, notification.Value.Serialise(), notification.SubscriptionId, notification.Id);
+            return String.Format(NotificationFormat, notification.Value.Serialize(), notification.SubscriptionId, notification.Id);
         }
 
-        public static string Serialise(this IWoopsaValue value)
+        public static string Serialize(this IWoopsaValue value)
         {
             StringBuilder valueAsText = new StringBuilder();
             if (value.Type != WoopsaValueType.JsonData &&
