@@ -24,45 +24,11 @@ namespace Woopsa
 
         #endregion
 
-        #region Public Properties
-
-        public new IEnumerable<WoopsaClientProperty> Properties
-        {
-            get { return base.Properties.Select(property => (WoopsaClientProperty)property); }
-        }
-
-        public new IEnumerable<WoopsaClientObject> Items
-        {
-            get { return base.Items.OfType<WoopsaClientObject>(); }
-        }
-
-        #endregion
-
         #region Public Methods
 
         public override void Refresh()
         {
-            // TODO : analyse this code and redesign
-
-
-            // We need this apparently useless "flushProperties"
-            // argument because Get'ing one of these 3 properties
-            // will trigger the DoPopulate method on the WoopsaObject,
-            // which will in turn ask this clientobject to call this
-            // same refresh method, leading to a deadly never-ending
-            // recursive call to itself!
-            // However we still want to provide a way for users of 
-            // this API to completely refresh this client's items.
-            for (int i = Properties.Count() - 1; i >= 0; i--)
-                Remove(Properties.ElementAt(i));
-
-            for (int i = Methods.Count() - 1; i >= 0; i--)
-                Remove((WoopsaMethod)Methods.ElementAt(i)); // TODO CJI From CJI : Why do we need to cast here?!
-
-            for (int i = Items.Count() - 1; i >= 0; i--)
-                Remove(Items.ElementAt(i));
-
-            PopulateObject();
+            Clear();
         }
 
         #endregion
@@ -235,82 +201,6 @@ namespace Woopsa
         public WoopsaClientProperty(WoopsaClientObject container, string name, WoopsaValueType type, WoopsaPropertyGet get)
             : this(container, name, type, get, null) { }
 
-        #endregion
-
-        #region Implicit Operators
-
-        // TODO : Move these implicit conversion to WoopsaProperty ?????
-/*
-        public static implicit operator bool(WoopsaClientProperty property)
-        {
-            return property.Value.ToBool();
-        }
-
-        public static implicit operator sbyte(WoopsaClientProperty property)
-        {
-            return property.Value.ToSByte();
-        }
-
-        public static implicit operator Int16(WoopsaClientProperty property)
-        {
-            return property.Value.ToInt16();
-        }
-
-        public static implicit operator Int32(WoopsaClientProperty property)
-        {
-            return property.Value.ToInt32();
-        }
-
-        public static implicit operator Int64(WoopsaClientProperty property)
-        {
-            return property.Value.ToInt64();
-        }
-
-        public static implicit operator byte(WoopsaClientProperty property)
-        {
-            return property.Value.ToByte();
-        }
-
-        public static implicit operator UInt16(WoopsaClientProperty property)
-        {
-            return property.Value.ToUInt16();
-        }
-
-        public static implicit operator UInt32(WoopsaClientProperty property)
-        {
-            return property.Value.ToUInt32();
-        }
-
-        public static implicit operator UInt64(WoopsaClientProperty property)
-        {
-            return property.Value.ToUInt64();
-        }
-
-        public static implicit operator float(WoopsaClientProperty property)
-        {
-            return property.Value.ToFloat();
-        }
-
-        public static implicit operator double(WoopsaClientProperty property)
-        {
-            return property.Value.ToDouble();
-        }
-
-        public static implicit operator DateTime(WoopsaClientProperty property)
-        {
-            return property.Value.ToDateTime();
-        }
-
-        public static implicit operator TimeSpan(WoopsaClientProperty property)
-        {
-            return property.Value.ToTimeSpan();
-        }
-
-        public static implicit operator string(WoopsaClientProperty property)
-        {
-            return property.Value.AsText;
-        }
-        */
         #endregion
 
         #region Public Methods

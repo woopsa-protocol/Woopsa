@@ -12,7 +12,7 @@ namespace Woopsa
         public WoopsaDynamicClient(string url)
         {
             _client = new WoopsaClient(url);
-            _object = new WoopsaDynamicObject(_client.Root);
+            _object = new WoopsaDynamicClientObject(_client.Root);
         }
 
         #endregion
@@ -76,16 +76,16 @@ namespace Woopsa
         #region Private Members
 
         private readonly WoopsaClient _client;
-        private readonly WoopsaDynamicObject _object;
+        private readonly WoopsaDynamicClientObject _object;
 
         #endregion
     }
 
-    public class WoopsaDynamicObject : DynamicObject
+    public class WoopsaDynamicClientObject : DynamicObject
     {
         #region Constructors
 
-        public WoopsaDynamicObject(WoopsaClientObject innerObject)
+        public WoopsaDynamicClientObject(WoopsaClientObject innerObject)
         {
             _innerObject = innerObject;
         }
@@ -108,14 +108,15 @@ namespace Woopsa
             foreach (var item in _innerObject.Items)
             {
                 if (binder.Name.Equals(item.Name))
-                {
-                    result = new WoopsaDynamicObject(item);
-                    return true;
-                }
+                    if (item is WoopsaClientObject)
+                    {
+                        result = new WoopsaDynamicClientObject((WoopsaClientObject)item);
+                        return true;
+                    }
             }
             return false;
         }
-        
+
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
             foreach (var property in _innerObject.Properties)

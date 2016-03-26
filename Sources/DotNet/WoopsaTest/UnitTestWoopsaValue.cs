@@ -48,7 +48,7 @@ namespace WoopsaTest
 		}
 
 		[TestMethod]
-		public void TestMethodWoopsaDateTimeTimeSpan()
+		public void TestMethodWoopsaValueDateTimeTimeSpan()
 		{
 			WoopsaValue v1 = new DateTime(1972, 11, 1, 10, 11, 12, 13, DateTimeKind.Utc);
 			DateTime t1 = v1;
@@ -84,9 +84,10 @@ namespace WoopsaTest
 			v = WoopsaValue.WoopsaJsonData("{\"Name\":\"Switzerland\" , \"Year\":1291}");
             Assert.IsNotNull(v.JsonData);
             Assert.AreEqual(v.JsonData["Name"].ToString(), "Switzerland");
-			// TODO : finalize this test to check the correctness of Json
-            //Assert.AreEqual(v.AsText, "{\"Name\":\"Switzerland\" , \"Year\":1291}");
-			Assert.AreEqual(v.Type, WoopsaValueType.JsonData);
+            Assert.AreEqual(v.JsonData["Year"].ToInt16(), 1291);
+            Assert.AreEqual(v.JsonData["Year"].ToInt32(), 1291);
+            Assert.AreEqual(v.JsonData["Year"].ToInt64(), 1291);
+            Assert.AreEqual(v.Type, WoopsaValueType.JsonData);
 		}
 
 		[TestMethod]

@@ -11,9 +11,11 @@ namespace Woopsa
         public static readonly TimeSpan DefaultMonitorInterval = TimeSpan.FromMilliseconds(200);
         public static readonly TimeSpan DefaultPublishInterval = TimeSpan.FromMilliseconds(200);
 
+        public const int MinimumNotificationId = 1;
         public const int MaximumNotificationId = 1000000000;
+        public static readonly TimeSpan ClientTimeOut = TimeSpan.FromMinutes(20);
 
-		public const string WoopsaServiceSubscriptionName   = "SubscriptionService";
+        public const string WoopsaServiceSubscriptionName   = "SubscriptionService";
         public const string WoopsaCreateSubscriptionChannel = "CreateSubscriptionChannel";
         public const string WoopsaRegisterSubscription      = "RegisterSubscription";
         public const string WoopsaUnregisterSubscription    = "UnregisterSubscription";
@@ -27,8 +29,7 @@ namespace Woopsa
         public const string WoopsaSubscriptionId            = "SubscriptionId";
         public const string WoopsaLastNotificationId        = "LastNotificationId";
     }
-
-	public interface IWoopsaServiceSubscription
+    public interface IWoopsaServiceSubscription
 	{
 		/// <summary>
 		/// 
@@ -59,7 +60,11 @@ namespace Woopsa
 		/// 
 		/// </summary>
 		/// <param name="subscriptionChannel"></param>
-        /// <param name="lastNotificationId"></param>
+        /// <param name="lastNotificationId">
+        /// The id of the last notification received by the client. All the notifications upt o and including this one
+        /// will be deleted from channel queue.
+        /// Set to 0 to acknowledge a notification queue overflow.
+        /// </param>
 		/// <returns>JsonData. Json serialization of the IWoopsaNotifications. throws an exception if the channel is not valid</returns>
 		IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId);
 	}
@@ -68,6 +73,10 @@ namespace Woopsa
 	{
         IWoopsaValue Value { get; }
         int SubscriptionId { get; }
+
+        /// <summary>
+        /// Id range between 1 and 1_000_000_000
+        /// </summary>
         int Id { get; set; }
 	}
 

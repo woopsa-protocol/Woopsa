@@ -14,13 +14,17 @@ namespace Woopsa
 
         #region Public Events
 
-        // TODO CJI From CJI : Why this event is virtual? What is the need behind this?
-        public virtual event EventHandler<WoopsaNotificationsEventArgs> ValueChange;
+        public event EventHandler<WoopsaNotificationsEventArgs> ValueChange;
+
+        protected virtual void DoValueChanged(WoopsaNotificationsEventArgs e)
+        {
+            if (ValueChange != null)
+                ValueChange(this, e);
+        }
 
         protected virtual void DoValueChanged(IWoopsaNotifications notifications)
         {
-            if (ValueChange != null)
-                ValueChange(this, new WoopsaNotificationsEventArgs(notifications));
+            DoValueChanged(new WoopsaNotificationsEventArgs(notifications));
         }
 
         #endregion

@@ -1,24 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
     public class LightWeightTimer : IDisposable
     {
-        public LightWeightTimer(int interval)
-        {
-            Interval = interval;
-            lock (_timers)
-            {
-                _timers.Add(this);
-            }
-        }
-
+        private static Thread _thread;
+        private static List<LightWeightTimer> _timers = new List<LightWeightTimer>();
         static LightWeightTimer()
         {
             _thread = new Thread(Execute);
@@ -27,10 +17,20 @@ namespace Woopsa
             _thread.Start();
         }
 
-		/// <summary>
-        /// The interval at which to repeat the callback, in milliseconds
+        public LightWeightTimer(TimeSpan interval)
+        {
+            Interval = interval;
+            lock (_timers)
+                _timers.Add(this);
+        }
+        public LightWeightTimer(int interval) : this(TimeSpan.FromMilliseconds(interval))
+        {
+        }
+
+        /// <summary>
+        /// The interval at which to trigger the callbac
         /// </summary>
-        public int Interval { get; private set; }
+        public TimeSpan Interval { get; private set; }
 
         /// <summary>
         /// This value is false by default. You must set this value to
@@ -40,34 +40,27 @@ namespace Woopsa
         {
             get
             {
-                return _isEnabled;
+                return _watch.IsRunning;
             }
             set
             {
-                if ( value )
-                {
+                if (value)
                     _watch.Start();
-                }
-                _isEnabled = value;
+                else
+                    _watch.Stop();
             }
         }
-        private bool _isEnabled = false;
 
         public event EventHandler<EventArgs> Elapsed;
-
         private Stopwatch _watch = new Stopwatch();
-
-        private static Thread _thread;
-        private static List<LightWeightTimer> _timers = new List<LightWeightTimer>();
-        private static object _lock = new object();
 
         private static void Execute(object obj)
         {
-            while (true)
+            for (;;)
             {
                 var i = 0;
                 LightWeightTimer timer = null;
-                for (; ; )
+                for (;;)
                 {
                     lock (_timers)
                     {
@@ -76,11 +69,12 @@ namespace Woopsa
                         else
                             break;
                     }
-                    if (timer.Enabled && timer._watch.ElapsedMilliseconds >= timer.Interval)
-                    {
-                        timer.OnElapsed();
-                        timer._watch.Restart();
-                    }
+                    if (timer.Enabled)
+                        if (timer._watch.Elapsed >= timer.Interval)
+                        {
+                            timer._watch.Restart();
+                            timer.OnElapsed();
+                        }
                 }
                 Thread.Sleep(1);
             }
@@ -89,9 +83,7 @@ namespace Woopsa
         protected virtual void OnElapsed()
         {
             if (Elapsed != null)
-            {
                 Elapsed(this, new EventArgs());
-            }
         }
 
         protected virtual void Dispose(bool disposing)
@@ -101,10 +93,6 @@ namespace Woopsa
                 lock (_timers)
                 {
                     _timers.Remove(this);
-                }
-                if ( _timers.Count == 0 )
-                {
-                    _thread = null;
                 }
             }
         }

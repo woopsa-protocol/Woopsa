@@ -11,17 +11,12 @@ namespace Woopsa
             _client = client;
             _service = new SubscriptionService(_client);
             _channel = new WoopsaClientSubscriptionChannel(_client);
+            _channel.ValueChange += _channel_ValueChange;
         }
 
-        #endregion
-
-        #region Override Event ValueChange
-
-        // TODO CJI From CJI : Why do we need to override the event here?
-        public override event EventHandler<WoopsaNotificationsEventArgs> ValueChange
+        private void _channel_ValueChange(object sender, WoopsaNotificationsEventArgs e)
         {
-            add { _channel.ValueChange += value; }
-            remove { _channel.ValueChange -= value; }
+            DoValueChanged(e);
         }
 
         #endregion
@@ -44,8 +39,12 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
         {
-            _client.Dispose();
-            _service.Dispose();
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                _channel.Dispose();
+                _service.Dispose();
+            }
         }
 
         #endregion

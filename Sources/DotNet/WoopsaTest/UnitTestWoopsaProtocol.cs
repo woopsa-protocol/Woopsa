@@ -41,7 +41,7 @@ namespace WoopsaTest
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    WoopsaProperty property = client.Root.Properties.ByName("Votes");
+                    IWoopsaProperty property = client.Root.Properties.ByName("Votes");
                     property.Value = new WoopsaValue(0);
                     Stopwatch watch = new Stopwatch();
                     watch.Start();

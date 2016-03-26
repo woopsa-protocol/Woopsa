@@ -39,7 +39,9 @@ namespace Woopsa
                             _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
                             break;
                         }
-                        catch (WoopsaNotFoundException) { }
+                        catch (WoopsaNotFoundException)
+                        {
+                        }
                         searchPath += pathParts[i] + WoopsaConst.WoopsaPathSeparator;
                     }
                 }

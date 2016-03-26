@@ -72,7 +72,6 @@ namespace Woopsa
             return UInt64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
 
-        // TODO : Remove this, make a normal method instead of extension
         public static string ToStringWoopsa(double value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
@@ -108,7 +107,7 @@ namespace Woopsa
 
         public static string WoopsaError(Exception e)
         {
-            return String.Format(ErrorFormat, e.Message.JsonEscape(), e.GetType().Name);
+            return String.Format(ErrorFormat, JsonEscape(e.Message), e.GetType().Name);
         }
 
         /// <summary>
@@ -116,19 +115,22 @@ namespace Woopsa
         /// </summary>
         /// <param name="value">The string to escape</param>
         /// <returns>A string with the following special characters handled, in this order: \ " \n \b \f \r \t</returns>
-        public static string JsonEscape(this string value)
+        public static string JsonEscape(string value)
         {
-            // TODO : Optimize performance
-            var s = new StringBuilder(value);
-            return s
-                .Replace("\\", "\\\\")
-                .Replace("\"", "\\\"")
-                .Replace("\n", "\\n")
-                .Replace("\b", "\\b")
-                .Replace("\f", "\\f")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t")
-                .ToString();
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (var item in value)
+                switch (item)
+                {
+                    case '\\': stringBuilder.Append("\\\\"); break;
+                    case '\"': stringBuilder.Append("\\\""); break;
+                    case '\n': stringBuilder.Append("\\n"); break;
+                    case '\b': stringBuilder.Append("\\b"); break;
+                    case '\f': stringBuilder.Append("\\f"); break;
+                    case '\r': stringBuilder.Append("\\r"); break;
+                    case '\t': stringBuilder.Append("\\t"); break;
+                    default: stringBuilder.Append(item); break;
+                }
+            return stringBuilder.ToString();
         }
         public static string Serialize(this IEnumerable<MultipleRequestResponse> responses)
         {
@@ -178,7 +180,7 @@ namespace Woopsa
                     value.Type != WoopsaValueType.Integer &&
                     value.Type != WoopsaValueType.Logical &&
                     value.Type != WoopsaValueType.TimeSpan)
-                valueAsText.Append(ValueEscapeCharacter).Append(value.AsText.JsonEscape()).Append(ValueEscapeCharacter);
+                valueAsText.Append(ValueEscapeCharacter).Append(JsonEscape(value.AsText)).Append(ValueEscapeCharacter);
             else
                 valueAsText.Append(value.AsText);
 
@@ -193,7 +195,7 @@ namespace Woopsa
         {
             if (justName)
             {
-                return String.Format(StringFormat, container.Name.JsonEscape());
+                return String.Format(StringFormat, JsonEscape(container.Name));
             }
             if (container is IWoopsaObject)
             {
@@ -242,13 +244,13 @@ namespace Woopsa
 
         private static string SerializeMetadata(this IWoopsaProperty property)
         {
-            return String.Format(MetadataProperty, property.Name.JsonEscape(), property.Type, property.IsReadOnly.ToString().ToLower());
+            return String.Format(MetadataProperty, JsonEscape(property.Name), property.Type, property.IsReadOnly.ToString().ToLower());
         }
 
         private static string SerializeMetadata(this IWoopsaMethod method)
         {
             string arguments = method.ArgumentInfos.SerializeMetadata();
-            return String.Format(MetadataMethod, method.Name.JsonEscape(), method.ReturnType, arguments);
+            return String.Format(MetadataMethod, JsonEscape(method.Name), method.ReturnType, arguments);
         }
 
         private static string SerializeMetadata(this IEnumerable<IWoopsaMethodArgumentInfo> argumentInfos)
@@ -268,7 +270,7 @@ namespace Woopsa
 
         private static string SerializeMetadata(this IWoopsaMethodArgumentInfo argumentInfo)
         {
-            return String.Format(MetadataArgumentInfo, argumentInfo.Name.JsonEscape(), argumentInfo.Type);
+            return String.Format(MetadataArgumentInfo, JsonEscape(argumentInfo.Name), argumentInfo.Type);
         }
 
         public const string KeyValue = "Value";

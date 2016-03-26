@@ -132,6 +132,7 @@ namespace Woopsa
                         // acknowledge to the server.
                         if (WaitNotification(out notifications, 0) > 0)
                         {
+                            // TODO analyse this code : may fail
                             foreach (IWoopsaNotification notification in notifications.Notifications)
                                 if (notification.Id > _lastNotificationId)
                                     _lastNotificationId = notification.Id;
@@ -153,7 +154,7 @@ namespace Woopsa
             return WaitNotification(out notificationsResult, _lastNotificationId);
         }
 
-        private int WaitNotification(out IWoopsaNotifications notificationsResult, int lastNotificationId)
+        private int WaitNotification(out IWoopsaNotifications notificationsResult, long lastNotificationId)
         {
             var arguments = new List<WoopsaValue> {ChannelId, lastNotificationId};
             IWoopsaValue val = _waitNotification.Invoke(arguments);
@@ -281,7 +282,7 @@ namespace Woopsa
         private readonly IWoopsaMethod _waitNotification;
         private readonly int _notificationQueueSize;
 
-        private int _lastNotificationId;
+        private long _lastNotificationId;
 
         private readonly TimeSpan _waitNotificationRetryPeriod = TimeSpan.FromSeconds(10);
 
