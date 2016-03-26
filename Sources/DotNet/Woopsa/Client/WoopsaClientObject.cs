@@ -40,8 +40,11 @@ namespace Woopsa
 
         #region Public Methods
 
-        public void Refresh()
+        public override void Refresh()
         {
+            // TODO : analyse this code and redesign
+
+
             // We need this apparently useless "flushProperties"
             // argument because Get'ing one of these 3 properties
             // will trigger the DoPopulate method on the WoopsaObject,

@@ -116,12 +116,17 @@ namespace Woopsa
             new SubscriptionService((WoopsaObject)_root);
         }
 
+        /// <summary>
+        /// Clear all the knowledge of IWoopsaContainer stored in cache for performance optimization.
+        /// Call this method when the underlying structure of cached IWoopContainer has changed
+        /// For IWoopsaContainer with a frequently changing structure, it is preferible to avoi caching
+        /// </summary>
+        /// <seealso cref="PathCaching"/>
         public void ClearCache()
         {
-            _pathCache = new Dictionary<string, IWoopsaElement>();
-            // TODO : design a more general approach for clearing the root or sub nodes
-            if (_root is WoopsaObjectAdapter)
-                (_root as WoopsaObjectAdapter).ClearCache();
+            _pathCache.Clear();
+            if (_root is WoopsaContainer)
+                (_root as WoopsaContainer).Refresh();
         }
 
         protected virtual bool OnCachingPath(string path)

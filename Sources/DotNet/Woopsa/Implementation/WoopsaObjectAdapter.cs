@@ -99,11 +99,6 @@ namespace Woopsa
 
         public const string IEnumerableItemBaseName = "Item";
 
-        static public void ClearTypeCache()
-        {
-            _typesCache.Clear();
-        }
-
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
             WoopsaVisibility defaultVisibility = WoopsaVisibility.DefaultVisible)
@@ -125,18 +120,6 @@ namespace Woopsa
                 Visibility = defaultVisibility;
         }
 
-        public void ClearCache()
-        {
-            //TODO check this implementation
-
-            // Clear all items and all the children of each item.
-            base.Clear();
-
-            // Clear the properties and the methods of the current object.
-            ClearProperties();
-            ClearMethods();
-
-        }
 
         /// <summary>
         /// To customize the woopsa visibility of a member. 
@@ -158,6 +141,12 @@ namespace Woopsa
         /// Visibility for this WoopsaObjectAdapter
         /// </summary>
         public WoopsaVisibility Visibility { get; private set; }
+
+        public override void Refresh()
+        {
+            base.Refresh();
+            Clear();
+        }
 
         #region private members
 

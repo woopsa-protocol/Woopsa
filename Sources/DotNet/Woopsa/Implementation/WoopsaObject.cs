@@ -65,7 +65,7 @@ namespace Woopsa
 
         #endregion
 
-        #region Public Properties
+        #region Public 
 
         public IEnumerable<IWoopsaContainer> Items
         {
@@ -74,6 +74,19 @@ namespace Woopsa
                 DoPopulate();
                 return _items;
             }
+        }
+        
+        /// <summary>
+        /// Calls refresh recursively on all the WoopsaContainers hierarchy.
+        /// Objects containing dynamic structure should refresh their content following this call.
+        /// </summary>
+        public virtual void Refresh()
+        {
+            foreach (var item in _items)
+                item.Refresh();
+            // Refresh must not call clear, as WoopsaContainer and WoopsaObject can be used to create
+            // static hierarchy.
+            // Inheriting classes containing dynamic hierarchy should call clear in their Refresh method implementation
         }
 
         #endregion
@@ -104,7 +117,7 @@ namespace Woopsa
             _items.Remove(item);
         }
 
-        internal void Clear()
+        protected virtual void Clear()
         {
             for (int i = _items.Count - 1; i >= 0; i--)
                 _items[i].Dispose();
@@ -312,6 +325,13 @@ namespace Woopsa
         {
         }
 
+        protected override void Clear()
+        {
+            ClearProperties();
+            ClearMethods();
+            base.Clear();
+        }
+
         #region Properties Management Add / Remove / Clear
 
         internal void Add(WoopsaProperty item)
@@ -326,7 +346,7 @@ namespace Woopsa
             _properties.Remove(item);
         }
 
-        internal void ClearProperties()
+        private void ClearProperties()
         {
             for (int i = _properties.Count - 1; i >= 0; i--)
                 _properties[i].Dispose();
@@ -348,21 +368,10 @@ namespace Woopsa
             _methods.Remove(item);
         }
 
-        internal void ClearMethods()
+        private void ClearMethods()
         {
             for (int i = _methods.Count - 1; i >= 0; i--)
                 _methods[i].Dispose();
-        }
-
-        #endregion
-
-        #region IDisposable
-
-        protected override void Dispose(bool disposing)
-        {
-            ClearProperties();
-            ClearMethods();
-            base.Dispose(disposing);
         }
 
         #endregion

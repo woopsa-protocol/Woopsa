@@ -237,8 +237,6 @@ namespace Woopsa
                     // Do not dispose the reader so that the inner stream stays open (no using)
                     StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true);
                     bool leaveOpen = true;
-                    // TODO : is a timeout required ? 
-                    // stream.ReadTimeout = 2000;
                     HTTPResponse response = null;
                     HTTPRequest request = null;
 

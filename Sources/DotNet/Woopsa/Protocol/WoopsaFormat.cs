@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,102 @@ namespace Woopsa
 {
     public static class WoopsaFormat
     {
+
+        #region Helpers
+
+        public static bool ToBool(string text)
+        {
+            if (text == WoopsaConst.WoopsaTrue)
+                return true;
+            else if (text == WoopsaConst.WoopsaFalse)
+                return false;
+            else
+                throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("bool", text));
+
+        }
+
+        public static bool TryParseWoopsa(string value, out float result)
+        {
+            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out double result)
+        {
+            return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out sbyte result)
+        {
+            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int16 result)
+        {
+            return Int16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int32 result)
+        {
+            return Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int64 result)
+        {
+            return Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out byte result)
+        {
+            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out UInt16 result)
+        {
+            return UInt16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out UInt32 result)
+        {
+            return UInt32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+        public static bool TryParseWoopsa(string value, out UInt64 result)
+        {
+            return UInt64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        // TODO : Remove this, make a normal method instead of extension
+        public static string ToStringWoopsa(double value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(Int64 value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(int value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(DateTime dateTime)
+        {
+            return dateTime.ToUniversalTime().ToString("o");
+        }
+
+        public static string ToStringWoopsa(TimeSpan timeSpan)
+        {
+            return ToStringWoopsa(timeSpan.TotalSeconds);
+        }
+
+        public static string ToStringWoopsa(object o)
+        {
+            return Convert.ToString(o, CultureInfo.InvariantCulture);
+        }
+
+        #endregion
+
 
         public static string WoopsaError(Exception e)
         {
@@ -86,14 +183,10 @@ namespace Woopsa
                 valueAsText.Append(value.AsText);
 
             if (value.TimeStamp.HasValue)
-            {
                 return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(),
-                    value.TimeStamp.Value.ToStringWoopsa());
-            }
+                    WoopsaFormat.ToStringWoopsa(value.TimeStamp.Value));
             else
-            {
                 return String.Format(ValueFormatNoDate, valueAsText.ToString(), value.Type.ToString());
-            }
         }
 
         public static string SerializeMetadata(this IWoopsaContainer container, bool justName = false)

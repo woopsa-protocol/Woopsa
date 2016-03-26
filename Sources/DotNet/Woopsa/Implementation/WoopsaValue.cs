@@ -72,9 +72,9 @@ namespace Woopsa
                         if (string.IsNullOrEmpty((string)value))
                             return new WoopsaValue(string.Empty, timeStamp);
                         else
-                            return new WoopsaValue(Convert.ToString(value, CultureInfo.InvariantCulture), timeStamp);
+                            return new WoopsaValue(WoopsaFormat.ToStringWoopsa(value), timeStamp);
                     default:
-                        return WoopsaValue.CreateUnchecked(Convert.ToString(value, CultureInfo.InvariantCulture), type, timeStamp);
+                        return WoopsaValue.CreateUnchecked(WoopsaFormat.ToStringWoopsa(value), type, timeStamp);
                 }
             }
             catch (InvalidCastException)
@@ -101,22 +101,22 @@ namespace Woopsa
         }
 
         public WoopsaValue(Int64 value, DateTime? timestamp = null)
-            : this(value.ToStringWoopsa(), WoopsaValueType.Integer, timestamp)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Integer, timestamp)
         {
         }
 
         public WoopsaValue(double value, DateTime? timestamp = null)
-            : this(value.ToStringWoopsa(), WoopsaValueType.Real, timestamp)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Real, timestamp)
         {
         }
 
         public WoopsaValue(DateTime value, DateTime? timestamp = null)
-            : this(value.ToStringWoopsa(), WoopsaValueType.DateTime, timestamp)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.DateTime, timestamp)
         {
         }
 
         public WoopsaValue(TimeSpan value, DateTime? timestamp = null)
-            : this(value.ToStringWoopsa(), WoopsaValueType.TimeSpan, timestamp)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.TimeSpan, timestamp)
         {
         }
 

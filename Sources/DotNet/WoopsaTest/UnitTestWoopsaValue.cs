@@ -82,6 +82,8 @@ namespace WoopsaTest
 			Assert.AreEqual(v.AsText, "http://www.woopsa.org/logo.png");
 			Assert.AreEqual(v.Type, WoopsaValueType.ResourceUrl);
 			v = WoopsaValue.WoopsaJsonData("{\"Name\":\"Switzerland\" , \"Year\":1291}");
+            Assert.IsNotNull(v.JsonData);
+            Assert.AreEqual(v.JsonData["Name"].ToString(), "Switzerland");
 			// TODO : finalize this test to check the correctness of Json
             //Assert.AreEqual(v.AsText, "{\"Name\":\"Switzerland\" , \"Year\":1291}");
 			Assert.AreEqual(v.Type, WoopsaValueType.JsonData);
