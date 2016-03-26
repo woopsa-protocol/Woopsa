@@ -165,7 +165,7 @@ namespace Woopsa
         public static bool ToBool(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (bool)data.InternalObject;
+                return WoopsaExtensions.ToBool(data.InternalObject.ToString());
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("bool", data.InternalObject.GetType().ToString()));
         }
@@ -173,7 +173,7 @@ namespace Woopsa
         public static SByte ToSByte(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (SByte)data.InternalObject;
+                return Convert.ToSByte(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("SByte", data.InternalObject.GetType().ToString()));
         }
@@ -181,7 +181,7 @@ namespace Woopsa
         public static Int16 ToInt16(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (Int16)data.InternalObject;
+                return Convert.ToInt16(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("Int16", data.InternalObject.GetType().ToString()));
         }
@@ -189,7 +189,7 @@ namespace Woopsa
         public static Int32 ToInt32(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (Int32)data.InternalObject;
+                return Convert.ToInt32(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("Int32", data.InternalObject.GetType().ToString()));
         }
@@ -197,7 +197,7 @@ namespace Woopsa
         public static Int64 ToInt64(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (Int64)data.InternalObject;
+                return Convert.ToInt64(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("Int64", data.InternalObject.GetType().ToString()));
         }
@@ -205,7 +205,7 @@ namespace Woopsa
         public static Byte ToByte(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (Byte)data.InternalObject;
+                return Convert.ToByte(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("Byte", data.InternalObject.GetType().ToString()));
         }
@@ -213,7 +213,7 @@ namespace Woopsa
         public static UInt16 ToUInt16(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (UInt16)data.InternalObject;
+                return Convert.ToUInt16(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("UInt16", data.InternalObject.GetType().ToString()));
         }
@@ -221,7 +221,7 @@ namespace Woopsa
         public static UInt32 ToUInt32(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (UInt32)data.InternalObject;
+                return Convert.ToUInt32(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("UInt32", data.InternalObject.GetType().ToString()));
         }
@@ -229,7 +229,7 @@ namespace Woopsa
         public static UInt64 ToUInt64(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (UInt64)data.InternalObject;
+                return Convert.ToUInt64(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("UInt64", data.InternalObject.GetType().ToString()));
         }
@@ -237,7 +237,7 @@ namespace Woopsa
         public static float ToFloat(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (float)data.InternalObject;
+                return (float)Convert.ToDouble(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("float", data.InternalObject.GetType().ToString()));
         }
@@ -245,7 +245,7 @@ namespace Woopsa
         public static double ToDouble(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (double)data.InternalObject;
+                return Convert.ToDouble(data.InternalObject);
             else
                 throw new WoopsaException(WoopsaExtensions.WoopsaCastTypeExceptionMessage("double", data.InternalObject.GetType().ToString()));
         }

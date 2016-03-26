@@ -24,7 +24,7 @@ namespace WoopsaTest
                 {
                     int id = client.Root.Subscribe(nameof(TestObjectServer.Votes), 
                         (sender, e) => { isValueChanged = true; }, 
-                        TimeSpan.FromMilliseconds(10.0), TimeSpan.FromMilliseconds(20.0));
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();

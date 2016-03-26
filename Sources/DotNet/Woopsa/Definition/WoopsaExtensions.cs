@@ -25,15 +25,21 @@ namespace Woopsa
             return string.Format("Cannot find WoopsaElement specified by path {0}", path);
         }
 
+        public static bool ToBool(string text)
+        {
+            if (text == WoopsaConst.WoopsaTrue)
+                return true;
+            else if (text == WoopsaConst.WoopsaFalse)
+                return false;
+            else
+                throw new WoopsaException(WoopsaCastValueExceptionMessage("bool", text));
+
+        }
+
         public static bool ToBool(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Logical)
-                if (value.AsText == WoopsaConst.WoopsaTrue)
-                    return true;
-                else if (value.AsText == WoopsaConst.WoopsaFalse)
-                    return false;
-                else
-                    throw new WoopsaException(WoopsaCastValueExceptionMessage("bool", value.AsText));
+                return ToBool(value.AsText);
             else
                 throw new WoopsaException(WoopsaCastTypeExceptionMessage("bool", value.Type.ToString()));
         }
