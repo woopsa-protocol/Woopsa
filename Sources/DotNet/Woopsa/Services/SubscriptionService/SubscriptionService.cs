@@ -1,10 +1,13 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 
 namespace Woopsa
 {
     public class SubscriptionService : WoopsaObject, IWoopsaServiceSubscription
     {
+        public readonly TimeSpan ChannelTimedOutCheckInterval = TimeSpan.FromSeconds(60);
+
         #region Constructors
 
         public SubscriptionService(WoopsaContainer container)
@@ -61,6 +64,44 @@ namespace Woopsa
                     var arguments = args as IWoopsaValue[] ?? args.ToArray();
                     return WaitNotification(arguments[0], arguments[1]);
                 });
+
+            _timerCheckChannelTimedOut = new LightWeightTimer(ChannelTimedOutCheckInterval);
+            _timerCheckChannelTimedOut.Elapsed += _timerCheckChannelTimedOut_Elapsed;
+            _timerCheckChannelTimedOut.IsEnabled = true;
+        }
+
+        private void _timerCheckChannelTimedOut_Elapsed(object sender, EventArgs e)
+        {
+            WoopsaSubscriptionChannel[] timedoutChannels;
+            lock(_channels)
+            {
+                timedoutChannels = _channels.Values.Where((item) => item.ClientTimedOut).ToArray();
+            }
+            foreach (var item in timedoutChannels)
+            {
+                lock(_channels)
+                    _channels.Remove(item.Id);
+                item.Dispose();
+            }
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                if (_timerCheckChannelTimedOut != null)
+                {
+                    _timerCheckChannelTimedOut.Dispose();
+                    _timerCheckChannelTimedOut = null;
+                }
+                if (_channels != null)
+                {
+                    foreach (var item in _channels.Values)
+                        item.Dispose();
+                    _channels = null;
+                }
+            }
         }
 
         #endregion
@@ -123,7 +164,8 @@ namespace Woopsa
         private WoopsaMethod _registerSubscription;
         private WoopsaMethod _unregisterSubscription;
         private WoopsaMethod _waitNotification;
-        private readonly Dictionary<int, WoopsaSubscriptionChannel> _channels = new Dictionary<int, WoopsaSubscriptionChannel>();
+        private Dictionary<int, WoopsaSubscriptionChannel> _channels = new Dictionary<int, WoopsaSubscriptionChannel>();
+        private LightWeightTimer _timerCheckChannelTimedOut;
 
         #endregion
     }

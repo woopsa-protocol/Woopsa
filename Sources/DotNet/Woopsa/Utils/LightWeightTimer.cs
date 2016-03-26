@@ -36,7 +36,7 @@ namespace Woopsa
         /// This value is false by default. You must set this value to
         /// true in order to start this LightWeightTimer.
         /// </summary>
-        public bool Enabled
+        public bool IsEnabled
         {
             get
             {
@@ -69,7 +69,7 @@ namespace Woopsa
                         else
                             break;
                     }
-                    if (timer.Enabled)
+                    if (timer.IsEnabled)
                         if (timer._watch.Elapsed >= timer.Interval)
                         {
                             timer._watch.Restart();

@@ -8,7 +8,6 @@ namespace Woopsa
 {
     public class WoopsaSubscriptionChannel : IDisposable
     {
-        // TODO CJI From FSG : Delete subscription channels that aren't active after XX minutes
         public WoopsaSubscriptionChannel(int notificationQueueSize)
         {
             lock(_idLock)

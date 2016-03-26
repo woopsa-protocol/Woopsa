@@ -12,7 +12,7 @@ namespace WoopsaTest
 {
     [TestClass]
     public class UnitTestWoopsaClient
-    {         
+    {
         [TestMethod]
         public void TestWoopsaClientSubscriptionChannel()
         {
@@ -22,13 +22,13 @@ namespace WoopsaTest
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    int id = client.Root.Subscribe(nameof(TestObjectServer.Votes), 
-                        (sender, e) => { isValueChanged = true; }, 
+                    int id = client.Root.Subscribe(nameof(TestObjectServer.Votes),
+                        (sender, e) => { isValueChanged = true; },
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while (!isValueChanged && watch.Elapsed < TimeSpan.FromSeconds(5))
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
