@@ -137,7 +137,7 @@ namespace Woopsa
         /// <summary>
         /// The authenticator in use by Woopsa. Set to null if no authenticator is used. 
         /// </summary>
-        public WWWAuthenticator Authenticator
+        public BaseAuthenticator Authenticator
         {
             get
             {
@@ -166,7 +166,7 @@ namespace Woopsa
             }
         }
         
-        private WWWAuthenticator _authenticator;
+        private BaseAuthenticator _authenticator;
 
         #region Private Members
         private void AddRoutes()

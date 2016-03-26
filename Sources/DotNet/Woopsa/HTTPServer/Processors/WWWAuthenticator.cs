@@ -1,22 +1,13 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    public delegate bool AuthenticationCheck(string username, string password);
-
-    public class WWWAuthenticator : PostRouteProcessor, IRequestProcessor
+    public abstract class BaseAuthenticator : PostRouteProcessor, IRequestProcessor
     {
-        public WWWAuthenticator(string realm, AuthenticationCheck authenticationCheck)
+        public BaseAuthenticator(string realm)
         {
-            Realm = realm;
-            if (authenticationCheck != null)
-                AuthenticationCheck = authenticationCheck;
-            else
-                throw new NotImplementedException("No DoCheck delegate was specified for WWWAuthenticator.");
+            Realm = realm;            
         }
 
         public string Realm { get; private set; }
@@ -31,7 +22,7 @@ namespace Woopsa
                 string[] parts = authString.Split(':');
                 string username = parts[0];
                 string password = parts[1];
-                authenticated = AuthenticationCheck(username, password);
+                authenticated = Authenticate(username, password);
             }
             else
                 authenticated = false;
@@ -43,6 +34,44 @@ namespace Woopsa
             return authenticated;
         }
 
+        protected abstract bool Authenticate(string username, string password);
+    }
+
+    public class AuthenticationCheckEventArgs : EventArgs
+    {
+        public AuthenticationCheckEventArgs(string username, string password)
+        {
+            Username = username;
+            Password = password;
+        }
+        public string Username { get; private set; }
+        public string Password { get; private set; }
+
+        public bool IsAuthenticated { get; set; }
+    }
+
+    public delegate void AuthenticationCheck(object sender, AuthenticationCheckEventArgs e);
+
+    public class SimpleAuthenticator : BaseAuthenticator
+    {
+        public SimpleAuthenticator(string realm, AuthenticationCheck authenticationCheck): 
+            base(realm)
+        {
+            if (authenticationCheck != null)
+                AuthenticationCheck = authenticationCheck;
+            else
+                throw new NotImplementedException("No DoCheck delegate was specified for WWWAuthenticator.");
+        }
+
+        protected override bool Authenticate(string username, string password)
+        {
+            AuthenticationCheckEventArgs eventArgs = new AuthenticationCheckEventArgs(username, password);
+            eventArgs.IsAuthenticated = false;
+            AuthenticationCheck(this, eventArgs);
+            return eventArgs.IsAuthenticated;
+        }
+
         private AuthenticationCheck AuthenticationCheck;
     }
+
 }
