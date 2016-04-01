@@ -96,7 +96,7 @@ namespace Woopsa
                     else
                     {
                         JavaScriptSerializer serializer = new JavaScriptSerializer();
-                        string _serializedData = serializer.Serialize(_data);
+                        _serializedData = serializer.Serialize(_data);
                     }
                 }
                 return _serializedData;
