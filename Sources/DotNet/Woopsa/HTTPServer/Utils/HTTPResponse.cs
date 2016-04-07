@@ -35,6 +35,7 @@ namespace Woopsa
             _bufferWriter = new StreamWriter(_bufferStream);
             ResponseCode = 200;
             ResponseMessage = "OK";
+            _isResponseSent = false;
         }
         #endregion
         
@@ -94,6 +95,22 @@ namespace Woopsa
         public void SetHeader(string header, string value)
         {
             _headers[header] = value;
+        }
+
+        /// <summary>
+        /// Set the status and message code of the response
+        /// </summary>
+        /// <param name="responseCode"></param>
+        /// <param name="responseMessage"></param>
+        public void SetStatusCode(int responseCode, string responseMessage)
+        {
+            if(!_isResponseSent)
+            {
+                ResponseCode = responseCode;
+                ResponseMessage = responseMessage;
+            }
+            else
+                throw new WoopsaException("Response has already been sent");
         }
 
         /// <summary>
@@ -187,6 +204,7 @@ namespace Woopsa
                 _bufferStream.CopyTo(responseStream);
                 responseStream.Position = 0;
                 responseStream.CopyTo(outputStream);
+                _isResponseSent = true;
             }
             catch(IOException e)
             {
@@ -201,6 +219,7 @@ namespace Woopsa
         private Stream _bufferStream;
         private StreamWriter _bufferWriter;
         private Dictionary<string, string> _headers;
+        private bool _isResponseSent;
         #endregion
 
         #region Private/Protected/Internal Methods
