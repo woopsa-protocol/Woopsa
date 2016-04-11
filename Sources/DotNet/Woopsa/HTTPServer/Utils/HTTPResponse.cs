@@ -35,10 +35,9 @@ namespace Woopsa
             _bufferWriter = new StreamWriter(_bufferStream);
             ResponseCode = 200;
             ResponseMessage = "OK";
-            _isResponseSent = false;
         }
         #endregion
-        
+
         #region Public Members
         internal IEnumerable<string> Headers
         {
@@ -104,13 +103,8 @@ namespace Woopsa
         /// <param name="responseMessage"></param>
         public void SetStatusCode(int responseCode, string responseMessage)
         {
-            if(!_isResponseSent)
-            {
-                ResponseCode = responseCode;
-                ResponseMessage = responseMessage;
-            }
-            else
-                throw new WoopsaException("Response has already been sent");
+            ResponseCode = responseCode;
+            ResponseMessage = responseMessage;
         }
 
         /// <summary>
@@ -204,9 +198,8 @@ namespace Woopsa
                 _bufferStream.CopyTo(responseStream);
                 responseStream.Position = 0;
                 responseStream.CopyTo(outputStream);
-                _isResponseSent = true;
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 // This error will be "caught" by the Web Server and evented up so the
                 // user can do whatever he wants (or not) with it
@@ -214,12 +207,11 @@ namespace Woopsa
             }
         }
         #endregion
-        
+
         #region Private Members        
         private Stream _bufferStream;
         private StreamWriter _bufferWriter;
         private Dictionary<string, string> _headers;
-        private bool _isResponseSent;
         #endregion
 
         #region Private/Protected/Internal Methods

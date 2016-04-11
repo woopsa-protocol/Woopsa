@@ -1,13 +1,14 @@
-﻿namespace Woopsa
+﻿
+namespace Woopsa
 {
     public enum WoopsaRedirection
     {
         Temporary = 1,
         Premanent = 2
     }
-    public class RouteHandelerRedirect : IHTTPRouteHandler
+    public class RouteHandlerRedirect : IHTTPRouteHandler
     {
-        public RouteHandelerRedirect(string location, WoopsaRedirection redirection)
+        public RouteHandlerRedirect(string location, WoopsaRedirection redirection)
         {
             _location = location;
             _redirection = redirection;
