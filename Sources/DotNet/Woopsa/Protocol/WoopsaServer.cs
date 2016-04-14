@@ -405,6 +405,8 @@ namespace Woopsa
                 response.SetHeader("Access-Control-Allow-Origin", "*");
                 response.SetHeader("Access-Control-Allow-Credentials", "true");
                 response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString(CultureInfo.InvariantCulture));
+                // Make IE stop cacheing AJAX requests
+                response.SetHeader("Cache-Control", "no-cache, no-store");
                 return true;
             }
         }
