@@ -8,7 +8,7 @@ namespace Woopsa
 {
     public class WoopsaSubscription : IDisposable
     {
-        public WoopsaSubscription(IWoopsaContainer container, int id, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public WoopsaSubscription(WoopsaContainer container, int id, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             Id = id;
             PropertyLink = propertyLink;
@@ -34,7 +34,7 @@ namespace Woopsa
                     {
                         try
                         {
-                            IWoopsaObject subscriptionService = (IWoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+                            WoopsaObject subscriptionService = (WoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
                             channelContainerPath = subscriptionService.Owner.GetPath();
                             _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
                             break;

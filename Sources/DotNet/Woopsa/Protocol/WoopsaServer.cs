@@ -317,7 +317,7 @@ namespace Woopsa
                         throw new WoopsaInvalidOperationException(String.Format("Missing argument {0} for method {1}", argInfo.Name, item.Name));
                     wArguments.Add(WoopsaValue.CreateUnchecked(argumentValue, argInfo.Type));
                 }
-                IWoopsaValue result = method.Invoke(wArguments);
+                IWoopsaValue result = method.Invoke(wArguments.ToArray());
                 return (result != null) ? result.Serialize() : string.Empty;
             }
             else

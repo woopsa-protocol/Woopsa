@@ -253,7 +253,7 @@ namespace Woopsa
         #endregion
     }
 
-    public delegate WoopsaValue WoopsaMethodInvoke(IEnumerable<IWoopsaValue> arguments);
+    public delegate WoopsaValue WoopsaMethodInvoke(IWoopsaValue[] arguments);
 
     public class WoopsaMethod : WoopsaElement, IWoopsaMethod
     {
@@ -273,12 +273,16 @@ namespace Woopsa
 
         #region IWoopsaMethod
 
-        public WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments)
+        public WoopsaValue Invoke(params WoopsaValue[] arguments)
         {
             return _methodInvoke(arguments);
         }
-
-        IWoopsaValue IWoopsaMethod.Invoke(IEnumerable<IWoopsaValue> arguments)
+        public WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments)
+        {
+            return _methodInvoke(arguments.ToArray());
+        }
+        
+        IWoopsaValue IWoopsaMethod.Invoke(IWoopsaValue[] arguments)
         {
             return Invoke(arguments);
         }

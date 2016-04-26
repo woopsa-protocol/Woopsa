@@ -87,7 +87,7 @@ namespace Woopsa
 
         private void Create(int notificationQueueSize)
         {
-            var arguments = new List<WoopsaValue> {notificationQueueSize};
+            var arguments = new WoopsaValue[] {notificationQueueSize};
             IWoopsaValue result = _createSubscriptionChannel.Invoke(arguments);
             ChannelId = result.ToInt32();
         }
@@ -156,7 +156,7 @@ namespace Woopsa
 
         private int WaitNotification(out IWoopsaNotifications notificationsResult, long lastNotificationId)
         {
-            var arguments = new List<WoopsaValue> {ChannelId, lastNotificationId};
+            var arguments = new WoopsaValue[] {ChannelId, lastNotificationId};
             IWoopsaValue val = _waitNotification.Invoke(arguments);
             WoopsaJsonData results = ((WoopsaValue)val).JsonData;
 
@@ -220,9 +220,9 @@ namespace Woopsa
             }
 
             public bool Unregister()
-            {
-                var arguments = new List<WoopsaValue> {_channel.ChannelId, Id};
-                IWoopsaValue result = _unregisterSubscription.Invoke(arguments);
+            {                
+                IWoopsaValue result = _unregisterSubscription.Invoke(new WoopsaValue[]
+                    { _channel.ChannelId, Id});
                 return result.ToBool();
             }
 
@@ -232,12 +232,9 @@ namespace Woopsa
 
             private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
             {
-                var arguments = new List<WoopsaValue>();
-                arguments.Add(_channel.ChannelId);
-                arguments.Add(WoopsaValue.CreateUnchecked(Path, WoopsaValueType.WoopsaLink));
-                arguments.Add(monitorInterval);
-                arguments.Add(publishInterval);
-                IWoopsaValue result = _registerSubscription.Invoke(arguments);
+                IWoopsaValue result = _registerSubscription.Invoke(
+                    new WoopsaValue[] {_channel.ChannelId,
+                        WoopsaValue.WoopsaRelativeLink(Path), monitorInterval, publishInterval});                  
                 return result.ToInt32();
             }
 

@@ -30,7 +30,7 @@ namespace WoopsaTest
 
             Assert.AreEqual(coMessung1.Properties.Count(), 2);
 			Assert.AreEqual(coMessung1.Properties.First().Value.ToDouble(), 1040.0);
-            coMessung1.Properties.ByName("Variation").Value = (WoopsaValue)45;
+            coMessung1.Properties.ByName("Variation").Value = 45;
             Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToInt32(), 45);
             Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToString(), "45");
             (coMessung1.ByName("Variation") as IWoopsaProperty).Value = (WoopsaValue)36;
@@ -45,7 +45,7 @@ namespace WoopsaTest
 					new WoopsaMethodArgumentInfo("maxLevel", WoopsaValueType.Real)
 				},
 				Calibrate);
-			IWoopsaValue result = method1.Invoke(new WoopsaValue[] { 1.1, 5.5});
+			IWoopsaValue result = method1.Invoke(1.1, 5.5);
 			Assert.AreEqual(result, WoopsaValue.Null);
 			Assert.AreEqual(_minLevel, 1.1);
 			Assert.AreEqual(_maxLevel, 5.5);

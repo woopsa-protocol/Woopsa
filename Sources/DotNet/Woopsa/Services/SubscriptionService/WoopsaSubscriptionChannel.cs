@@ -38,7 +38,7 @@ namespace Woopsa
             get { return _watchClientActivity.Elapsed > WoopsaServiceSubscriptionConst.ClientTimeOut; }
         }
 
-        public int RegisterSubscription(IWoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public int RegisterSubscription(WoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             WoopsaSubscription newSubscription;
             lock(_idLock)

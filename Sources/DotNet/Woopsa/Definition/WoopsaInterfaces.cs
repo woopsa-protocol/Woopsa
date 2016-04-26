@@ -59,7 +59,7 @@ namespace Woopsa
 
 	public interface IWoopsaMethod : IWoopsaElement
 	{
-		IWoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments);
+		IWoopsaValue Invoke(IWoopsaValue[] arguments);
 		WoopsaValueType ReturnType { get; }
 		IEnumerable<IWoopsaMethodArgumentInfo> ArgumentInfos { get; }
 	}
