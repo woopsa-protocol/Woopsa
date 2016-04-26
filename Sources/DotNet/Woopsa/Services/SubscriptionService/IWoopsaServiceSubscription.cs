@@ -36,7 +36,7 @@ namespace Woopsa
 		/// </summary>
 		/// <param name="notificationQueueSize">The maximum number of pending notifications in the channel</param>
 		/// <returns>Integer, the identifier of the subscription channel</returns>
-		IWoopsaValue CreateSubscriptionChannel(IWoopsaValue notificationQueueSize);
+		WoopsaValue CreateSubscriptionChannel(IWoopsaValue notificationQueueSize);
 
 		/// <summary>
 		/// 
@@ -46,7 +46,7 @@ namespace Woopsa
 		/// <param name="monitorInterval"></param>
 		/// <param name="publishInterval"></param>
 		/// <returns>Integer, the identifier of the subscription</returns>
-		IWoopsaValue RegisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue woopsaPropertyLink, IWoopsaValue monitorInterval, IWoopsaValue publishInterval);
+		WoopsaValue RegisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue woopsaPropertyLink, IWoopsaValue monitorInterval, IWoopsaValue publishInterval);
 
 		/// <summary>
 		/// 
@@ -54,7 +54,7 @@ namespace Woopsa
 		/// <param name="subscriptionChannel"></param>
 		/// <param name="subscriptionId"></param>
 		/// <returns>Logical, true if the subsciption has been found and successfully unregistered</returns>
-		IWoopsaValue UnregisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue subscriptionId);
+		WoopsaValue UnregisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue subscriptionId);
 
 		/// <summary>
 		/// 
@@ -66,7 +66,7 @@ namespace Woopsa
         /// Set to 0 to acknowledge a notification queue overflow.
         /// </param>
 		/// <returns>JsonData. Json serialization of the IWoopsaNotifications. throws an exception if the channel is not valid</returns>
-		IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId);
+		WoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId);
 	}
 
 	public interface IWoopsaNotification

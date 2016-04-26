@@ -108,7 +108,7 @@ namespace Woopsa
 
         #region IWoopsaServiceSubscription
 
-        public IWoopsaValue CreateSubscriptionChannel(IWoopsaValue notificationQueueSize)
+        public WoopsaValue CreateSubscriptionChannel(IWoopsaValue notificationQueueSize)
         {
             var channel = new WoopsaSubscriptionChannel(notificationQueueSize.ToInt32());
             lock (_channels)
@@ -116,18 +116,18 @@ namespace Woopsa
             return new WoopsaValue(channel.Id);
         }
 
-        public IWoopsaValue RegisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue woopsaPropertyLink, IWoopsaValue monitorInterval, IWoopsaValue publishInterval)
+        public WoopsaValue RegisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue woopsaPropertyLink, IWoopsaValue monitorInterval, IWoopsaValue publishInterval)
         {
             int channelId = subscriptionChannel.ToInt32();
             lock (_channels)
                 if (_channels.ContainsKey(channelId))
-                    return new WoopsaValue(_channels[channelId].RegisterSubscription(Container, woopsaPropertyLink, monitorInterval.ToTimeSpan(), publishInterval.ToTimeSpan()));
+                    return new WoopsaValue(_channels[channelId].RegisterSubscription(Owner, woopsaPropertyLink, monitorInterval.ToTimeSpan(), publishInterval.ToTimeSpan()));
                 else
                     throw new WoopsaException(string.Format("Tried to register a subscription on channel with id={0} that does not exist", subscriptionChannel.ToInt32()));
         }
 
         // Logical, true if the subscription has been found and successfully unregistered
-        public IWoopsaValue UnregisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue subscriptionId)
+        public WoopsaValue UnregisterSubscription(IWoopsaValue subscriptionChannel, IWoopsaValue subscriptionId)
         {
             int channelId = subscriptionChannel.ToInt32();
             lock (_channels)
@@ -137,7 +137,7 @@ namespace Woopsa
                     throw new WoopsaException(string.Format("Tried to unregister a subscription on channel with id={0} that does not exist", subscriptionChannel.ToInt32()));
         }
 
-        public IWoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId)
+        public WoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId)
         {
             int channelId = subscriptionChannel.ToInt32();
             int notificationId = lastNotificationId.ToInt32();

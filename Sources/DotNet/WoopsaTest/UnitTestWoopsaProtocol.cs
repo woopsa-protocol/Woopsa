@@ -43,10 +43,11 @@ namespace WoopsaTest
                 {
                     IWoopsaProperty property = client.Root.Properties.ByName("Votes");
                     property.Value = new WoopsaValue(0);
+                    int n = property.Value.ToInt32();
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
 
-                    for (int i = 0; i < 1000; i++)
+                    for (int i = 0; i < 100; i++)
                     {
                         property.Value = new WoopsaValue(i);
                         Assert.AreEqual(objectServer.Votes, i);
@@ -54,7 +55,7 @@ namespace WoopsaTest
                         Assert.AreEqual(result.ToInt64(), i);
                     }
                     TimeSpan duration = watch.Elapsed;
-                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(1000));
+                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200));
                 }
             }
         }

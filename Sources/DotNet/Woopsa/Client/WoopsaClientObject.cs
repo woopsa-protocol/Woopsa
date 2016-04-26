@@ -44,8 +44,8 @@ namespace Woopsa
                 // we need to navigate back to the root of this client to find
                 // the subscription service, and that's where we can subscribe
                 WoopsaClientObject rootObject = this;
-                while (rootObject.Container is WoopsaClientObject)
-                    rootObject = (WoopsaClientObject)rootObject.Container;
+                while (rootObject.Owner is WoopsaClientObject)
+                    rootObject = (WoopsaClientObject)rootObject.Owner;
 
                 if (HasSubscriptionService(rootObject))
                     _subscriptionChannel = new WoopsaClientSubscriptionChannel(rootObject);

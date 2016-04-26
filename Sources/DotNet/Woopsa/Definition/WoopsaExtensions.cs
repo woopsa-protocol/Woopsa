@@ -287,6 +287,24 @@ namespace Woopsa
             }
         }
 
+
+        public static IWoopsaElement ByPathOrNull(this IWoopsaContainer element, string path)
+        {
+            string workPath = path.TrimStart(WoopsaConst.WoopsaPathSeparator);
+            string[] pathElements = workPath.Split(WoopsaConst.WoopsaPathSeparator);
+
+            IWoopsaElement result = element;
+            foreach (var item in pathElements)
+                if (result is IWoopsaContainer)
+                    result = ((IWoopsaContainer)result).ByNameOrNull(item);
+                else
+                {
+                    result = null;
+                    break;
+                }
+            return result;
+        }
+
         /// <summary>
         /// Finds the WoopsaElement specified by path, relative to a container
         /// </summary>
@@ -296,108 +314,53 @@ namespace Woopsa
         /// 
         public static IWoopsaElement ByPath(this IWoopsaContainer element, string path)
         {
-            string workPath = path.TrimStart('/');
-            string[] pathElements = workPath.Split(WoopsaConst.WoopsaPathSeparator);
-            IWoopsaElement result = element.Items.ByNameOrNull(pathElements[0]);
-
+            IWoopsaElement result = ByPathOrNull(element, path);
             if (result != null)
-                if (pathElements.Length > 1)
-                    return (result as IWoopsaContainer).ByPath(String.Join(WoopsaConst.WoopsaPathSeparator.ToString(), pathElements.Skip(1).ToArray()));
-                else
-                    return result;
-
-            if (element is IWoopsaObject)
-            {
-                IWoopsaObject asObject = element as IWoopsaObject;
-                result = asObject.Methods.ByNameOrNull(pathElements[0]);
-                if (result == null)
-                {
-                    result = asObject.Properties.ByNameOrNull(pathElements[0]);
-                    if (result != null)
-                        return result;
-                }
-                else
-                    return result;
-            }
-            throw new WoopsaNotFoundException(string.Format("Woopsa element not found at path : {0}", path));
+                return result;
+            else
+                throw new WoopsaNotFoundException(string.Format("Woopsa element not found at path : {0}", path));
         }
 
-        public static IWoopsaElement ByName(this IWoopsaObject container, string name)
+
+        public static T ByNameOrNull<T>(this IEnumerable<T> items, string name) where T : IWoopsaElement
         {
-            IWoopsaElement result = ByNameOrNull(container, name);
+            foreach (var item in items)
+                if (item.Name == name)
+                    return item;
+            return default(T);
+        }
+
+        public static T ByName<T>(this IEnumerable<T> items, string name) where T : IWoopsaElement
+        {
+            T result = ByNameOrNull(items, name);
             if (result != null)
                 return result;
             else
                 throw new WoopsaNotFoundException(string.Format("Woopsa element not found : {0}", name));
         }
 
-        public static IWoopsaContainer ByName(this IEnumerable<IWoopsaContainer> containers, string name)
+        public static IWoopsaElement ByNameOrNull(this IWoopsaContainer woopsaContainer, string name)
         {
-            IWoopsaContainer result = ByNameOrNull(containers, name);
+            IWoopsaElement result;
+            result = (IWoopsaElement)woopsaContainer.Items.ByNameOrNull(name);
+            if (result == null && woopsaContainer is IWoopsaObject)
+            {
+                IWoopsaObject woopsaObject = (IWoopsaObject)woopsaContainer;
+                result = (IWoopsaElement)woopsaObject.Properties.ByNameOrNull(name) ??
+                         (IWoopsaElement)woopsaObject.Methods.ByNameOrNull(name);
+            }
+            return result;
+        }
+
+        public static IWoopsaElement ByName(this IWoopsaContainer woopsaContainer, string name)
+        {
+            IWoopsaElement result = ByNameOrNull(woopsaContainer, name);
             if (result != null)
                 return result;
             else
-                throw new WoopsaNotFoundException(string.Format("Woopsa container not found : {0}", name));
+                throw new WoopsaNotFoundException(string.Format("Woopsa element not found : {0}", name));
         }
 
-        public static IWoopsaProperty ByName(this IEnumerable<IWoopsaProperty> properties, string name)
-        {
-            IWoopsaProperty result = ByNameOrNull(properties, name);
-            if (result != null)
-                return result;
-            else
-                throw new WoopsaNotFoundException(string.Format("Woopsa property not found : {0}", name));
-        }
-
-        public static IWoopsaMethod ByName(this IEnumerable<IWoopsaMethod> methods, string name)
-        {
-            IWoopsaMethod result = ByNameOrNull(methods, name);
-            if (result != null)
-                return result;
-            else
-                throw new WoopsaNotFoundException(string.Format("Woopsa method not found : {0}", name));
-        }
-
-        internal static IWoopsaElement ByNameOrNull(this IWoopsaObject obj, string name)
-        {
-            foreach (var item in obj.Items)
-                if (item.Name.Equals(name))
-                    return item;
-
-            foreach (var method in obj.Methods)
-                if (method.Name.Equals(name))
-                    return method;
-
-            foreach (var property in obj.Properties)
-                if (property.Name.Equals(name))
-                    return property;
-
-            return null;
-        }
-
-        public static IWoopsaContainer ByNameOrNull(this IEnumerable<IWoopsaContainer> containers, string name)
-        {
-            foreach (var item in containers)
-                if (item.Name == name)
-                    return item;
-            return null;
-        }
-
-        public static IWoopsaProperty ByNameOrNull(this IEnumerable<IWoopsaProperty> properties, string name)
-        {
-            foreach (var item in properties)
-                if (item.Name == name)
-                    return item;
-            return null;
-        }
-
-        public static IWoopsaMethod ByNameOrNull(this IEnumerable<IWoopsaMethod> methods, string name)
-        {
-            foreach (var item in methods)
-                if (item.Name == name)
-                    return item;
-            return null;
-        }
         #endregion
     }
 }

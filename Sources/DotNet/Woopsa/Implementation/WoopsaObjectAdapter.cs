@@ -165,8 +165,8 @@ namespace Woopsa
                 MemberWoopsaVisibilityCheck(this, e);
                 isVisible = e.IsVisible;
             }
-            else if (Container is WoopsaObjectAdapter)
-                ((WoopsaObjectAdapter)Container).OnMemberWoopsaVisibilityCheck(member, ref isVisible);
+            else if (Owner is WoopsaObjectAdapter)
+                ((WoopsaObjectAdapter)Owner).OnMemberWoopsaVisibilityCheck(member, ref isVisible);
         }
 
         protected bool IsMemberWoopsaVisible(MemberInfo member)
