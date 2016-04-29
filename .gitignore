@@ -8,4 +8,7 @@ Debug
 *.filters
 *.user
 *.log
-/Sources/Embedded/Release
+/Sources/Embedded/Release/*
+/Sources/Embedded/DemoServer/Release/*
+/Sources/Embedded/Server/Release/*
+node_modules

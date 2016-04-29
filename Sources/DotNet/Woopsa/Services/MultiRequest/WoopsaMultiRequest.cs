@@ -29,7 +29,7 @@ namespace Woopsa
             );
         }
 
-        private IWoopsaValue HandleCall(IWoopsaValue requestsArgument)
+        private WoopsaValue HandleCall(IWoopsaValue requestsArgument)
         {
             var serializer = new JavaScriptSerializer();
             Request[] requestsList = serializer.Deserialize<Request[]>(requestsArgument.AsText);

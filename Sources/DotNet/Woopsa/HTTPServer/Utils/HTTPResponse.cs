@@ -37,7 +37,7 @@ namespace Woopsa
             ResponseMessage = "OK";
         }
         #endregion
-        
+
         #region Public Members
         internal IEnumerable<string> Headers
         {
@@ -93,14 +93,18 @@ namespace Woopsa
         /// </param>
         public void SetHeader(string header, string value)
         {
-            if (_headers.ContainsKey(header))
-            {
-                _headers[header] = value;
-            }
-            else
-            {
-                _headers.Add(header, value);
-            }
+            _headers[header] = value;
+        }
+
+        /// <summary>
+        /// Set the status and message code of the response
+        /// </summary>
+        /// <param name="responseCode"></param>
+        /// <param name="responseMessage"></param>
+        public void SetStatusCode(int responseCode, string responseMessage)
+        {
+            ResponseCode = responseCode;
+            ResponseMessage = responseMessage;
         }
 
         /// <summary>
@@ -187,9 +191,7 @@ namespace Woopsa
                 StreamWriter writer = new StreamWriter(responseStream, new UTF8Encoding(false), 4096, true);
                 writer.Write("HTTP/1.1 " + ResponseCode + " " + ResponseMessage + "\r\n");
                 foreach (string header in Headers)
-                {
                     writer.Write(header + "\r\n");
-                }
                 writer.Write("\r\n");
                 writer.Flush();
                 _bufferStream.Position = 0;
@@ -197,19 +199,15 @@ namespace Woopsa
                 responseStream.Position = 0;
                 responseStream.CopyTo(outputStream);
             }
-            catch(IOException e)
+            catch (IOException e)
             {
                 // This error will be "caught" by the Web Server and evented up so the
                 // user can do whatever he wants (or not) with it
                 DoError(this, e);
             }
-            finally
-            {
-                //_bufferWriter.Close();
-            }
         }
         #endregion
-        
+
         #region Private Members        
         private Stream _bufferStream;
         private StreamWriter _bufferWriter;
@@ -232,7 +230,7 @@ namespace Woopsa
             string errorPage = HTTPServerUtils.GetEmbeddedResource("Woopsa.HTTPServer.HTML.ErrorPage.html");
             errorPage = errorPage.Replace("@ErrorCode", errorCode.ToString());
             errorPage = errorPage.Replace("@ErrorMessage", errorMessage);
-            errorPage = errorPage.Replace("@Version", Assembly.GetEntryAssembly().GetName().Version.ToString());
+            errorPage = errorPage.Replace("@Version", Assembly.GetExecutingAssembly().GetName().Version.ToString());
             WriteString(errorPage);
             SetHeader(HTTPHeader.ContentType, MIMETypes.Text.HTML);
             SetHeader(HTTPHeader.Connection, "close");

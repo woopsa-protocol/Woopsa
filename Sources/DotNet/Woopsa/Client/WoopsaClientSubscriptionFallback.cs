@@ -1,34 +1,28 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    internal class WoopsaClientSubscriptionChannelFallback : WoopsaClientSubscriptionChannelBase, IDisposable
+    internal class WoopsaClientSubscriptionChannelFallback : WoopsaClientSubscriptionChannelBase
     {
+        #region Constructors
+
         public WoopsaClientSubscriptionChannelFallback(WoopsaClientObject client)
         {
             _client = client;
             _service = new SubscriptionService(_client);
             _channel = new WoopsaClientSubscriptionChannel(_client);
+            _channel.ValueChange += _channel_ValueChange;
         }
 
-        public override event EventHandler<WoopsaNotificationsEventArgs> ValueChange
+        private void _channel_ValueChange(object sender, WoopsaNotificationsEventArgs e)
         {
-            add
-            {
-                _channel.ValueChange += value;
-            }
-            remove
-            {
-                _channel.ValueChange -= value;
-            }
+            DoValueChanged(e);
         }
 
-        private WoopsaClientObject _client;
-        
+        #endregion
+
+        #region Override Register / Unregister
+
         public override int Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             return _channel.Register(path, monitorInterval, publishInterval);
@@ -39,16 +33,28 @@ namespace Woopsa
             return _channel.Unregister(id);
         }
 
-        private SubscriptionService _service;
-        private WoopsaClientSubscriptionChannel _channel;
+        #endregion
 
         #region IDisposable
+
         protected override void Dispose(bool disposing)
         {
-            _client.Dispose();
-            _service.Dispose();
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                _channel.Dispose();
+                _service.Dispose();
+            }
         }
 
-        #endregion IDisposable
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaClientObject _client;
+        private readonly SubscriptionService _service;
+        private readonly WoopsaClientSubscriptionChannel _channel;
+
+        #endregion
     }
 }

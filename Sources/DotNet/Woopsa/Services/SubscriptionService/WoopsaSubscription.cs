@@ -8,7 +8,7 @@ namespace Woopsa
 {
     public class WoopsaSubscription : IDisposable
     {
-        public WoopsaSubscription(IWoopsaContainer container, int id, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public WoopsaSubscription(WoopsaContainer container, int id, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             Id = id;
             PropertyLink = propertyLink;
@@ -34,12 +34,14 @@ namespace Woopsa
                     {
                         try
                         {
-                            IWoopsaObject subscriptionService = (IWoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+                            WoopsaObject subscriptionService = (WoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
                             channelContainerPath = subscriptionService.Owner.GetPath();
                             _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
                             break;
                         }
-                        catch (WoopsaNotFoundException) { }
+                        catch (WoopsaNotFoundException)
+                        {
+                        }
                         searchPath += pathParts[i] + WoopsaConst.WoopsaPathSeparator;
                     }
                 }
@@ -69,14 +71,14 @@ namespace Woopsa
             }
             else
             {
-                _monitorTimer = new LightWeightTimer((int)monitorInterval.TotalMilliseconds);
+                _monitorTimer = new LightWeightTimer(monitorInterval);
                 _monitorTimer.Elapsed += _monitorTimer_Elapsed;
 
-                _publishTimer = new LightWeightTimer((int)publishInterval.TotalMilliseconds);
+                _publishTimer = new LightWeightTimer(publishInterval);
                 _publishTimer.Elapsed += _publishTimer_Elapsed;
 
-                _monitorTimer.Enabled = true;
-                _publishTimer.Enabled = true;
+                _monitorTimer.IsEnabled = true;
+                _publishTimer.IsEnabled = true;
             }
         }
 
@@ -182,11 +184,17 @@ namespace Woopsa
                 {
                     _subscriptionChannel.ValueChange -= subscriptionChannel_ValueChange;
                     _subscriptionChannel.Unregister(_subscriptionId.Value);
+                    _subscriptionChannel = null;
                 }
-                else
+                if (_monitorTimer != null)
                 {
                     _monitorTimer.Dispose();
+                    _monitorTimer = null;
+                }
+                if (_publishTimer != null)
+                { 
                     _publishTimer.Dispose();
+                    _publishTimer = null;
                 }
             }
         }

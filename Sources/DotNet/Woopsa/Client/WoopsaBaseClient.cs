@@ -1,12 +1,8 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
+using System.Globalization;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Text;
-using System.Threading.Tasks;
 using System.Web;
 using System.Web.Script.Serialization;
 
@@ -14,7 +10,7 @@ namespace Woopsa
 {
     internal class WoopsaBaseClient
     {
-        private readonly TimeSpan DefaultRequestTimeout = TimeSpan.FromSeconds(10); 
+        #region Constructors
 
         public WoopsaBaseClient(string url)
         {
@@ -23,8 +19,16 @@ namespace Woopsa
             _url = url;
         }
 
+        #endregion
+
+        #region Public Properties
+
         public string Username { get; set; }
         public string Password { get; set; }
+
+        #endregion
+
+        #region Public Methods
 
         public WoopsaValue Read(string path)
         {
@@ -34,8 +38,7 @@ namespace Woopsa
 
         public WoopsaValue Write(string path, string value)
         {
-            NameValueCollection arguments = new NameValueCollection();
-            arguments.Add(WoopsaFormat.KeyValue, value);
+            var arguments = new NameValueCollection { { WoopsaFormat.KeyValue, value } };
             string response = Request("write" + path, arguments);
             return WoopsaValueFromResponse(response);
         }
@@ -48,7 +51,7 @@ namespace Woopsa
 
         public WoopsaValue Invoke(string path, NameValueCollection arguments)
         {
-            return Invoke(path, arguments, DefaultRequestTimeout);
+            return Invoke(path, arguments, _defaultRequestTimeout);
         }
 
         public WoopsaMetaResult Meta(string path)
@@ -59,53 +62,56 @@ namespace Woopsa
             return result;
         }
 
+        #endregion
+
+        #region Private Helpers
+
         private WoopsaValue WoopsaValueFromResponse(string response)
         {
-            var serializer = new JavaScriptSerializer();
-            serializer.MaxJsonLength = int.MaxValue;
-            WoopsaReadResult result = serializer.Deserialize<WoopsaReadResult>(response);
-
-            if(result == null)
-                return WoopsaValue.Null;
-
-            // At this stage, the read result's type is still a string -- make it a WoopsaValueType
-            WoopsaValueType valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
-
-            if (valueType == WoopsaValueType.JsonData)
+            var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+            var result = serializer.Deserialize<WoopsaReadResult>(response);
+            if (result != null)
             {
-                if (result.TimeStamp == null)
-                    return new WoopsaValue(result.Value);
+                var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
+                WoopsaValue resultWoopsaValue;
+                DateTime? timeStamp;
+                if (result.TimeStamp != null)
+                    timeStamp = DateTime.Parse(result.TimeStamp, CultureInfo.InvariantCulture);
                 else
-                    return new WoopsaValue(result.Value, DateTime.Parse(result.TimeStamp));
+                    timeStamp = null;
+                if (valueType == WoopsaValueType.JsonData)
+                    resultWoopsaValue = new WoopsaValue(WoopsaJsonData.CreateFromDeserializedData(result.Value), timeStamp);
+                else
+                    resultWoopsaValue = WoopsaValue.CreateChecked(WoopsaFormat.ToStringWoopsa(result.Value),
+                        valueType, timeStamp);
+                return resultWoopsaValue;
             }
             else
-            {
-                if (result.TimeStamp == null)
-                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type));
-                else
-                    return WoopsaValue.CreateChecked(result.Value.ToString(), (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type), DateTime.Parse(result.TimeStamp));
-            }
+                return WoopsaValue.Null;
         }
-        
+
+        private string Request(string path, NameValueCollection postData = null)
+        {
+            return Request(path, postData, _defaultRequestTimeout);
+        }
+
         private string Request(string path, NameValueCollection postData, TimeSpan timeout)
         {
-            HttpWebRequest request = (HttpWebRequest)WebRequest.Create(_url + path);
+            var request = (HttpWebRequest)WebRequest.Create(_url + path);
 
             if (Username != null)
-            {
                 request.Credentials = new NetworkCredential(Username, Password);
-            }
 
             request.Timeout = (int)timeout.TotalMilliseconds;
+
             if (postData != null)
             {
                 request.Method = "POST";
                 request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
             }
             else
-            {
                 request.Method = "GET";
-            }
+
             request.Accept = "*/*";
 
             if (postData != null)
@@ -114,21 +120,18 @@ namespace Woopsa
                 {
                     for (var i = 0; i < postData.Count; i++)
                     {
-                        var key = postData.AllKeys[i];
-                        if (i == postData.Count - 1)
-                            writer.Write("{0}={1}", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
-                        else
-                            writer.Write("{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                        string key = postData.AllKeys[i];
+                        writer.Write(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
                     }
                 }
             }
 
-            HttpWebResponse response = null;
+            HttpWebResponse response;
             try
             {
                 response = (HttpWebResponse)request.GetResponse();
             }
-            catch (WebException exception) 
+            catch (WebException exception)
             {
                 // This could be an HTTP error, in which case
                 // we actually have a response (with the HTTP 
@@ -144,7 +147,7 @@ namespace Woopsa
             }
 
             string resultString;
-            using ( var reader = new StreamReader(response.GetResponseStream()) )
+            using (var reader = new StreamReader(response.GetResponseStream()))
             {
                 resultString = reader.ReadToEnd();
             }
@@ -154,40 +157,40 @@ namespace Woopsa
                 if (response.ContentType == MIMETypes.Application.JSON)
                 {
                     var serializer = new JavaScriptSerializer();
-                    WoopsaErrorResult error = serializer.Deserialize<WoopsaErrorResult>(resultString);
+                    var error = serializer.Deserialize<WoopsaErrorResult>(resultString);
 
                     // Generate one of the possible Woopsa exceptions based
-                    // on the JSON-serialized error 
+                    // on the JSON-serialized error
                     if (error.Type == typeof(WoopsaNotFoundException).Name)
                         throw new WoopsaNotFoundException(error.Message);
-                    else if (error.Type == typeof(WoopsaNotificationsLostException).Name)
+                    if (error.Type == typeof(WoopsaNotificationsLostException).Name)
                         throw new WoopsaNotificationsLostException(error.Message);
-                    else if (error.Type == typeof(WoopsaInvalidOperationException).Name)
+                    if (error.Type == typeof(WoopsaInvalidOperationException).Name)
                         throw new WoopsaInvalidOperationException(error.Message);
-                    else if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
+                    if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
                         throw new WoopsaInvalidSubscriptionChannelException(error.Message);
-                    else if (error.Type == typeof(WoopsaException).Name)
+                    if (error.Type == typeof(WoopsaException).Name)
                         throw new WoopsaException(error.Message);
-                    else
-                        throw new Exception(error.Message);
+                    throw new Exception(error.Message);
                 }
-                else
-                    throw new WoopsaException(response.StatusDescription);
+
+                throw new WoopsaException(response.StatusDescription);
             }
+
             return resultString;
         }
 
-        private string Request(string path)
-        {
-            return Request(path, null);
-        }
+        #endregion
 
-        private string Request(string path, NameValueCollection postData)
-        {
-            return Request(path, postData, DefaultRequestTimeout);
-        }
+        #region Private Members
 
-        private string _url;
+        private readonly TimeSpan _defaultRequestTimeout = TimeSpan.FromSeconds(10);
+
+        private readonly string _url;
+
+        #endregion
+
+        #region Private Nested Classes
 
         private class WoopsaReadResult
         {
@@ -195,6 +198,8 @@ namespace Woopsa
             public string Type { get; set; }
             public string TimeStamp { get; set; }
         }
+
+        #endregion
     }
 
     public class WoopsaErrorResult

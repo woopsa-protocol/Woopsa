@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -24,9 +20,6 @@ namespace Woopsa
         public string Error { get; private set; }
         public HTTPRequest Request { get; private set; }
         public RoutingErrorType Type { get; private set; }
-
-        public RoutingErrorEventArgs()
-        { }
 
         public RoutingErrorEventArgs(RoutingErrorType type, string error, HTTPRequest request)
         {

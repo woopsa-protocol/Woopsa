@@ -1,18 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
 using System.Dynamic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
     public class WoopsaJsonDataDynamic : DynamicObject
     {
+        #region Constructors
+
         public WoopsaJsonDataDynamic(WoopsaJsonData data)
         {
             _data = data;
         }
+
+        #endregion
+
+        #region Public Override Methods
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
@@ -48,7 +50,13 @@ namespace Woopsa
             }
         }
 
-        private WoopsaJsonData _data;
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaJsonData _data;
+
+        #endregion
     }
 
     public static class WoopsaJsonDataDynamicExtensions

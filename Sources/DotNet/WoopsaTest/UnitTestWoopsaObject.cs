@@ -15,6 +15,7 @@ namespace WoopsaTest
 		{
 			WoopsaRoot root = new WoopsaRoot();
 			WoopsaObject tunnel1 = new WoopsaObject(root, "Tunnel1");
+            
 			Assert.AreEqual(root.Items.Count(), 1);
 			WoopsaObject tunnel2 = new WoopsaObject(root, "Tunnel2");
 			Assert.AreEqual(root.Items.Count(), 2);
@@ -29,22 +30,28 @@ namespace WoopsaTest
 
             Assert.AreEqual(coMessung1.Properties.Count(), 2);
 			Assert.AreEqual(coMessung1.Properties.First().Value.ToDouble(), 1040.0);
-			coMessung1.Properties.ByName("Variation").Value = (WoopsaValue)45;
-			Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToInt32(), 45);
-			Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToString(), "45");
-			WoopsaMethod method1 = new WoopsaMethod(coMessung1, "Calibrate", WoopsaValueType.Null,
+            coMessung1.Properties.ByName("Variation").Value = 45;
+            Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToInt32(), 45);
+            Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToString(), "45");
+            (coMessung1.ByName("Variation") as IWoopsaProperty).Value = (WoopsaValue)36;
+            Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToInt32(), 36);
+            coMessung1.Properties["Variation"].Value = 5;
+            Assert.AreEqual(property2Value, 5);
+            int variation = coMessung1.Properties["Variation"].Value;
+            Assert.AreEqual(variation, 5);
+            WoopsaMethod method1 = new WoopsaMethod(coMessung1, "Calibrate", WoopsaValueType.Null,
 				new WoopsaMethodArgumentInfo[] { 
 					new WoopsaMethodArgumentInfo("minLevel", WoopsaValueType.Real), 
 					new WoopsaMethodArgumentInfo("maxLevel", WoopsaValueType.Real)
 				},
 				Calibrate);
-			IWoopsaValue result = method1.Invoke(new WoopsaValue[] { 1.1, 5.5});
+			IWoopsaValue result = method1.Invoke(1.1, 5.5);
 			Assert.AreEqual(result, WoopsaValue.Null);
 			Assert.AreEqual(_minLevel, 1.1);
 			Assert.AreEqual(_maxLevel, 5.5);
 		}
 
-		private IWoopsaValue Calibrate(System.Collections.Generic.IEnumerable<IWoopsaValue> Arguments)
+		private WoopsaValue Calibrate(System.Collections.Generic.IEnumerable<IWoopsaValue> Arguments)
 		{
 			_minLevel = Arguments.ElementAt(0).ToDouble();
 			_maxLevel = Arguments.ElementAt(1).ToDouble();

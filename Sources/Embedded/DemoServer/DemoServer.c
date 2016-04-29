@@ -57,10 +57,10 @@ int sockClose(SOCKET sock) {
 	return status;
 }
 
-float Temperature = 24.2;
+float Temperature = 24.2f;
 char IsRaining = 1;
 int Altitude = 430;
-float Sensitivity = 0.5;
+float Sensitivity = 0.5f;
 char City[20] = "Geneva";
 float TimeSinceLastRain = 11;
 
@@ -85,21 +85,22 @@ WOOPSA_END;
 #define BUFFER_SIZE 1024
 
 
-WoopsaUInt16 ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaUInt16 dataBufferSize) {
+WoopsaBufferUInt ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaBufferUInt dataBufferSize) {
 	strcpy(dataBuffer, "Hello world!");
-	return strlen("Hellow world!");
+	return (WoopsaBufferUInt)strlen("Hellow world!");
 }
 
-int main(int argc, char argv[]) {
+int main(int argc, char * argv[]) {
 	SOCKET sock, clientSock;
-	struct sockaddr_in addr, clientAddr;
+	struct sockaddr_in addr;
+	struct sockaddr clientAddr;
 	char buffer[BUFFER_SIZE];
 	int clientAddrSize = 0, readBytes = 0;
 	WoopsaServer server;
-	WoopsaUInt16 responseLength;
+	WoopsaBufferUInt responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
-	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, NULL);
+	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, ServeHTML);
 
 	printf("Woopsa C library v0.1 demo server.\n");
 
@@ -135,7 +136,7 @@ int main(int argc, char argv[]) {
 		}
 
 		while (1) {
-			readBytes = recv(clientSock, buffer + readBytes, sizeof(buffer), NULL);
+			readBytes = recv(clientSock, buffer + readBytes, sizeof(buffer), 0);
 
 			if (readBytes == SOCKET_ERROR) {
 				printf("Error %d", WSAGetLastError());
@@ -154,7 +155,7 @@ int main(int argc, char argv[]) {
 			}
 
 			if (WoopsaHandleRequest(&server, buffer, sizeof(buffer), buffer, sizeof(buffer), &responseLength) >= WOOPSA_SUCCESS) {
-				send(clientSock, buffer, responseLength, NULL);
+				send(clientSock, buffer, responseLength, 0);
 			}
 			readBytes = 0;
 			memset(buffer, 0, sizeof(buffer));

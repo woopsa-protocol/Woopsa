@@ -62,12 +62,6 @@ namespace WoopsaDemoClient
                     Console.WriteLine(indentString + "  => Changing value to 1");
                     property.Value = new WoopsaValue(1);
                 }
-                if (property.Type == WoopsaValueType.Text)
-                {
-                    Console.WriteLine("Writing a long string...");
-                    string demo = File.ReadAllText(@"MS5637-02BA03.xml");
-                    property.Value = new WoopsaValue(demo);
-                }
             }
 
             // Display methods and their arguments
