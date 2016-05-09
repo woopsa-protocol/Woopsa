@@ -22,10 +22,10 @@ namespace WoopsaDemoClient
             }
             else
             {
-                Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
+                Console.Write("Please enter the Woopsa server URL or leave blank for default (http://demo.woopsa.org/woopsa): ");
                 serverUrl = Console.ReadLine(); 
                 if (serverUrl == "")
-                    serverUrl = "http://localhost/woopsa";
+                    serverUrl = "http://demo.woopsa.org/woopsa";
             
             }
 
@@ -61,12 +61,6 @@ namespace WoopsaDemoClient
                     // Actually change the value
                     Console.WriteLine(indentString + "  => Changing value to 1");
                     property.Value = new WoopsaValue(1);
-                }
-                if (property.Type == WoopsaValueType.Text)
-                {
-                    Console.WriteLine("Writing a long string...");
-                    string demo = File.ReadAllText(@"MS5637-02BA03.xml");
-                    property.Value = new WoopsaValue(demo);
                 }
             }
 
