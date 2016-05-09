@@ -53,8 +53,8 @@ namespace Woopsa
 
             if (_listenThread== null)
             {
-                _listenThread = new Thread(DoWaitNotification) {Name = "WoopsaClientSubscription_Thread"};
                 _listening = true;
+                _listenThread = new Thread(DoWaitNotification) {Name = "WoopsaClientSubscription_Thread"};
                 _listenThread.Start();
             }
 
@@ -139,13 +139,22 @@ namespace Woopsa
                             DoValueChanged(notifications);
                         }
                     }
-                    catch (WebException)
+                    catch (WebException e)
                     {
-                        // There was some sort of network error. We will
-                        // try again later
-                        Thread.Sleep(_waitNotificationRetryPeriod);
+                        if (_listening)
+                        {
+                            // There was some sort of network error. We will
+                            // try again later
+                            Thread.Sleep(_waitNotificationRetryPeriod);
+                        }
+                        else
+                        {
+                            // Cancelled WebRequest, ignore
+                        }
                     }
                 }
+                else
+                    Thread.Sleep(1);
             }
         }
 
@@ -262,6 +271,11 @@ namespace Woopsa
             if (disposing)
             {
                 _listening = false;
+                if (_listenThread != null)
+                {
+                    _listenThread.Join();
+                    _listenThread = null;
+                }
             }
         }
 

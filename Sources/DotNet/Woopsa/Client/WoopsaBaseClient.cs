@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
@@ -8,12 +9,13 @@ using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
-    internal class WoopsaBaseClient
+    internal class WoopsaBaseClient : IDisposable
     {
         #region Constructors
 
         public WoopsaBaseClient(string url)
         {
+            _pendingRequests = new List<WebRequest>();
             if (!url.EndsWith(WoopsaConst.WoopsaPathSeparator.ToString()))
                 url = url + WoopsaConst.WoopsaPathSeparator;
             _url = url;
@@ -98,86 +100,121 @@ namespace Woopsa
         private string Request(string path, NameValueCollection postData, TimeSpan timeout)
         {
             var request = (HttpWebRequest)WebRequest.Create(_url + path);
-
-            if (Username != null)
-                request.Credentials = new NetworkCredential(Username, Password);
-
-            request.Timeout = (int)timeout.TotalMilliseconds;
-
-            if (postData != null)
-            {
-                request.Method = "POST";
-                request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-            }
-            else
-                request.Method = "GET";
-
-            request.Accept = "*/*";
-
-            if (postData != null)
-            {
-                using (var writer = new StreamWriter(request.GetRequestStream()))
-                {
-                    for (var i = 0; i < postData.Count; i++)
-                    {
-                        string key = postData.AllKeys[i];
-                        writer.Write(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
-                    }
-                }
-            }
-
-            HttpWebResponse response;
+            lock (_pendingRequests)
+                _pendingRequests.Add(request);
             try
             {
-                response = (HttpWebResponse)request.GetResponse();
-            }
-            catch (WebException exception)
-            {
-                // This could be an HTTP error, in which case
-                // we actually have a response (with the HTTP 
-                // status and error)
-                response = (HttpWebResponse)exception.Response;
-                if (response == null)
+
+                if (Username != null)
+                    request.Credentials = new NetworkCredential(Username, Password);
+
+                request.Timeout = (int)timeout.TotalMilliseconds;
+
+                if (postData != null)
                 {
-                    // Sometimes, we can make the request, but the server dies
-                    // before we get a reply - in that case the Response
-                    // is null, so we re-throw the exception
-                    throw;
+                    request.Method = "POST";
+                    request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
                 }
-            }
+                else
+                    request.Method = "GET";
 
-            string resultString;
-            using (var reader = new StreamReader(response.GetResponseStream()))
-            {
-                resultString = reader.ReadToEnd();
-            }
+                request.Accept = "*/*";
 
-            if (response.StatusCode != HttpStatusCode.OK)
-            {
-                if (response.ContentType == MIMETypes.Application.JSON)
+                if (postData != null)
                 {
-                    var serializer = new JavaScriptSerializer();
-                    var error = serializer.Deserialize<WoopsaErrorResult>(resultString);
-
-                    // Generate one of the possible Woopsa exceptions based
-                    // on the JSON-serialized error
-                    if (error.Type == typeof(WoopsaNotFoundException).Name)
-                        throw new WoopsaNotFoundException(error.Message);
-                    if (error.Type == typeof(WoopsaNotificationsLostException).Name)
-                        throw new WoopsaNotificationsLostException(error.Message);
-                    if (error.Type == typeof(WoopsaInvalidOperationException).Name)
-                        throw new WoopsaInvalidOperationException(error.Message);
-                    if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
-                        throw new WoopsaInvalidSubscriptionChannelException(error.Message);
-                    if (error.Type == typeof(WoopsaException).Name)
-                        throw new WoopsaException(error.Message);
-                    throw new Exception(error.Message);
+                    using (var writer = new StreamWriter(request.GetRequestStream()))
+                    {
+                        for (var i = 0; i < postData.Count; i++)
+                        {
+                            string key = postData.AllKeys[i];
+                            writer.Write(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                        }
+                    }
                 }
 
-                throw new WoopsaException(response.StatusDescription);
-            }
+                HttpWebResponse response;
+                try
+                {
+                    response = (HttpWebResponse)request.GetResponse();
+                }
+                catch (WebException exception)
+                {
+                    // This could be an HTTP error, in which case
+                    // we actually have a response (with the HTTP 
+                    // status and error)
+                    response = (HttpWebResponse)exception.Response;
+                    if (response == null)
+                    {
+                        // Sometimes, we can make the request, but the server dies
+                        // before we get a reply - in that case the Response
+                        // is null, so we re-throw the exception
+                        throw;
+                    }
+                }
 
-            return resultString;
+                string resultString;
+                using (var reader = new StreamReader(response.GetResponseStream()))
+                {
+                    resultString = reader.ReadToEnd();
+                }
+
+                if (response.StatusCode != HttpStatusCode.OK)
+                {
+                    if (response.ContentType == MIMETypes.Application.JSON)
+                    {
+                        var serializer = new JavaScriptSerializer();
+                        var error = serializer.Deserialize<WoopsaErrorResult>(resultString);
+
+                        // Generate one of the possible Woopsa exceptions based
+                        // on the JSON-serialized error
+                        if (error.Type == typeof(WoopsaNotFoundException).Name)
+                            throw new WoopsaNotFoundException(error.Message);
+                        if (error.Type == typeof(WoopsaNotificationsLostException).Name)
+                            throw new WoopsaNotificationsLostException(error.Message);
+                        if (error.Type == typeof(WoopsaInvalidOperationException).Name)
+                            throw new WoopsaInvalidOperationException(error.Message);
+                        if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
+                            throw new WoopsaInvalidSubscriptionChannelException(error.Message);
+                        if (error.Type == typeof(WoopsaException).Name)
+                            throw new WoopsaException(error.Message);
+                        throw new Exception(error.Message);
+                    }
+
+                    throw new WoopsaException(response.StatusDescription);
+                }
+
+                return resultString;
+            }
+            finally
+            {
+                lock (_pendingRequests)
+                    _pendingRequests.Remove(request);
+            }
+        }
+
+        private void AbortPendingRequests()
+        {
+            WebRequest[] pendingRequests;
+            lock (_pendingRequests)
+                pendingRequests = _pendingRequests.ToArray();
+            foreach (var item in pendingRequests)
+                item.Abort();
+        }
+
+        #endregion
+
+        #region IDisposable
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+                AbortPendingRequests();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
         }
 
         #endregion
@@ -187,6 +224,8 @@ namespace Woopsa
         private readonly TimeSpan _defaultRequestTimeout = TimeSpan.FromSeconds(10);
 
         private readonly string _url;
+
+        private List<WebRequest> _pendingRequests;
 
         #endregion
 

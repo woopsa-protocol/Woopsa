@@ -167,8 +167,15 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
         {
-            if (_subscriptionChannel != null)
-                _subscriptionChannel.Dispose();
+            base.Dispose(disposing);
+            if (disposing)
+            {
+                if (_subscriptionChannel != null)
+                {
+                    _subscriptionChannel.Dispose();
+                    _subscriptionChannel = null;
+                }
+            }
         }
 
         #endregion

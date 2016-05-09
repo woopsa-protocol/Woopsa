@@ -113,7 +113,7 @@ namespace Woopsa
             this(new WoopsaObjectAdapter(null, root.GetType().Name, root), port, routePrefix)
         {
             new WoopsaMultiRequestHandler((WoopsaObject)_root, this);
-            new SubscriptionService((WoopsaObject)_root);
+            _subscriptionService = new SubscriptionService((WoopsaObject)_root);
         }
 
         /// <summary>
@@ -325,6 +325,7 @@ namespace Woopsa
         }
         #endregion
 
+        private SubscriptionService _subscriptionService;
         private IWoopsaContainer _root;
         private string _routePrefix;
         private bool _isWebServerEmbedded = false;
@@ -383,6 +384,7 @@ namespace Woopsa
             if (disposing)
             {
                 RemoveRoutes();
+                _subscriptionService.Dispose();
                 if (_isWebServerEmbedded)
                     WebServer.Dispose();
             }

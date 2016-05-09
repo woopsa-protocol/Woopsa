@@ -67,8 +67,16 @@ namespace Woopsa
         {
             if (disposing)
             {
+                if (_client != null)
+                {
+                    _client.Dispose();
+                    _client = null;
+                }
                 if (_clientObject != null)
+                {
                     _clientObject.Dispose();
+                    _clientObject = null;
+                }
             }
         }
 
@@ -82,7 +90,7 @@ namespace Woopsa
 
         #region Private Members
 
-        private readonly WoopsaBaseClient _client;
+        private WoopsaBaseClient _client;
         private readonly WoopsaContainer _container;
         private WoopsaClientObject _clientObject;
         private string _name;

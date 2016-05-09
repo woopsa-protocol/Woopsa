@@ -177,26 +177,26 @@ namespace Woopsa
         public bool Join(TimeSpan timeout)
         {
             DateTime waitStart = DateTime.Now;
-            
+            CustomThreadPoolThread[] threads;
             lock (_threads)
+                threads = _threads.ToArray();
+            _aborting = true;
+            foreach (var item in threads)
             {
-                _aborting = true;
-                foreach (var item in _threads)
+                TimeSpan remaining;
+                if (timeout != Timeout.InfiniteTimeSpan)
                 {
-                    TimeSpan remaining;
-                    if (timeout != Timeout.InfiniteTimeSpan)
-                    {
-                        TimeSpan elapsed = DateTime.Now - waitStart;
-                        remaining = timeout - elapsed;
-                        if (remaining < TimeSpan.Zero)
-                            remaining = TimeSpan.Zero;
-                    }
-                    else
-                        remaining = Timeout.InfiniteTimeSpan;
-                    if (!item.Join(remaining))
-                        return false;
+                    TimeSpan elapsed = DateTime.Now - waitStart;
+                    remaining = timeout - elapsed;
+                    if (remaining < TimeSpan.Zero)
+                        remaining = TimeSpan.Zero;
                 }
+                else
+                    remaining = Timeout.InfiniteTimeSpan;
+                if (!item.Join(remaining))
+                    return false;
             }
+
             return true;
         }
         public void Join()
@@ -213,7 +213,7 @@ namespace Woopsa
             }
         }
 
-        private List<CustomThreadPoolThread> _threads;        
+        private List<CustomThreadPoolThread> _threads;
         private Semaphore _semaphore;
         private bool _aborting;
         private int _threadPoolSize;
