@@ -9,3 +9,4 @@ Debug
 *.user
 *.log
 /Sources/Embedded/Release
+/Sources/Uwp/.vs
