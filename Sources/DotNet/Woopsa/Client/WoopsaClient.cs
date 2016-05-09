@@ -8,6 +8,8 @@ namespace Woopsa
 {
     public class WoopsaClient : IDisposable
     {
+        #region Constructors
+
         public WoopsaClient(string url) : this(url, null, null) { }
 
         public WoopsaClient(string url, WoopsaContainer container, string name)
@@ -19,39 +21,35 @@ namespace Woopsa
                 Refresh();
         }
 
+        #endregion
+
+        #region Public Properties
+
         public string Username
         {
-            get
-            {
-                return _client.Username;
-            }
-            set
-            {
-                _client.Username = value;
-            }
+            get { return _client.Username; }
+            set { _client.Username = value; }
         }
 
         public string Password
         {
-            get
-            {
-                return _client.Password;
-            }
-            set
-            {
-                _client.Password = value;
-            }
+            get { return _client.Password; }
+            set { _client.Password = value; }
         }
 
-        public WoopsaClientObject Root 
-        { 
+        public WoopsaClientObject Root
+        {
             get
             {
                 if (_clientObject == null)
                     Refresh();
                 return _clientObject; 
-            } 
+            }
         }
+
+        #endregion
+
+        #region Public Methods
 
         public void Refresh()
         {
@@ -61,16 +59,15 @@ namespace Woopsa
             _clientObject = new WoopsaClientObject(_client, _container, _name, null);
         }
 
-        private WoopsaBaseClient _client;
-        private WoopsaClientObject _clientObject;
-        private WoopsaContainer _container;
-        private string _name;
+        #endregion
+
+        #region IDisposable
 
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
-                if ( _clientObject != null )
+                if (_clientObject != null)
                     _clientObject.Dispose();
             }
         }
@@ -80,5 +77,16 @@ namespace Woopsa
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaBaseClient _client;
+        private readonly WoopsaContainer _container;
+        private WoopsaClientObject _clientObject;
+        private string _name;
+
+        #endregion
     }
 }

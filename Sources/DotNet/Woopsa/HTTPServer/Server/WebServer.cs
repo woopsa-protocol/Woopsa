@@ -1,18 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Diagnostics;
 using System.IO;
-using System.Linq;
 using System.Net;
-using System.Net.Security;
 using System.Net.Sockets;
-using System.Security.Authentication;
-using System.Security.Cryptography.X509Certificates;
 using System.Text;
-using System.Text.RegularExpressions;
 using System.Threading;
-using System.Threading.Tasks;
 using System.Web;
 
 namespace Woopsa
@@ -33,31 +26,11 @@ namespace Woopsa
     /// <item>HTTP Methods other than POST, GET, PUT, DELETE (must be handled manually)</item>
     /// </list>
     /// </remarks>
-    public class WebServer
+    public class WebServer : IDisposable
     {
-        public const int DEFAULT_PORT_HTTP = 80;
-        public const int DEFAULT_PORT_HTTPS = 443;
-
-        /// <summary>
-        /// Creates a WebServer that runs on port 80, single-threaded
-        /// </summary>
-        /// <remarks>
-        /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
-        /// <seealso cref="WebServer.WebServer(int port, bool multiThreaded)"/>
-        /// </remarks>
-        public WebServer() : this(DEFAULT_PORT_HTTP, false) { }
-
-        /// <summary>
-        /// Creates a WebServer that runs on the specified port, single-threaded
-        /// </summary>
-        /// <param name="port">
-        /// The port on which to run the server (default 80)
-        /// </param>
-        /// <remarks> 
-        /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
-        /// <seealso cref="WebServer.WebServer(int port, bool multiThreaded)"/>
-        /// </remarks>
-        public WebServer(int port) : this(port, false) { }
+        public const int DefaultPortHttp = 80;
+        public const int DefaultPortHttps = 443;        
+        public const ThreadPriority DefaultThreadPriority = ThreadPriority.Normal;
 
         /// <summary>
         /// Creates a WebServer that runs on the specified port and can be multithreaded
@@ -65,21 +38,28 @@ namespace Woopsa
         /// <param name="port">
         /// The port on which to run the server (default 80)
         /// </param>
-        /// <param name="multithreaded">
-        /// Whether this server should use a ThreadPool or not.
+        /// <param name="threadPoolSize">
+        /// The maximum number of threads to be created. 
+        /// CustomThreadPool.DefaultThreadPoolSize means use default operating system value.
+        /// </param>
+        /// <param name="priority">
+        /// The priority of the web server threads.
         /// </param>
         /// <remarks>
         /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
         /// </remarks>
-        public WebServer(int port, bool multithreaded)
+        public WebServer(int port = DefaultPortHttp, int threadPoolSize = CustomThreadPool.DefaultThreadPoolSize, ThreadPriority priority = DefaultThreadPriority)
         {
             Port = port;
             PreRouteProcessors = new List<PreRouteProcessor>();
-            _routeSolver = new RouteSolver();
-            _routeSolver.Error += _routeSolver_Error;
+            Routes = new RouteSolver();
+            Routes.Error += _routeSolver_Error;
+            _openTcpClients = new List<TcpClient>();
             _listener = new TcpListener(IPAddress.Any, port);
-            MultiThreaded = multithreaded;
+            if (threadPoolSize == CustomThreadPool.DefaultThreadPoolSize || threadPoolSize > 1)
+                _threadPool = new CustomThreadPool(threadPoolSize, priority);
             _listenerThread = new Thread(Listen);
+            _listenerThread.Priority = priority;
             _listenerThread.Name = "WebServer_Listener";
             HTTPResponse.Error += HTTPResponse_Error;
         }
@@ -88,20 +68,19 @@ namespace Woopsa
         /// <summary>
         /// The RouteSolver allows a user to configure routes on the web server. This member is created internally and as such is read-only.
         /// </summary>
-        public RouteSolver Routes { get { return _routeSolver; } }
+        public RouteSolver Routes { get; private set; }
 
         /// <summary>
-        /// This event is raised whenever an orrur occurs inside the web server. In most cases, the error can be ignored, but odd behavior might occur when there are multiple matching routes, for example.
+        /// This event is raised whenever an error occurs inside the web server. In most cases, the error can be ignored, but odd behavior might occur when there are multiple matching routes, for example.
         /// </summary>
-        public delegate void ErrorEventHandler(object sender, EventArgs e);
-        public event ErrorEventHandler Error;
+        public event EventHandler Error;
 
         public event EventHandler<LogEventArgs> Log;
 
         /// <summary>
         /// Whether this server is using a thread pool to handle requests
         /// </summary>
-        public bool MultiThreaded { get; private set; }
+        public bool MultiThreaded { get { return _threadPool != null; } }
 
         /// <summary>
         /// Which TCP port the WebServer is currently listening on
@@ -112,9 +91,10 @@ namespace Woopsa
         #endregion
 
         #region Private Members
-        private RouteSolver _routeSolver;
         private TcpListener _listener;
         private Thread _listenerThread;
+        private List<TcpClient> _openTcpClients;
+        private CustomThreadPool _threadPool;
 
         private Dictionary<string, HTTPMethod> _supportedMethods = new Dictionary<string, HTTPMethod>()
         {
@@ -141,19 +121,51 @@ namespace Woopsa
         }
 
         /// <summary>
-        /// Stops the server and stops listening for TCP connexions. At this point, the server becomes completely unreachable.
+        /// Shutdowns the server and stops listening for TCP connexions. At this point, the server becomes completely unreachable.
+        /// It cannot be restarted.
         /// </summary>
-        public void Stop()
+        public void Shutdown()
         {
-            _listener.Stop();
-            _abort = true;
+            if (!_abort)
+            {
+                _listener.Stop();
+                lock (_openTcpClients)
+                    foreach (var item in _openTcpClients)
+                        item.Close();
+                _abort = true;
+                if (_threadPool != null)
+                {
+                    _threadPool.Terminate();
+                    _threadPool.Join();
+                }
+                _listenerThread.Join();
+               
+            }
         }
         #endregion
+
+
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Shutdown();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
+
 
         #region Private Methods
         private void Listen()
         {
-            while(!_abort && _started)
+            while (!_abort && _started)
             {
                 try
                 {
@@ -167,7 +179,7 @@ namespace Woopsa
                     {
                         try
                         {
-                            ThreadPool.QueueUserWorkItem(
+                            _threadPool.StartUserWorkItem(
                                 (o) =>
                                 {
                                     try
@@ -211,138 +223,149 @@ namespace Woopsa
 
         private void HandleClient(TcpClient client)
         {
-            Stream stream = client.GetStream();
+            lock (_openTcpClients)
+                _openTcpClients.Add(client);
             try
             {
-                foreach (PreRouteProcessor processor in PreRouteProcessors)
-                {
-                    stream = processor.ProcessStream(stream);
-                }
-
-                // The Stream Reader leaves the inner stream open!
-                StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true);
-                bool leaveOpen = true;
-                stream.ReadTimeout = 2000;
-                HTTPResponse response = null;
-                HTTPRequest request = null;
-
+                Stream stream = client.GetStream();
                 try
                 {
-                    while (leaveOpen && !_abort)
+                    foreach (PreRouteProcessor processor in PreRouteProcessors)
                     {
-                        response = new HTTPResponse();
-                        /*
-                            * Parse the first line of the HTTP Request
-                            * Examples:
-                            *      GET / HTTP/1.1
-                            *      POST /submit HTTP/1.1
-                            */
-                        string requestString = null;
-                        try
+                        stream = processor.ProcessStream(stream);
+                    }
+                    // Do not dispose the reader so that the inner stream stays open (no using)
+                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true);
+                    bool leaveOpen = true;
+                    HTTPResponse response = null;
+                    HTTPRequest request = null;
+
+                    try
+                    {
+                        while (leaveOpen && !_abort)
                         {
-                            requestString = reader.ReadLine();
-                        }
-                        catch (Exception)
-                        {
-                            leaveOpen = false;
-                            break;
-                        }
-                        if (requestString == null)
-                        {
-                            //Why does this happen?
-                            break;
-                        }
-
-
-                        string[] parts = requestString.Split(' ');
-                        if (parts.Length != 3)
-                        {
-                            throw new HandlingException(HTTPStatusCode.BadRequest, "Bad Request");
-                        }
-                        string method = parts[0].ToUpper();
-                        string url = parts[1];
-                        string version = parts[2].ToUpper();
-
-                        //Check if the version is what we expect
-                        if (version != "HTTP/1.1" && version != "HTTP/1.0")
-                        {
-                            throw new HandlingException(HTTPStatusCode.HttpVersionNotSupported, "HTTP Version Not Supported");
-                        }
-
-                        //Check if the method is supported
-                        if (!_supportedMethods.ContainsKey(method))
-                        {
-                            throw new HandlingException(HTTPStatusCode.NotImplemented, method + " Method Not Implemented");
-                        }
-                        HTTPMethod httpMethod = _supportedMethods[method];
-
-                        url = HttpUtility.UrlDecode(url);
-
-                        //Build the request object
-                        request = new HTTPRequest(httpMethod, url);
-
-                        //Add all headers to the request object
-                        FillHeaders(request, reader);
-
-                        //Handle encoding for this request
-                        Encoding clientEncoding = InferEncoding(request);
-
-                        //Extract all the data from the URL (base and query)
-                        ExtractQuery(request, clientEncoding);
-
-                        //Extract and decode all the POST data
-                        ExtractPOST(request, reader, clientEncoding);
-
-                        bool keepAlive = false;
-                        // According to spec, Keep-Alive is ON by default
-                        if (version == "HTTP/1.1")
-                            keepAlive = true;
-                        if (request.Headers.ContainsKey(HTTPHeader.Connection))
-                        {
-                            if (request.Headers[HTTPHeader.Connection].ToLower().Equals("close"))
+                            response = new HTTPResponse();
+                            /*
+                                * Parse the first line of the HTTP Request
+                                * Examples:
+                                *      GET / HTTP/1.1
+                                *      POST /submit HTTP/1.1
+                                */
+                            string requestString = null;
+                            try
                             {
-                                keepAlive = false;
+                                requestString = reader.ReadLine();
+                            }
+                            catch (Exception)
+                            {
+                                leaveOpen = false;
+                                break;
+                            }
+                            if (requestString == null)
+                            {
+                                //Why does this happen?
+                                break;
+                            }
+
+                            string[] parts = requestString.Split(' ');
+                            if (parts.Length != 3)
+                            {
+                                throw new HandlingException(HTTPStatusCode.BadRequest, "Bad Request");
+                            }
+                            string method = parts[0].ToUpper();
+                            string url = parts[1];
+                            string version = parts[2].ToUpper();
+
+                            //Check if the version is what we expect
+                            if (version != "HTTP/1.1" && version != "HTTP/1.0")
+                            {
+                                throw new HandlingException(HTTPStatusCode.HttpVersionNotSupported, "HTTP Version Not Supported");
+                            }
+
+                            //Check if the method is supported
+                            if (!_supportedMethods.ContainsKey(method))
+                            {
+                                throw new HandlingException(HTTPStatusCode.NotImplemented, method + " Method Not Implemented");
+                            }
+                            HTTPMethod httpMethod = _supportedMethods[method];
+
+                            url = HttpUtility.UrlDecode(url);
+
+                            //Build the request object
+                            request = new HTTPRequest(httpMethod, url);
+
+                            //Add all headers to the request object
+                            FillHeaders(request, reader);
+
+                            //Handle encoding for this request
+                            Encoding clientEncoding = InferEncoding(request);
+
+                            //Extract all the data from the URL (base and query)
+                            ExtractQuery(request, clientEncoding);
+
+                            //Extract and decode all the POST data
+                            ExtractPOST(request, reader, clientEncoding);
+
+                            bool keepAlive = false;
+                            // According to spec, Keep-Alive is ON by default
+                            if (version == "HTTP/1.1")
+                                keepAlive = true;
+                            if (request.Headers.ContainsKey(HTTPHeader.Connection))
+                            {
+                                if (request.Headers[HTTPHeader.Connection].ToLower().Equals("close"))
+                                {
+                                    keepAlive = false;
+                                    response.SetHeader(HTTPHeader.Connection, "close");
+                                }
+                            }
+
+                            //Keep-Alive can only work on a multithreaded server!
+                            if (!keepAlive || !MultiThreaded)
+                            {
+                                leaveOpen = false;
                                 response.SetHeader(HTTPHeader.Connection, "close");
                             }
+                            //Pass this on to the route solver
+                            Routes.HandleRequest(request, response, stream);
+                            OnLog(request, response);
                         }
-
-                        //Keep-Alive can only work on a multithreaded server!
-                        if (!keepAlive || !MultiThreaded)
+                    }
+                    catch (HandlingException e)
+                    {
+                        if (response != null)
                         {
-                            leaveOpen = false;
-                            response.SetHeader(HTTPHeader.Connection, "close");
+                            response.WriteError(e.Status, e.ErrorMessage);
+                            response.Respond(stream);
+                            OnLog(request, response);
                         }
-                        //Pass this on to the route solver
-                        _routeSolver.HandleRequest(request, response, stream);
-                        OnLog(request, response);
                     }
-                }
-                catch (HandlingException e)
-                {
-                    if (response != null)
+                    catch (ThreadAbortException)
                     {
-                        response.WriteError(e.Status, e.ErrorMessage);
-                        response.Respond(stream);
-                        OnLog(request, response);
+                        // Do nothing, server is terminating
                     }
-                }
-                catch (Exception e)
-                {
-                    if (response != null)
+                    catch (Exception e)
                     {
-                        response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
-                        response.Respond(stream);
-                        OnLog(request, response);
+                        if (response != null)
+                        {
+                            response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
+                            response.Respond(stream);
+                            OnLog(request, response);
+                        }
+                    }
+                    finally
+                    {
+                        reader.Close();
                     }
                 }
                 finally
                 {
-                    reader.Close();
+                    stream.Dispose();
                 }
             }
             finally
             {
-                stream.Dispose();
+                lock (_openTcpClients)
+                    _openTcpClients.Remove(client);
             }
         }
 
@@ -411,8 +434,8 @@ namespace Woopsa
                 {
                     throw new HandlingException(HTTPStatusCode.LengthRequired, "Length Required");
                 }
-                int contentLength =  Convert.ToInt32(request.Headers[HTTPHeader.ContentLength]);
-                if (contentLength != 0 )
+                int contentLength = Convert.ToInt32(request.Headers[HTTPHeader.ContentLength]);
+                if (contentLength != 0)
                 {
                     if (!request.Headers.ContainsKey(HTTPHeader.ContentType))
                     {
@@ -444,7 +467,7 @@ namespace Woopsa
                 }
             }
         }
-        
+
         void HTTPResponse_Error(object sender, HTTPResponseErrorEventArgs e)
         {
             OnError(e);
@@ -452,7 +475,7 @@ namespace Woopsa
 
         protected virtual void OnLog(HTTPRequest request, HTTPResponse response)
         {
-            if ( Log != null )
+            if (Log != null)
             {
                 Log(this, new LogEventArgs(request, response));
             }
@@ -460,7 +483,7 @@ namespace Woopsa
 
         protected virtual void OnError(EventArgs args)
         {
-            if ( Error != null )
+            if (Error != null)
             {
                 Error(this, args);
             }
@@ -487,12 +510,12 @@ namespace Woopsa
 
     public class LogEventArgs : EventArgs
     {
-        public HTTPRequest Request;
-        public HTTPResponse Response;
         public LogEventArgs(HTTPRequest request, HTTPResponse response)
         {
             Request = request;
             Response = response;
         }
+        public HTTPRequest Request { get; private set; }
+        public HTTPResponse Response { get; private set; }
     }
 }

@@ -11,7 +11,7 @@ set DOT_NET_SOURCES_DIR=Sources\DotNet
 set DOT_NET_SERVER_EXAMPLE_DIR=WoopsaDemoServer
 set DOT_NET_CLIENT_EXAMPLE_DIR=WoopsaDemoClient
 set JAVASCRIPT_RELEASE_DIR=JavaScript
-set JAVASCRIPT_PROJECT_DIR=Sources\JavaScript
+set JAVASCRIPT_PROJECT_DIR=Sources\JavaScript\browser
 set EMBEDDED_RELEASE_DIR=Embedded
 set EMBEDDED_PROJECT_DIR=Sources\Embedded
 set EMBEDDED_EXAMPLE_DIR=Release
@@ -41,7 +41,7 @@ REM JavaScript library
 if not exist %RELEASE_DIR%\%JAVASCRIPT_RELEASE_DIR% mkdir %RELEASE_DIR%\%JAVASCRIPT_RELEASE_DIR%
 cd %JAVASCRIPT_PROJECT_DIR%
 call build-windows.bat
-cd ..\..
+cd ..\..\..
 copy %JAVASCRIPT_PROJECT_DIR%\dist\* %RELEASE_DIR%\%JAVASCRIPT_RELEASE_DIR%\
 
 REM Embedded library

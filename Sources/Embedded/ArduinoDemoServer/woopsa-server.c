@@ -142,7 +142,7 @@ TypesDictionaryEntry * GetTypeEntry(WoopsaType type) {
 // Returns the length of the *current* header, or -1 if this header is empty
 // (which means this is the double new-line at the end of HTTP request)
 WoopsaInt16 NextHTTPHeader(const WoopsaChar8* searchString, const WoopsaChar8** nextHeader) {
-	WoopsaUInt16 i = 0, carriageFound = 0;
+	WoopsaInt16 i = 0, carriageFound = 0;
 	while (searchString[i] != '\0') {
 		if (carriageFound == 1 && searchString[i] == '\n') {
 			*nextHeader = searchString + i + 1;
@@ -160,7 +160,7 @@ WoopsaInt16 NextHTTPHeader(const WoopsaChar8* searchString, const WoopsaChar8** 
 // and decodes the actual value. Note: keys are lowercased
 // Returns the length of the *current* key/value pair, or -1 if none found
 WoopsaInt16 NextURLDecodedValue(const WoopsaChar8* searchString, WoopsaChar8* key, WoopsaChar8* value) {
-	WoopsaUInt16 i = 0, inKey = 1, keyAt = 0, valueAt = 0;
+	WoopsaInt16 i = 0, inKey = 1, keyAt = 0, valueAt = 0;
 	WoopsaUInt8 specialCharAt = 0, inSpecialChar = 0;
 	WoopsaChar8 charBuff[2] = { 0, 0 };
 	WoopsaChar8 specialChar = '\0', curChar = '\0';
@@ -223,8 +223,8 @@ WoopsaInt16 NextURLDecodedValue(const WoopsaChar8* searchString, WoopsaChar8* ke
 
 // Appends source to destination, while keeping destination under num length
 // Returns amount of characters actually appended
-WoopsaUInt16 Append(WoopsaChar8 destination[], const WoopsaChar8 source[], WoopsaUInt16 num) {
-	WoopsaUInt16 i = 0, cnt = 0;
+WoopsaBufferUInt Append(WoopsaChar8 destination[], const WoopsaChar8 source[], WoopsaBufferUInt num) {
+	WoopsaBufferUInt i = 0, cnt = 0;
 	// go to end of destination
 	while (destination[i] != '\0')
 		i++;
@@ -238,8 +238,8 @@ WoopsaUInt16 Append(WoopsaChar8 destination[], const WoopsaChar8 source[], Woops
 // Appends source to destination, while keeping destination under num length
 // and escaping specified character
 // Returns amount of characters actually appended
-WoopsaUInt16 AppendEscape(WoopsaChar8 destination[], const WoopsaChar8 source[], WoopsaChar8 special, WoopsaChar8 escape, WoopsaUInt16 num) {
-	WoopsaUInt16 i = 0, cnt = 0, extras = 0;
+WoopsaBufferUInt AppendEscape(WoopsaChar8 destination[], const WoopsaChar8 source[], WoopsaChar8 special, WoopsaChar8 escape, WoopsaBufferUInt num) {
+	WoopsaBufferUInt i = 0, cnt = 0, extras = 0;
 	// go to end of destination
 	while (destination[i] != '\0')
 		i++;
@@ -264,15 +264,15 @@ WoopsaUInt16 AppendEscape(WoopsaChar8 destination[], const WoopsaChar8 source[],
 // This method will basically prepare the entire string that can be
 // send out to the client, including all HTTP headers.
 // Returns the length of the prepared string
-WoopsaUInt16 PrepareResponse(
+WoopsaBufferUInt PrepareResponse(
 		WoopsaChar8* outputBuffer,
-		const WoopsaUInt16 outputBufferLength,
+		const WoopsaBufferUInt outputBufferLength,
 		const WoopsaChar8* httpStatusCode,
 		const WoopsaChar8* httpStatusStr,
-		WoopsaUInt16* contentLengthPosition,
+		WoopsaBufferUInt* contentLengthPosition,
 		const WoopsaChar8* contentType
 		) {
-	WoopsaUInt16 size = 0;
+	WoopsaBufferUInt size = 0;
 	outputBuffer[0] = '\0';
 	// HTTP/1.1
 	size = Append(outputBuffer, HTTP_VERSION_STRING " ", outputBufferLength);
@@ -297,19 +297,21 @@ WoopsaUInt16 PrepareResponse(
 	return size;
 }
 
-void SetContentLength(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaUInt16 contentLengthPosition, WoopsaUInt16 contentLength) {
-	WOOPSA_INTEGER_TO_PADDED_STRING(contentLength, outputBuffer + contentLengthPosition, 8);
+void SetContentLength(WoopsaChar8* outputBuffer, const WoopsaBufferUInt outputBufferLength, WoopsaBufferUInt contentLengthPosition, WoopsaBufferUInt contentLength) {
+	if (contentLengthPosition + 8 > outputBufferLength)
+		return;
+	WOOPSA_INTEGER_TO_PADDED_STRING((int)contentLength, outputBuffer + contentLengthPosition, 8);
 	// snprintf usually adds a null byte, remove it and put a \r instead
 	outputBuffer[contentLengthPosition + WOOPSA_STRING_LENGTH(HEADER_CONTENT_LENGTH_SPACE)] = '\r';
 }
 
-WoopsaUInt16 PrepareResponseWithContent(
+WoopsaBufferUInt PrepareResponseWithContent(
 		WoopsaChar8* outputBuffer,
-		const WoopsaUInt16 outputBufferLength,
+		const WoopsaBufferUInt outputBufferLength,
 		const WoopsaChar8* httpStatusCode,
 		const WoopsaChar8* httpStatusStr,
 		const WoopsaChar8* content) {
-	WoopsaUInt16 len, pos, contentLength;
+	WoopsaBufferUInt len, pos, contentLength;
 	len = PrepareResponse(outputBuffer, outputBufferLength, httpStatusCode, httpStatusStr, &pos, CONTENT_TYPE_JSON);
 	contentLength = WOOPSA_STRING_LENGTH(content);
 	SetContentLength(outputBuffer, outputBufferLength, pos, contentLength);
@@ -319,19 +321,19 @@ WoopsaUInt16 PrepareResponseWithContent(
 
 // Shortcut to generate an HTTP error. The contents
 // of the response is the error string itself.
-WoopsaUInt16 PrepareError(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaChar8 errorCode[], const WoopsaChar8 errorStr[]) {
+WoopsaBufferUInt PrepareError(WoopsaChar8* outputBuffer, const WoopsaBufferUInt outputBufferLength, WoopsaChar8 errorCode[], const WoopsaChar8 errorStr[]) {
 	return PrepareResponseWithContent(outputBuffer, outputBufferLength, errorCode, errorStr, errorStr);
 }
 
 void StringToLower(WoopsaChar8 str[]) {
-	int i = 0;
+	WoopsaBufferUInt i = 0;
 	for (i = 0; str[i]; i++) {
 		str[i] = WOOPSA_CHAR_TO_LOWER(str[i]);
 	}
 }
 
-WoopsaUInt16 OutputSerializedValue(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaChar8 stringValue[], WoopsaChar8 typeString[], WoopsaChar8 isStringValue) {
-	WoopsaUInt16 contentLength = 0;
+WoopsaBufferUInt OutputSerializedValue(WoopsaChar8* outputBuffer, const WoopsaBufferUInt outputBufferLength, WoopsaChar8 stringValue[], WoopsaChar8 typeString[], WoopsaChar8 isStringValue) {
+	WoopsaBufferUInt contentLength = 0;
 	contentLength += Append(outputBuffer, JSON_VALUE_VALUE, outputBufferLength);
 #ifdef WOOPSA_ENABLE_STRINGS
 	if (isStringValue) {
@@ -350,27 +352,27 @@ WoopsaUInt16 OutputSerializedValue(WoopsaChar8* outputBuffer, const WoopsaUInt16
 	return contentLength;
 }
 
-WoopsaUInt16 OutputProperty(WoopsaChar8* outputBuffer, const WoopsaUInt16 outputBufferLength, WoopsaEntry* woopsaEntry, TypesDictionaryEntry* typeEntry, WoopsaChar8 numericValueBuffer[]) {
-	WoopsaUInt16 contentLength = 0;
+WoopsaBufferUInt OutputProperty(WoopsaChar8* outputBuffer, const WoopsaBufferUInt outputBufferLength, WoopsaEntry* woopsaEntry, TypesDictionaryEntry* typeEntry, WoopsaChar8 numericValueBuffer[]) {
+	WoopsaBufferUInt contentLength = 0;
 #ifdef WOOPSA_ENABLE_STRINGS
 	if (woopsaEntry->type == WOOPSA_TYPE_TEXT
 		|| woopsaEntry->type == WOOPSA_TYPE_LINK
 		|| woopsaEntry->type == WOOPSA_TYPE_RESOURCE_URL
 		|| woopsaEntry->type == WOOPSA_TYPE_DATE_TIME) {
 		WOOPSA_LOCK
-			contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, (WoopsaChar8*)woopsaEntry->address, typeEntry->string, 1);
+			contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, (WoopsaChar8*)woopsaEntry->address.data, typeEntry->string, 1);
 		WOOPSA_UNLOCK
 	} else if ( woopsaEntry->type == WOOPSA_TYPE_LOGICAL ){
 		WOOPSA_LOCK
-			contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, *(WoopsaChar8*)(woopsaEntry->address)?JSON_TRUE:JSON_FALSE, typeEntry->string, 0);
+			contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, *(WoopsaChar8*)(woopsaEntry->address.data)?JSON_TRUE:JSON_FALSE, typeEntry->string, 0);
 		WOOPSA_UNLOCK
 	} else {
 #endif
 		WOOPSA_LOCK
 		if (woopsaEntry->type == WOOPSA_TYPE_INTEGER)
-			WOOPSA_INTEGER_TO_STRING(*(int*)woopsaEntry->address, numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
+			WOOPSA_INTEGER_TO_STRING(*(int*)woopsaEntry->address.data, numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
 		else
-			WOOPSA_REAL_TO_STRING(*(float*)(woopsaEntry->address), numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
+			WOOPSA_REAL_TO_STRING(*(float*)(woopsaEntry->address.data), numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
 		WOOPSA_UNLOCK
 		contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, numericValueBuffer, typeEntry->string, 0);
 #ifdef WOOPSA_ENABLE_STRINGS
@@ -383,7 +385,7 @@ WoopsaUInt16 OutputProperty(WoopsaChar8* outputBuffer, const WoopsaUInt16 output
 //                   BEGIN PUBLIC WOOPSA IMPLEMENTATION                      //
 ///////////////////////////////////////////////////////////////////////////////
 
-void WoopsaServerInit(WoopsaServer* server, const WoopsaChar8* prefix, WoopsaEntry entries[], WoopsaUInt16(*handleRequest)(WoopsaChar8*, WoopsaUInt8, WoopsaChar8*, WoopsaUInt16)) {
+void WoopsaServerInit(WoopsaServer* server, const WoopsaChar8* prefix, WoopsaEntry entries[], WoopsaBufferUInt(*handleRequest)(WoopsaChar8*, WoopsaUInt8, WoopsaChar8*, WoopsaBufferUInt)) {
 	server->pathPrefix = prefix;
 	server->entries = entries;
 	server->handleRequest = handleRequest;
@@ -391,12 +393,13 @@ void WoopsaServerInit(WoopsaServer* server, const WoopsaChar8* prefix, WoopsaEnt
 
 WoopsaUInt8 WoopsaCheckRequestComplete(WoopsaServer* server, WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength) {
 	WoopsaUInt8 contentLengthLength = 0;
-	WoopsaChar8 *buffer = server->buffer, *header = NULL, *contentLengthPosition = NULL, *contentStart = NULL, *contentPosition = NULL;
-	WoopsaInt16 headerSize = 0, contentLength = 0, i = 0;
+	WoopsaChar8 *buffer = server->buffer, *header = NULL, *contentLengthPosition = NULL, *contentPosition = NULL;
+	WoopsaBufferUInt headerSize = 0;
+	WoopsaBufferUInt contentLength = 0, i = 0;
 	// Zero-out the buffer
 	memset(buffer, 0, sizeof(WoopsaBuffer));
 	header = inputBuffer;
-	while ((headerSize = NextHTTPHeader(header, &header)) != -1) {
+	while ((headerSize = NextHTTPHeader(header, &header)) != -1 && header < inputBuffer + inputBufferLength) {
 		WOOPSA_STRING_N_COPY(buffer, header, headerSize); 
 		StringToLower(buffer);
 		// Is there a "Content-Length" header?
@@ -433,15 +436,15 @@ WoopsaUInt8 WoopsaCheckRequestComplete(WoopsaServer* server, WoopsaChar8* inputB
 	}
 }
 
-WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBuffer, WoopsaUInt16 inputBufferLength, WoopsaChar8* outputBuffer, WoopsaUInt16 outputBufferLength, WoopsaUInt16* responseLength) {
+WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBuffer, WoopsaBufferUInt inputBufferLength, WoopsaChar8* outputBuffer, WoopsaBufferUInt outputBufferLength, WoopsaBufferUInt* responseLength) {
 	WoopsaChar8* header = NULL;
 	WoopsaChar8* woopsaPath = NULL;
 	WoopsaChar8* requestContent = NULL;
 	WoopsaChar8 numericValueBuffer[MAX_NUMERICAL_VALUE_LENGTH];
-	WoopsaChar8 oldChar = '\0';
-	WoopsaUInt16 i = 0, pos = 0, contentLengthPosition = 0, contentLength = 0;
+	WoopsaBufferUInt contentLengthPosition = 0;
+	WoopsaBufferUInt contentLength = 0, i = 0, pos = 0;
 	WoopsaUInt8 isPost = 0, valueFound = 0, entryAt = 0;
-	WoopsaInt16 headerSize = 0, keypairSize = 0;
+	WoopsaBufferUInt headerSize = 0, keypairSize = 0;
 	WoopsaEntry* woopsaEntry = NULL;
 	TypesDictionaryEntry* typeEntry = NULL;
 	WoopsaChar8* buffer = server->buffer;
@@ -469,7 +472,7 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		buffer[i] = inputBuffer[pos + i];
 	}
 	// Extract all headers (but do nothing with them)
-	while ((headerSize = NextHTTPHeader(header, &header)) != -1) {
+	while ((headerSize = NextHTTPHeader(header, &header)) != -1 && header < inputBuffer + inputBufferLength) {
 		// Do some work on the headers. We don't need to really do anything now actually
 	}
 	// Check if the path is a Woopsa path
@@ -477,7 +480,7 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		// It's not, so we try to handle it with the handleRequest func pointer
 		if (server->handleRequest != NULL) {
 			*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, &contentLengthPosition, CONTENT_TYPE_HTML);
-			contentLength = server->handleRequest(buffer, isPost, outputBuffer, outputBufferLength);
+			contentLength = server->handleRequest(buffer, isPost, outputBuffer + *responseLength, outputBufferLength - *responseLength);
 			if (contentLength == 0) {
 				*responseLength = PrepareError(outputBuffer, outputBufferLength, HTTP_CODE_NOT_FOUND, HTTP_TEXT_NOT_FOUND);
 				return WOOPSA_CLIENT_REQUEST_ERROR;
@@ -572,20 +575,20 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		// Write the value
 		if (woopsaEntry->type == WOOPSA_TYPE_INTEGER) {
 			WOOPSA_LOCK
-				WOOPSA_STRING_TO_INTEGER(*(int*)woopsaEntry->address, buffer);
+				WOOPSA_STRING_TO_INTEGER(*(int*)woopsaEntry->address.data, buffer);
 			WOOPSA_UNLOCK
 		} else if (woopsaEntry->type == WOOPSA_TYPE_REAL || woopsaEntry->type == WOOPSA_TYPE_TIME_SPAN) {
 			WOOPSA_LOCK
-				WOOPSA_STRING_TO_FLOAT(*(float*)woopsaEntry->address, buffer);
+				WOOPSA_STRING_TO_FLOAT(*(float*)woopsaEntry->address.data, buffer);
 			WOOPSA_UNLOCK
 		} 
 		else if (woopsaEntry->type == WOOPSA_TYPE_LOGICAL) {
 			StringToLower(buffer);
 			WOOPSA_LOCK
 			if (WOOPSA_STRING_EQUAL(buffer, JSON_TRUE))
-				*(char*)woopsaEntry->address = 1;
+				*(char*)woopsaEntry->address.data = 1;
 			else
-				*(char*)woopsaEntry->address = 0;
+				*(char*)woopsaEntry->address.data = 0;
 			WOOPSA_UNLOCK
 		}
 #ifdef WOOPSA_ENABLE_STRINGS
@@ -593,7 +596,7 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		{
 			if (woopsaEntry->size > WOOPSA_STRING_LENGTH(buffer)) {
 				WOOPSA_LOCK
-					WOOPSA_STRING_COPY((char*)woopsaEntry->address, buffer);
+					WOOPSA_STRING_COPY((char*)woopsaEntry->address.data, buffer);
 				WOOPSA_UNLOCK
 			} else {
 				*responseLength = PrepareError(outputBuffer, outputBufferLength, HTTP_CODE_BAD_REQUEST, HTTP_TEXT_BAD_REQUEST);
@@ -621,7 +624,7 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 		*responseLength = PrepareResponse(outputBuffer, outputBufferLength, HTTP_CODE_OK, HTTP_TEXT_OK, &contentLengthPosition, CONTENT_TYPE_JSON);
 		// Invoke the method
 		if (woopsaEntry->type == WOOPSA_TYPE_NULL) {
-			(*(ptrMethodVoid)woopsaEntry->address)();
+			(*(ptrMethodVoid)woopsaEntry->address.function)();
 			contentLength = 0;
 		} else {
 			if (woopsaEntry->type == WOOPSA_TYPE_TEXT
@@ -629,16 +632,16 @@ WoopsaUInt8 WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBu
 				|| woopsaEntry->type == WOOPSA_TYPE_RESOURCE_URL
 				|| woopsaEntry->type == WOOPSA_TYPE_DATE_TIME) {
 				WOOPSA_LOCK
-					contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, (*(ptrMethodRetString)woopsaEntry->address)(), typeEntry->string, 1);
+					contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, (*(ptrMethodRetString)woopsaEntry->address.function)(), typeEntry->string, 1);
 				WOOPSA_UNLOCK
 			} else {
 				if (woopsaEntry->type == WOOPSA_TYPE_INTEGER) {
 					WOOPSA_LOCK
-						WOOPSA_INTEGER_TO_STRING((*(ptrMethodRetInteger)woopsaEntry->address)(), numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
+						WOOPSA_INTEGER_TO_STRING((*(ptrMethodRetInteger)woopsaEntry->address.function)(), numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
 					WOOPSA_UNLOCK
 				} else {
 					WOOPSA_LOCK
-						WOOPSA_REAL_TO_STRING((*(ptrMethodRetReal)woopsaEntry->address)(), numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
+						WOOPSA_REAL_TO_STRING((*(ptrMethodRetReal)woopsaEntry->address.function)(), numericValueBuffer, MAX_NUMERICAL_VALUE_LENGTH);
 					WOOPSA_UNLOCK
 				}
 				contentLength += OutputSerializedValue(outputBuffer, outputBufferLength, numericValueBuffer, typeEntry->string, 0);

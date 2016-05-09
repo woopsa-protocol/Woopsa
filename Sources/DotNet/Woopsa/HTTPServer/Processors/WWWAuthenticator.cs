@@ -1,55 +1,77 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    public class WWWAuthenticator:PostRouteProcessor, IRequestProcessor
+    public abstract class BaseAuthenticator : PostRouteProcessor, IRequestProcessor
     {
-        public WWWAuthenticator(string realm)
+        public BaseAuthenticator(string realm)
         {
-            Realm = realm;
+            Realm = realm;            
         }
 
-        public delegate bool Check(string username, string password);
-
-        public Check DoCheck { get; set; }
-        public string Realm { get; set; }
+        public string Realm { get; private set; }
 
         public bool Process(HTTPRequest request, HTTPResponse response)
         {
-            if ( DoCheck == null )
-            {
-                throw new NotImplementedException("No DoCheck delegate was specified for WWWAuthenticator.");
-            }
-
-            if ( !request.Headers.ContainsKey(HTTPHeader.Authorization) )
-            {
-                response.SetHeader(HTTPHeader.WWWAuthenticate, "Basic Realm=\"" + Realm + "\"");
-                response.WriteError(HTTPStatusCode.Unauthorized, "Unauthorized");
-                return false;
-            }
-            else
+            bool authenticated;
+            if (request.Headers.ContainsKey(HTTPHeader.Authorization))
             {
                 string authString = request.Headers[HTTPHeader.Authorization].Split(' ')[1];
                 authString = Encoding.GetEncoding("ISO-8859-1").GetString(Convert.FromBase64String(authString));
                 string[] parts = authString.Split(':');
                 string username = parts[0];
                 string password = parts[1];
-
-                if (DoCheck(username, password))
-                {
-                    return true;
-                }
-                else
-                {
-                    response.SetHeader(HTTPHeader.WWWAuthenticate, "Basic Realm=\"" + Realm + "\"");
-                    response.WriteError(HTTPStatusCode.Unauthorized, "Unauthorized");
-                    return false;
-                }
+                authenticated = Authenticate(username, password);
             }
+            else
+                authenticated = false;
+            if (!authenticated)
+            { 
+                response.SetHeader(HTTPHeader.WWWAuthenticate, "Basic Realm=\"" + Realm + "\"");
+                response.WriteError(HTTPStatusCode.Unauthorized, "Unauthorized");
+            }
+            return authenticated;
         }
+
+        protected abstract bool Authenticate(string username, string password);
     }
+
+    public class AuthenticationCheckEventArgs : EventArgs
+    {
+        public AuthenticationCheckEventArgs(string username, string password)
+        {
+            Username = username;
+            Password = password;
+        }
+        public string Username { get; private set; }
+        public string Password { get; private set; }
+
+        public bool IsAuthenticated { get; set; }
+    }
+
+    public delegate void AuthenticationCheck(object sender, AuthenticationCheckEventArgs e);
+
+    public class SimpleAuthenticator : BaseAuthenticator
+    {
+        public SimpleAuthenticator(string realm, AuthenticationCheck authenticationCheck): 
+            base(realm)
+        {
+            if (authenticationCheck != null)
+                AuthenticationCheck = authenticationCheck;
+            else
+                throw new NotImplementedException("No DoCheck delegate was specified for WWWAuthenticator.");
+        }
+
+        protected override bool Authenticate(string username, string password)
+        {
+            AuthenticationCheckEventArgs eventArgs = new AuthenticationCheckEventArgs(username, password);
+            eventArgs.IsAuthenticated = false;
+            AuthenticationCheck(this, eventArgs);
+            return eventArgs.IsAuthenticated;
+        }
+
+        private AuthenticationCheck AuthenticationCheck;
+    }
+
 }

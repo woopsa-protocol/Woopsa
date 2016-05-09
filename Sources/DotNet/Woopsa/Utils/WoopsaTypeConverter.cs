@@ -8,38 +8,38 @@ namespace Woopsa
 {
     public static class WoopsaTypeUtils
     {
-        public static object ConvertTo(this WoopsaValue value, Type targetType)
+        public static object ConvertTo(this IWoopsaValue value, Type targetType)
         {
             if (targetType == typeof(bool))
-                return (bool)value;
+                return value.ToBool();
             else if (targetType == typeof(float))
-                return (float)value;
+                return value.ToFloat();
             else if (targetType == typeof(double))
-                return (double)value;
+                return value.ToDouble();
             else if (targetType == typeof(byte))
-                return (byte)value;
+                return value.ToByte();
             else if (targetType == typeof(sbyte))
-                return (sbyte)value;
+                return value.ToSByte();
             else if (targetType == typeof(string))
-                return (string)value;
+                return value.AsText;
             else if (targetType == typeof(Int16))
-                return (Int16)value;
+                return value.ToInt16();
             else if (targetType == typeof(Int32))
-                return (Int32)value;
+                return value.ToInt32();
             else if (targetType == typeof(Int64))
-                return (Int64)value;
+                return value.ToInt64();
             else if (targetType == typeof(UInt16))
-                return (UInt16)value;
+                return value.ToUInt16();
             else if (targetType == typeof(UInt32))
-                return (UInt32)value;
+                return value.ToUInt32();
             else if (targetType == typeof(UInt64))
-                return (UInt64)value;
+                return value.ToUInt64();
             else if (targetType == typeof(TimeSpan))
-                return (TimeSpan)value;
+                return value.ToTimeSpan();
             else if (targetType == typeof(DateTime))
-                return (DateTime)value;
+                return value.ToDateTime();
             else if (targetType.IsEnum)
-                return Enum.Parse(targetType, value);
+                return Enum.Parse(targetType, value.AsText);
             else
                 throw new WoopsaException(String.Format("The type value \"{0}\" is not supported in parameters of dynamic function call.", targetType.Name));
         }
@@ -57,44 +57,45 @@ namespace Woopsa
                 resultType = WoopsaValueType.Null;
                 return true;
             }
-            switch (System.Type.GetTypeCode(targetType))
-            {
-                case TypeCode.Boolean:
-                    resultType = WoopsaValueType.Logical;
-                    return true;
-                case TypeCode.Byte:
-                case TypeCode.SByte:
-                case TypeCode.UInt16:
-                case TypeCode.UInt32:
-                case TypeCode.UInt64:
-                case TypeCode.Int16:
-                case TypeCode.Int32:
-                case TypeCode.Int64:
-                    resultType = WoopsaValueType.Integer;
-                    return true;
-                case TypeCode.Decimal:
-                case TypeCode.Double:
-                case TypeCode.Single:
-                    resultType = WoopsaValueType.Real;
-                    return true;
-                case TypeCode.DateTime:
-                    resultType = WoopsaValueType.DateTime;
-                    return true;
-                case TypeCode.String:
-                    resultType = WoopsaValueType.Text;
-                    return true;
-                default:
-                    if (targetType == typeof(TimeSpan))
-                    {
-                        resultType = WoopsaValueType.TimeSpan;
+            else
+                switch (System.Type.GetTypeCode(targetType))
+                {
+                    case TypeCode.Boolean:
+                        resultType = WoopsaValueType.Logical;
                         return true;
-                    }
-                    else
-                    {
-                        resultType = WoopsaValueType.Null;
-                        return false;
-                    }
-            }
+                    case TypeCode.Byte:
+                    case TypeCode.SByte:
+                    case TypeCode.UInt16:
+                    case TypeCode.UInt32:
+                    case TypeCode.UInt64:
+                    case TypeCode.Int16:
+                    case TypeCode.Int32:
+                    case TypeCode.Int64:
+                        resultType = WoopsaValueType.Integer;
+                        return true;
+                    case TypeCode.Decimal:
+                    case TypeCode.Double:
+                    case TypeCode.Single:
+                        resultType = WoopsaValueType.Real;
+                        return true;
+                    case TypeCode.DateTime:
+                        resultType = WoopsaValueType.DateTime;
+                        return true;
+                    case TypeCode.String:
+                        resultType = WoopsaValueType.Text;
+                        return true;
+                    default:
+                        if (targetType == typeof(TimeSpan))
+                        {
+                            resultType = WoopsaValueType.TimeSpan;
+                            return true;
+                        }
+                        else
+                        {
+                            resultType = WoopsaValueType.Null;
+                            return false;
+                        }
+                }
         }
     }
 }

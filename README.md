@@ -8,7 +8,7 @@ Woopsa allows you to share the complete object model of your application in a wa
 ```javascript
 var woopsa = new WoopsaClient("http://demo.woopsa.org/woopsa", jQuery);
 woopsa.read("/Temperature", function(result){
-//result = 42
+//result = 24.2
 });
 ```
 
@@ -19,7 +19,31 @@ woopsa.read("/Temperature", function(result){
 WeatherStation station = new WeatherStation();
 WoopsaServer server = new WoopsaServer(station);
 
-station.Temperature = 42;
+station.Temperature = 24.2;
+```
+
+**Example node Server**
+```javascript
+var woopsa = require('woopsa');
+var weatherStation = {
+    Temperature: 24.2,
+    IsRaining: false,
+    Sensitivity: 0.5,
+    Altitude: 430,
+    City: "Geneva",
+    Time: new Date(),
+    GetWeatherAtDate: function (date){
+        var date = new Date(date);
+        if ( date.getDay() === 1 )
+            return "rainy";
+        else
+            return "sunny";
+    },
+    Thermostat: {
+        SetPoint: 24.0
+    }
+}
+var server = new woopsa.Server(weatherStation, {port: 80});
 ```
 
 **Example Embedded C Server (Arduino, others)**

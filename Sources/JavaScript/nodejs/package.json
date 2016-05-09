@@ -1,0 +1,21 @@
+{
+  "name": "woopsa",
+  "version": "1.1.9",
+  "description": "Woopsa is the first fully open-source object-oriented protocol for automation and the Internet of Things",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "Woopsa Protocol <woopsa@objectis.ch>",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/woopsa-protocol/Woopsa/issues"
+  },
+  "homepage": "https://www.woopsa.org",
+  "dependencies": {
+    "basic-auth": "^1.0.3",
+    "body-parser": "^1.14.2",
+    "express": "^4.13.3",
+    "get-parameter-names": "^0.2.0"
+  }
+}

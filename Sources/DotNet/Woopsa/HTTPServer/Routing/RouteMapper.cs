@@ -1,15 +1,11 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.Collections.Generic;
 
 namespace Woopsa
 {
     /// <summary>
     /// Provides mechanisms that allow to map a route to a route handler.
     /// This class is used mostly internally, except when adding post-route
-    /// processors, and an instance should never be created by an end-user.
+    /// processors.
     /// </summary>
     public class RouteMapper
     {
@@ -66,10 +62,9 @@ namespace Woopsa
         #endregion
 
         #region Public methods
-        public RouteMapper AddProcessor(PostRouteProcessor processor)
+        public void AddProcessor(PostRouteProcessor processor)
         {
             _processors.Add(processor);
-            return this; //Allows daisy-chaining of AddProcessor calls
         }
 
         public bool RemoveProcessor(PostRouteProcessor processor)
