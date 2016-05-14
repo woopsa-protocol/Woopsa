@@ -5,6 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using Newtonsoft.Json;
+using Newtonsoft.Json.Linq;
 
 namespace Woopsa
 {
@@ -25,8 +26,11 @@ namespace Woopsa
         {
             _data = deserializedData;
             _serializedData = serializedData;
-            _asDictionary = (_data as Dictionary<string, object>);
-            _asArray = _data as object[];
+
+            var jobect = deserializedData as JObject;
+            if(jobect != null)
+                _asDictionary = jobect.ToObject<Dictionary<string, object>>();
+            _asArray = _data as JArray;
         }
 
         public WoopsaJsonData this[string key]
@@ -35,8 +39,7 @@ namespace Woopsa
             {
                 if (IsDictionary)
                 {
-                    var dic = (_data as Dictionary<string, object>);
-                    return CreateFromDeserializedData(dic[key]);
+                    return CreateFromDeserializedData(_asDictionary[key]);
                 }
                 else
                     throw new InvalidOperationException("String indexer is only available on WoopsaJsonData of type Object.");
@@ -48,7 +51,7 @@ namespace Woopsa
             get
             {
                 if (IsDictionary)
-                    return (_data as Dictionary<string, object>).Keys;
+                    return _asDictionary.Keys;
                 else
                     return new string[0];
             }
@@ -60,8 +63,7 @@ namespace Woopsa
             {
                 if (IsArray)
                 {
-                    var arr = (_data as object[]);
-                    return CreateFromDeserializedData(arr[index]);
+                    return CreateFromDeserializedData(_asArray[index]);
                 }
                 else
                     throw new InvalidOperationException("Integer indexer is only available on JsonDataof type Array.");
@@ -73,7 +75,7 @@ namespace Woopsa
             get
             {
                 if (IsArray)
-                    return (_data as object[]).Length;
+                    return _asArray.Count;
                 else
                     throw new InvalidOperationException("Length is only available on WoopsaJsonData of type Array.");
             }
@@ -109,7 +111,7 @@ namespace Woopsa
 
         private object _data;
         private Dictionary<string, object> _asDictionary;
-        private object[] _asArray;
+        private JArray _asArray;
         private string _serializedData;
 
         #region Static methods for type casting
