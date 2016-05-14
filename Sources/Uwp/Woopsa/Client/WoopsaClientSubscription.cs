@@ -1,23 +1,25 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
-using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    internal class WoopsaClientSubscriptionChannel : WoopsaClientSubscriptionChannelBase, IDisposable
+    internal class WoopsaClientSubscriptionChannel : WoopsaClientSubscriptionChannelBase
     {
+        #region Constants
+
         public const int DefaultNotificationQueueSize = 200;
-        private readonly TimeSpan WaitNotificationTimeout = TimeSpan.FromSeconds(10);
-        private readonly TimeSpan WaitNotificationRetryPeriod = TimeSpan.FromSeconds(10);
 
-        public int ChannelId { get; private set; }
+        #endregion
 
-        public WoopsaClientSubscriptionChannel(IWoopsaObject client) : this(client, DefaultNotificationQueueSize) { }
+        #region Constructors
+
+        public WoopsaClientSubscriptionChannel(IWoopsaObject client)
+            : this(client, DefaultNotificationQueueSize)
+        {}
 
         public WoopsaClientSubscriptionChannel(IWoopsaObject client, int notificationQueueSize)
         {
@@ -25,27 +27,38 @@ namespace Woopsa
             _notificationQueueSize = notificationQueueSize;
 
             _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
-            _createSubscriptionChannel = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel);
-            _waitNotification = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaWaitNotification);
+            _createSubscriptionChannel = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel);
+            _waitNotification = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaWaitNotification);
 
             Create(_notificationQueueSize);
         }
 
+        #endregion
+
+        #region Public Properties
+
+        public int ChannelId { get; private set; }
+
+        #endregion
+
+        #region Override Register / Unregister
+
         public override int Register(string path, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            WoopsaClientSubscription subscription = new WoopsaClientSubscription(this, _client, path, monitorInterval, publishInterval);
+            var subscription = new WoopsaClientSubscription(this, _client, path, monitorInterval, publishInterval);
             lock (_subscriptions)
             {
-                //Check if we haven't already subscribed to this guy by any chance
+                // Check if we haven't already subscribed to this guy by any chance
                 _subscriptions.Add(subscription);
             }
-            if (!_listenStarted)
+
+            if (_listenTask == null)
             {
                 _listenTask = new Task(DoWaitNotification);
-                //_listenTask.Name = "WoopsaClientSubscription_Thread";
-                _listenStarted = true;
+                _listening = true;
                 _listenTask.Start();
             }
+
             return subscription.Id;
         }
 
@@ -60,29 +73,29 @@ namespace Woopsa
                         bool result = subscription.Unregister();
                         _subscriptions.Remove(subscription);
                         if (!_subscriptions.Any())
-                            _listenStarted = false;
+                            _listening = false;
                         return result;
                     }
                 }
             }
+
             return false;
         }
+                
+        #endregion
 
-        private IWoopsaObject _client;
-        private List<WoopsaClientSubscription> _subscriptions = new List<WoopsaClientSubscription>();
-        private bool _listenStarted = false;
-        private Task _listenTask;
+        #region Private Helpers
 
-        private IWoopsaObject _subscriptionService;
-        private IWoopsaMethod _createSubscriptionChannel;
-        private IWoopsaMethod _waitNotification;
-        private int _notificationQueueSize;
-
-        private int _lastNotificationId = 0;
+        private void Create(int notificationQueueSize)
+        {
+            var arguments = new WoopsaValue[] {notificationQueueSize};
+            IWoopsaValue result = _createSubscriptionChannel.Invoke(arguments);
+            ChannelId = result.ToInt32();
+        }
 
         private void DoWaitNotification()
         {
-            while (_listenStarted)
+            while (_listening)
             {
                 if (_subscriptions.Count > 0)
                 {
@@ -102,11 +115,11 @@ namespace Woopsa
                         // This can happen if the server died and was relaunched
                         // => the channel doesn't exist anymore so we need to re-
                         // create it and re-subscribe
-                        Task.Delay(WaitNotificationRetryPeriod);
+                        Task.Delay(_waitNotificationRetryPeriod);
                         Create(_notificationQueueSize);
                         lock (_subscriptions)
                         {
-                            //Check if we haven't already subscribed to this guy by any chance
+                            // Check if we haven't already subscribed to this guy by any chance
                             foreach (var sub in _subscriptions)
                                 sub.Register();
                         }
@@ -120,6 +133,7 @@ namespace Woopsa
                         // acknowledge to the server.
                         if (WaitNotification(out notifications, 0) > 0)
                         {
+                            // TODO analyse this code : may fail
                             foreach (IWoopsaNotification notification in notifications.Notifications)
                                 if (notification.Id > _lastNotificationId)
                                     _lastNotificationId = notification.Id;
@@ -130,7 +144,7 @@ namespace Woopsa
                     {
                         // There was some sort of network error. We will
                         // try again later
-                        Task.Delay(WaitNotificationRetryPeriod);
+                        Task.Delay(_waitNotificationRetryPeriod);
                     }
                 }
             }
@@ -141,16 +155,16 @@ namespace Woopsa
             return WaitNotification(out notificationsResult, _lastNotificationId);
         }
 
-        private int WaitNotification(out IWoopsaNotifications notificationsResult, int lastNotificationId)
+        private int WaitNotification(out IWoopsaNotifications notificationsResult, long lastNotificationId)
         {
-            List<WoopsaValue> arguments = new List<WoopsaValue>();
-            arguments.Add(ChannelId);
-            arguments.Add(lastNotificationId);
+            var arguments = new WoopsaValue[] {ChannelId, lastNotificationId};
             IWoopsaValue val = _waitNotification.Invoke(arguments);
             WoopsaJsonData results = ((WoopsaValue)val).JsonData;
-            WoopsaNotifications notificationsList = new WoopsaNotifications();
+
+            var notificationsList = new WoopsaNotifications();
+
             int count = 0;
-            for (int i = 0; i < results.Length; i++ )
+            for (int i = 0; i < results.Length; i++)
             {
                 WoopsaJsonData notification = results[i];
                 var notificationValue = notification["Value"];
@@ -163,20 +177,19 @@ namespace Woopsa
                 notificationsList.Add(newNotification);
                 count++;
             }
+
             notificationsResult = notificationsList;
             return count;
         }
 
-        private void Create(int notificationQueueSize)
-        {
-            List<WoopsaValue> arguments = new List<WoopsaValue>();
-            arguments.Add(notificationQueueSize);
-            IWoopsaValue result = _createSubscriptionChannel.Invoke(arguments);
-            ChannelId = result.ToInt32();
-        }
+        #endregion
+
+        #region Internal Nested Classes
 
         internal class WoopsaClientSubscription
         {
+            #region Constructors
+
             public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
             {
                 _channel = channel;
@@ -184,56 +197,93 @@ namespace Woopsa
                 _monitorInterval = monitorInterval;
                 _publishInterval = publishInterval;
                 _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
-                _registerSubscription = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription);
-                _unregisterSubscription = (IWoopsaMethod)_subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription);
+                _registerSubscription = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription);
+                _unregisterSubscription = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription);
                 Path = path;
                 Register();
             }
-            
+
+            #endregion
+
+            #region Public Properties
+
+            public int Id { get; private set; }
+
+            public string Path { get; private set; }
+
+            #endregion
+
+            #region Public Methods
+
             public void Register()
             {
                 Id = Register(_monitorInterval, _publishInterval);
             }
 
-
-            public int Id { get; private set; }
-            public string Path { get; private set; }
-
             public bool Unregister()
-            {
-                List<WoopsaValue> arguments = new List<WoopsaValue>();
-                arguments.Add(_channel.ChannelId);
-                arguments.Add(Id);
-                IWoopsaValue result = _unregisterSubscription.Invoke(arguments);
+            {                
+                IWoopsaValue result = _unregisterSubscription.Invoke(new WoopsaValue[]
+                    { _channel.ChannelId, Id});
                 return result.ToBool();
             }
 
-            private WoopsaClientSubscriptionChannel _channel;
-            private IWoopsaObject _client;
-            private IWoopsaObject _subscriptionService;
-            private IWoopsaMethod _registerSubscription;
-            private IWoopsaMethod _unregisterSubscription;
-            private TimeSpan _monitorInterval;
-            private TimeSpan _publishInterval;
+            #endregion
+
+            #region Private Helpers
 
             private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
             {
-                List<WoopsaValue> arguments = new List<WoopsaValue>();
-                arguments.Add(_channel.ChannelId);
-                arguments.Add(WoopsaValue.CreateUnchecked(Path, WoopsaValueType.WoopsaLink));
-                arguments.Add(monitorInterval);
-                arguments.Add(publishInterval); 
-                IWoopsaValue result = _registerSubscription.Invoke(arguments);
+                IWoopsaValue result = _registerSubscription.Invoke(
+                    new WoopsaValue[] {_channel.ChannelId,
+                        WoopsaValue.WoopsaRelativeLink(Path), monitorInterval, publishInterval});                  
                 return result.ToInt32();
             }
+
+            #endregion
+
+            #region Private Members
+
+            private readonly WoopsaClientSubscriptionChannel _channel;
+            private readonly IWoopsaObject _client;
+            private readonly IWoopsaObject _subscriptionService;
+            private readonly IWoopsaMethod _registerSubscription;
+            private readonly IWoopsaMethod _unregisterSubscription;
+            private readonly TimeSpan _monitorInterval;
+            private readonly TimeSpan _publishInterval;
+
+            #endregion
         }
+
+        #endregion
+
+        #region IDisposable
 
         protected override void Dispose(bool disposing)
         {
             if (disposing)
             {
-                _listenStarted = false;
+                _listening = false;
             }
         }
+
+        #endregion
+
+        #region Private Members
+
+        private readonly IWoopsaObject _client;
+        private readonly List<WoopsaClientSubscription> _subscriptions = new List<WoopsaClientSubscription>();
+        private bool _listening;
+        private Task _listenTask;
+
+        private IWoopsaObject _subscriptionService;
+        private readonly IWoopsaMethod _createSubscriptionChannel;
+        private readonly IWoopsaMethod _waitNotification;
+        private readonly int _notificationQueueSize;
+
+        private long _lastNotificationId;
+
+        private readonly TimeSpan _waitNotificationRetryPeriod = TimeSpan.FromSeconds(10);
+
+        #endregion
     }
 }

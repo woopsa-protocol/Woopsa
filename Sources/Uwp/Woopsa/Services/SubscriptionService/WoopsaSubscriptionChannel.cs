@@ -1,24 +1,24 @@
 ﻿using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
+using System.Diagnostics;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
     public class WoopsaSubscriptionChannel : IDisposable
     {
-        // TODO: Delete subscription channels that aren't active after XX minutes
         public WoopsaSubscriptionChannel(int notificationQueueSize)
         {
-            lock (_idLock)
+            lock(_idLock)
             {
-                Id = _lastId++;
+                _lastChannelId++;
+                Id = _lastChannelId;
             }
             NotificationQueueSize = notificationQueueSize;
-            _notifications = new ConcurrentQueue<IWoopsaNotification>();
+            _pendingNotifications = new ConcurrentQueue<IWoopsaNotification>();
+            _watchClientActivity = new Stopwatch();
+            _watchClientActivity.Start();
         }
 
         /// <summary>
@@ -31,43 +31,46 @@ namespace Woopsa
         /// This means that if events come faster than they can be sent,
         /// old events will be "forgotten"
         /// </summary>
-        public int NotificationQueueSize { get; set; }
+        public int NotificationQueueSize { get; private set; }
 
-        public int RegisterSubscription(IWoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public bool ClientTimedOut
+        {
+            get { return _watchClientActivity.Elapsed > WoopsaServiceSubscriptionConst.ClientTimeOut; }
+        }
+
+        public int RegisterSubscription(WoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             WoopsaSubscription newSubscription;
-            lock (_idLock)
+            lock(_idLock)
             {
-                newSubscription = new WoopsaSubscription(container, _lastSubscriptionId, woopsaPropertyLink, monitorInterval, publishInterval);
                 _lastSubscriptionId++;
+                newSubscription = new WoopsaSubscription(container, _lastSubscriptionId, woopsaPropertyLink, monitorInterval, publishInterval);
             }
             newSubscription.Publish += newSubscription_Publish;
             _subscriptions.Add(newSubscription.Id, newSubscription);
-            
+            _watchClientActivity.Restart();
             return newSubscription.Id;
         }
 
-        void newSubscription_Publish(object sender, PublishEventArgs e)
+        private void newSubscription_Publish(object sender, PublishEventArgs e)
         {
-            lock (_lock)
+            foreach (var notification in e.Notifications)
             {
-                foreach (var notification in e.Notifications)
+                if (_pendingNotifications.Count >= NotificationQueueSize)
                 {
-                    if (_notifications.Count >= NotificationQueueSize)
-                    {
-                        // If the queue is full, raise the notificationsLost flag
-                        // and remove the oldest notification in the queue.
-                        // The WaitNotification method will then throw an exception
-                        // until the client has acknowledged the loss of notifications
-                        _notificationsLost = true;
-                        IWoopsaNotification discardedNotification;
-                        _notifications.TryDequeue(out discardedNotification);
-                    }
-                    _notifications.Enqueue(notification);
-                    notification.Id = _lastNotificationId++;
-                    if (_lastNotificationId >= WoopsaServiceSubscriptionConst.MaximumNotificationId)
-                        _lastNotificationId = WoopsaServiceSubscriptionConst.MaximumNotificationId;
+                    // If the queue is full, raise the notificationsLost flag
+                    // and remove the oldest notification in the queue.
+                    // The WaitNotification method will then throw an exception
+                    // until the client has acknowledged the loss of notifications
+                    _notificationsLost = true;
+                    IWoopsaNotification discardedNotification;
+                    _pendingNotifications.TryDequeue(out discardedNotification);
                 }
+                _lastNotificationId++;
+                if (_lastNotificationId >= WoopsaServiceSubscriptionConst.MaximumNotificationId)
+                    _lastNotificationId = WoopsaServiceSubscriptionConst.MinimumNotificationId;
+                notification.Id = _lastNotificationId;
+                _pendingNotifications.Enqueue(notification);
             }
             _waitNotificationEvent.Set();
         }
@@ -77,15 +80,9 @@ namespace Woopsa
             if (_subscriptions.ContainsKey(subscriptionId))
             {
                 var subscription = _subscriptions[subscriptionId];
-                /*
-                if (  _monitors[subscription.MonitorInterval].RemoveSubscription(subscription) )
-                {
-                    _monitors[subscription.MonitorInterval].Stop();
-                    _monitors.Remove(subscription.MonitorInterval);
-                }
-                 * */
+                subscription.Dispose();
                 _subscriptions.Remove(subscriptionId);
-
+                _watchClientActivity.Restart();
                 return true;
             }
             else
@@ -99,82 +96,72 @@ namespace Woopsa
 
         public IWoopsaNotifications WaitNotification(TimeSpan timeout, int lastNotificationId)
         {
+            bool hasNotifications;
+            _watchClientActivity.Restart();
+            // Remove acknowledged notifications already sent to the client
             if (_notificationsLost && lastNotificationId != 0)
                 throw new WoopsaNotificationsLostException("Notifications have been lost because the queue was full. Acknowledge the error by calling WaitNotification with LastNotificationId = 0");
             else
                 _notificationsLost = false;
-
-            int countNotifications = _notifications.Count;
-            bool lastNotificationFound = false;
-            for (int i = 0; i < countNotifications; i++)
-                if (_notifications.ElementAt(i).Id == lastNotificationId)
-                    lastNotificationFound = true;
-
-            if (lastNotificationFound)
+            IWoopsaNotification notification;
+            while (_pendingNotifications.Count > 0)
             {
-                countNotifications = _notifications.Count;
-                lock (_lock)
+                if (_pendingNotifications.TryPeek(out notification))
                 {
-                    for (; ; )
+                    if (notificationAge(notification.Id) <= notificationAge(lastNotificationId))
                     {
-                        IWoopsaNotification notification;
-                        if (_notifications.TryPeek(out notification))
-                        {
-                            _notifications.TryDequeue(out notification);
-                            if (notification.Id == lastNotificationId)
-                                break;
-                        }
+                        _pendingNotifications.TryDequeue(out notification);
+                        _lastRemovedNotificationId = notification.Id;
                     }
+                    else
+                        break;
                 }
             }
-
-            if (WaitHandle.WaitAny(new WaitHandle[]{_waitStopEvent, _waitNotificationEvent}, timeout) != 0)
-            {
-                WoopsaNotifications returnNotifications = new WoopsaNotifications();
-
-                lock (_lock)
-                {
-                    foreach (IWoopsaNotification notification in _notifications.Where(n => !lastNotificationFound || (n.Id > lastNotificationId)))
-                    {
-                        returnNotifications.Add(notification);
-                    }
-                }
-
-                return returnNotifications;
-            }
-            else
-                return new WoopsaNotifications();
+            // Wait notifications
+            _waitNotificationEvent.Reset();
+            hasNotifications = _pendingNotifications.Count > 0;
+            if (!hasNotifications)
+                WaitHandle.WaitAny(new WaitHandle[] { _waitStopEvent, _waitNotificationEvent }, timeout);
+            // Prepare result
+            WoopsaNotifications result = new WoopsaNotifications();
+            while (_pendingNotifications.TryDequeue(out notification))
+                result.Add(notification);
+            _watchClientActivity.Restart();
+            return result;
         }
 
-        private void monitor_Notification(object sender, NotificationEventArgs e)
+        private int notificationAge(int notificationId)
         {
-            _notifications.Enqueue(e.Notification);
-            _waitNotificationEvent.Set();
+            // _lastRemovedNotificationId used as a moving age reference
+            int age = notificationId - _lastRemovedNotificationId;
+            if (age < 0) // Id restart from 1
+                age += WoopsaServiceSubscriptionConst.MaximumNotificationId + age;
+            return age;
         }
 
-
-		private static int _lastId = (int)new Random().NextDouble();
+        private static int _lastChannelId = 0;
         private bool _notificationsLost = false;
-        private int _lastSubscriptionId = 1;
-        private int _lastNotificationId = 1;
+        private int _lastSubscriptionId = 0;
+        private int _lastNotificationId = 0;
+        private int _lastRemovedNotificationId = 0;
         private Dictionary<int, WoopsaSubscription> _subscriptions = new Dictionary<int, WoopsaSubscription>();
-        private ConcurrentQueue<IWoopsaNotification> _notifications;
+        private ConcurrentQueue<IWoopsaNotification> _pendingNotifications;
 
         private AutoResetEvent _waitNotificationEvent = new AutoResetEvent(false);
         private AutoResetEvent _waitStopEvent = new AutoResetEvent(false);
-        private AutoResetEvent _waitPublishEvent = new AutoResetEvent(false);
 
-        private object _lock = new object();
         private object _idLock = new Object();
 
-        
+        private Stopwatch _watchClientActivity;
+
+
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
+                Stop();
                 _waitNotificationEvent.Dispose();
                 _waitStopEvent.Dispose();
-                _waitPublishEvent.Dispose();
             }
         }
 

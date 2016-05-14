@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -6,30 +7,41 @@ using System.Threading.Tasks;
 
 namespace Woopsa
 {
+    public interface IWoopsaElementReadOnlyList<T>: IReadOnlyCollection<T>
+    {
+        T this[string name] { get; }
+
+        T ByName(string name);
+
+        T ByNameOrNull(string name);
+
+        bool Contains(string Name);
+
+        bool Contains(T element);
+    }
+
     public abstract class WoopsaElement : IWoopsaElement, IDisposable
     {
-        private WoopsaContainer _container;
-        private string _name;
+        #region Constructors
 
-        protected WoopsaElement(WoopsaContainer container, string name)
+        protected WoopsaElement(WoopsaContainer owner, string name)
         {
-            _container = container;
-            _name = name;
+            Owner = owner;
+            Name = name;
         }
 
-        public WoopsaContainer Container { get { return _container; } }
+        #endregion
 
         #region IWoopsaElement
 
-        public IWoopsaContainer Owner
+        public WoopsaContainer Owner { get; private set; }
+
+        IWoopsaContainer IWoopsaElement.Owner
         {
-            get { return _container; }
+            get { return Owner; }
         }
 
-        public string Name
-        {
-            get { return _name; }
-        }
+        public string Name { get; private set; }
 
         #endregion IWoopsaElement
 
@@ -37,7 +49,7 @@ namespace Woopsa
 
         protected virtual void Dispose(bool disposing)
         {
-            _container = null;
+            Owner = null;
         }
 
         public void Dispose()
@@ -51,27 +63,50 @@ namespace Woopsa
 
     public class WoopsaContainer : WoopsaElement, IWoopsaContainer
     {
+        #region Constructors
+
         public WoopsaContainer(WoopsaContainer container, string name)
             : base(container, name)
         {
-            _items = new List<WoopsaContainer>();
-            if (Container != null)
-                Container.Add(this);
+            _items = new WoopsaElementList<WoopsaContainer>();
+            if (Owner != null)
+                Owner.Add(this);
         }
 
-        public IEnumerable<IWoopsaContainer> Items
+        #endregion
+
+        #region Public 
+
+        public IWoopsaElementReadOnlyList<WoopsaContainer> Items
         {
             get
             {
                 DoPopulate();
-                foreach (var item in _items)
-                    yield return item;
+                return _items;
             }
         }
-
-        protected virtual void PopulateContainer(IList<WoopsaContainer> items)
+        IEnumerable<IWoopsaContainer> IWoopsaContainer.Items
         {
+            get { return Items; }
         }
+
+        /// <summary>
+        /// Calls refresh recursively on all the WoopsaContainers hierarchy.
+        /// Objects containing dynamic structure should refresh their content following this call.
+        /// </summary>
+        public virtual void Refresh()
+        {
+            foreach (var item in _items)
+                item.Refresh();
+            // Refresh must not call clear, as WoopsaContainer and WoopsaObject can be used to create
+            // static hierarchy.
+            // Inheriting classes containing dynamic hierarchy should call clear in their Refresh method implementation
+        }
+
+        #endregion
+
+        protected virtual void PopulateContainer(WoopsaElementList<WoopsaContainer> items)
+        { }
 
         protected void DoPopulate()
         {
@@ -82,10 +117,12 @@ namespace Woopsa
             }
         }
 
+        #region Items Management Add / Remove / Clear
+
         internal void Add(WoopsaContainer item)
         {
             if (_items.ByNameOrNull(item.Name) != null)
-                throw new WoopsaException("Tried to add an item with duplicate name '" + item.Name + "' to WoopsaContainer '" + this.Name + "'");
+                throw new WoopsaException("Tried to add an item with duplicate name '" + item.Name + "' to WoopsaContainer '" + Name + "'");
             _items.Add(item);
         }
 
@@ -94,25 +131,41 @@ namespace Woopsa
             _items.Remove(item);
         }
 
+        protected virtual void Clear()
+        {
+            _items.Clear();
+            _populated = false;
+        }
+
+        #endregion
+
+        #region IDisposable
+
         protected override void Dispose(bool disposing)
         {
-            if (Container != null)
-                Container.Remove(this);
+            if (Owner != null)
+                Owner.Remove(this);
             base.Dispose(disposing);
         }
 
-        private List<WoopsaContainer> _items;
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaElementList<WoopsaContainer> _items;
         private bool _populated;
 
+        #endregion
     }
 
-    public delegate WoopsaValue WoopsaPropertyGet(object sender);
-    public delegate void WoopsaPropertySet(object sender, IWoopsaValue value);
+    public delegate WoopsaValue WoopsaPropertyGet(IWoopsaProperty property);
+    public delegate void WoopsaPropertySet(IWoopsaProperty property, IWoopsaValue value);
 
     public class WoopsaProperty : WoopsaElement, IWoopsaProperty
     {
-        public WoopsaProperty(WoopsaObject container, string name, WoopsaValueType type,
-            WoopsaPropertyGet get, WoopsaPropertySet set)
+        #region Constructors
+
+        public WoopsaProperty(WoopsaObject container, string name, WoopsaValueType type, WoopsaPropertyGet get, WoopsaPropertySet set)
             : base(container, name)
         {
             Type = type;
@@ -120,28 +173,39 @@ namespace Woopsa
             IsReadOnly = set == null;
             if (!IsReadOnly)
                 _set = set;
-            container.Add(this);
+            if (container != null)
+                container.Add(this);
         }
 
-        public WoopsaProperty(WoopsaObject container, string name, WoopsaValueType type,
-            WoopsaPropertyGet get)
+        public WoopsaProperty(WoopsaObject container, string name, WoopsaValueType type, WoopsaPropertyGet get)
             : this(container, name, type, get, null)
         {
         }
+
+        #endregion
 
         #region IWoopsaProperty
 
         public bool IsReadOnly { get; private set; }
 
-        public IWoopsaValue Value
+        public WoopsaValue Value
         {
             get { return _get(this); }
+            set
+            {
+                ((IWoopsaProperty)this).Value = value;
+            }
+        }
+
+        IWoopsaValue IWoopsaProperty.Value
+        {
+            get { return Value; }
             set
             {
                 if (!IsReadOnly)
                     _set(this, value);
                 else
-                    throw new WoopsaException(String.Format("Cannot set read-only property {0}", Name));
+                    throw new WoopsaException(string.Format("Cannot set read-only property {0}", Name));
             }
         }
 
@@ -149,49 +213,78 @@ namespace Woopsa
 
         #endregion IWoopsaProperty
 
+        #region IDisposable
+
         protected override void Dispose(bool disposing)
         {
-            ((WoopsaObject)Container).Remove(this);
+            if (Owner != null)
+                ((WoopsaObject)Owner).Remove(this);
             base.Dispose(disposing);
         }
 
-        private WoopsaPropertyGet _get;
-        private WoopsaPropertySet _set;
+        #endregion
 
+        #region Private Members
+
+        private readonly WoopsaPropertyGet _get;
+        private readonly WoopsaPropertySet _set;
+
+        #endregion
     }
 
     public class WoopsaMethodArgumentInfo : IWoopsaMethodArgumentInfo
     {
+        #region Constructor
+
         public WoopsaMethodArgumentInfo(string name, WoopsaValueType type)
         {
             Name = name;
             Type = type;
         }
 
+        #endregion
+
+        #region Public Properties
+
         public string Name { get; private set; }
 
         public WoopsaValueType Type { get; private set; }
+
+        #endregion
     }
 
-    public delegate IWoopsaValue WoopsaMethodInvoke(IEnumerable<IWoopsaValue> Arguments);
+    public delegate WoopsaValue WoopsaMethodInvoke(IWoopsaValue[] arguments);
 
     public class WoopsaMethod : WoopsaElement, IWoopsaMethod
     {
-        public WoopsaMethod(WoopsaObject container, string name, WoopsaValueType returnType, IEnumerable<WoopsaMethodArgumentInfo> argumentInfos,
-            WoopsaMethodInvoke methodInvoke)
+        #region Constructors
+
+        public WoopsaMethod(WoopsaObject container, string name, WoopsaValueType returnType, IEnumerable<WoopsaMethodArgumentInfo> argumentInfos, WoopsaMethodInvoke methodInvoke)
             : base(container, name)
         {
             ReturnType = returnType;
             ArgumentInfos = argumentInfos;
             _methodInvoke = methodInvoke;
-            container.Add(this);
+            if (container != null)
+                container.Add(this);
         }
+
+        #endregion
 
         #region IWoopsaMethod
 
-        public IWoopsaValue Invoke(IEnumerable<IWoopsaValue> Arguments)
+        public WoopsaValue Invoke(params WoopsaValue[] arguments)
         {
-            return _methodInvoke(Arguments);
+            return _methodInvoke(arguments);
+        }
+        public WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments)
+        {
+            return _methodInvoke(arguments.ToArray());
+        }
+        
+        IWoopsaValue IWoopsaMethod.Invoke(IWoopsaValue[] arguments)
+        {
+            return Invoke(arguments);
         }
 
         public WoopsaValueType ReturnType { get; private set; }
@@ -200,26 +293,40 @@ namespace Woopsa
 
         #endregion IWoopsaMethod
 
+        #region IDisposable
+
         protected override void Dispose(bool disposing)
         {
-            ((WoopsaObject)Container).Remove(this);
+            if (Owner != null)
+                ((WoopsaObject)Owner).Remove(this);
             base.Dispose(disposing);
         }
 
-        private WoopsaMethodInvoke _methodInvoke;
+        #endregion
 
+        #region Private Members
+
+        private readonly WoopsaMethodInvoke _methodInvoke;
+
+        #endregion
     }
 
     public class WoopsaObject : WoopsaContainer, IWoopsaObject
     {
+        #region Constructors
+
         public WoopsaObject(WoopsaContainer container, string name)
             : base(container, name)
         {
-            _properties = new List<WoopsaProperty>();
-            _methods = new List<WoopsaMethod>();
+            _properties = new WoopsaElementList<WoopsaProperty>();
+            _methods = new WoopsaElementList<WoopsaMethod>();
         }
 
-        public IEnumerable<IWoopsaProperty> Properties
+        #endregion
+
+        #region IWoopsaObject Properties
+
+        public IWoopsaElementReadOnlyList<WoopsaProperty> Properties
         {
             get
             {
@@ -228,7 +335,12 @@ namespace Woopsa
             }
         }
 
-        public IEnumerable<IWoopsaMethod> Methods
+        IEnumerable<IWoopsaProperty> IWoopsaObject.Properties
+        {
+            get { return Properties; }
+        }
+
+        public IWoopsaElementReadOnlyList<WoopsaMethod> Methods
         {
             get
             {
@@ -237,7 +349,14 @@ namespace Woopsa
             }
         }
 
-        protected override void PopulateContainer(IList<WoopsaContainer> items)
+        IEnumerable<IWoopsaMethod> IWoopsaObject.Methods
+        {
+            get { return Methods; }
+        }
+
+        #endregion
+
+        protected override void PopulateContainer(WoopsaElementList<WoopsaContainer> items)
         {
             base.PopulateContainer(items);
             PopulateObject();
@@ -247,10 +366,19 @@ namespace Woopsa
         {
         }
 
+        protected override void Clear()
+        {
+            _properties.Clear();
+            _methods.Clear();
+            base.Clear();
+        }
+
+        #region Properties Management Add / Remove / Clear
+
         internal void Add(WoopsaProperty item)
         {
             if (_properties.ByNameOrNull(item.Name) != null)
-                throw new WoopsaException("Tried to add a method with duplicate name '" + item.Name + "' to WoopsaObject '" + this.Name + "'");
+                throw new WoopsaException("Tried to add a property with duplicate name '" + item.Name + "' to WoopsaObject '" + Name + "'");
             _properties.Add(item);
         }
 
@@ -259,10 +387,14 @@ namespace Woopsa
             _properties.Remove(item);
         }
 
+        #endregion
+
+        #region Methods Management Add / Remove / Clear
+
         internal void Add(WoopsaMethod item)
         {
             if (_methods.ByNameOrNull(item.Name) != null)
-                throw new WoopsaException("Tried to add a method with duplicate name '" + item.Name + "' to WoopsaObject '" + this.Name + "'");
+                throw new WoopsaException("Tried to add a method with duplicate name '" + item.Name + "' to WoopsaObject '" + Name + "'");
             _methods.Add(item);
         }
 
@@ -271,8 +403,14 @@ namespace Woopsa
             _methods.Remove(item);
         }
 
-        private List<WoopsaProperty> _properties;
-        private List<WoopsaMethod> _methods;
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaElementList<WoopsaProperty> _properties;
+        private readonly WoopsaElementList<WoopsaMethod> _methods;
+
+        #endregion
     }
 
     public class WoopsaRoot : WoopsaContainer
@@ -281,5 +419,82 @@ namespace Woopsa
             : base(null, string.Empty)
         {
         }
+    }
+
+    public class WoopsaElementList<T> : IWoopsaElementReadOnlyList<T> where T :WoopsaElement
+    {
+        public WoopsaElementList()
+        {
+            _items = new Dictionary<string, T>();
+        }
+
+        public T this[string name]
+        {
+            get
+            {
+                return _items[name];
+            }
+        }
+
+        public int Count
+        {
+            get
+            {
+                return _items.Count;
+            }
+        }
+
+        public IEnumerator<T> GetEnumerator()
+        {
+            return _items.Values.GetEnumerator();
+        }
+
+        IEnumerator IEnumerable.GetEnumerator()
+        {
+            return _items.Values.GetEnumerator();
+        }
+
+        public void Add(T item)
+        {
+            _items.Add(item.Name, item);
+        }
+
+        public void Remove(T item)
+        {
+            _items.Remove(item.Name);
+        }
+
+        public bool Contains(string key)
+        {
+            return _items.ContainsKey(key);
+        }
+
+        public bool Contains(T element)
+        {
+            return _items.ContainsValue(element);
+        }
+
+        public void Clear()
+        {
+            T[] items = _items.Values.ToArray();
+            foreach (var item in items)
+                item.Dispose();
+        }
+
+        public T ByName(string name)
+        {
+            return _items[name];
+        }
+
+        public T ByNameOrNull(string name)
+        {
+            if (Contains(name))
+                return ByName(name);
+            else
+                return null;
+        }
+
+        private Dictionary<string, T> _items;
+
     }
 }

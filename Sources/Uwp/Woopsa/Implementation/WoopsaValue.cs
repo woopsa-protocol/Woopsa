@@ -1,8 +1,6 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
+using System.Globalization;
 using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -14,20 +12,15 @@ namespace Woopsa
             _type = type;
             _timestamp = timestamp;
             if (type == WoopsaValueType.JsonData)
-                _jsonData = new WoopsaJsonData(text);
+                _jsonData = Woopsa.WoopsaJsonData.CreateFromText(text);
         }
 
-        public static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp)
+        internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null)
         {
             return new WoopsaValue(text, type, timestamp);
         }
 
-        public static WoopsaValue CreateUnchecked(string text, WoopsaValueType type)
-        {
-            return CreateUnchecked(text, type, null);
-        }
-
-        public static WoopsaValue CreateChecked(string text, WoopsaValueType type, DateTime? timestamp)
+        public static WoopsaValue CreateChecked(string text, WoopsaValueType type, DateTime? timestamp = null)
         {
             try
             {
@@ -35,20 +28,20 @@ namespace Woopsa
                 switch (type)
                 {
                     case WoopsaValueType.Integer:
-                        Int64.Parse(text);
+                        Int64.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.Real:
-                        Double.Parse(text);
+                        Double.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.Logical:
                         Boolean.Parse(text);
                         text = text.ToLower(); // .NET and JSON serialize booleans differently (.NET uses a capital first letter) :/
                         break;
                     case WoopsaValueType.DateTime:
-                        DateTime.Parse(text);
+                        DateTime.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.TimeSpan:
-                        Double.Parse(text);
+                        Double.Parse(text, CultureInfo.InvariantCulture);
                         break;
                 }
             }
@@ -59,9 +52,35 @@ namespace Woopsa
             return CreateUnchecked(text, type, timestamp);
         }
 
-        public static WoopsaValue CreateChecked(string text, WoopsaValueType type)
+        public static WoopsaValue ToWoopsaValue(object value, WoopsaValueType type, DateTime? timeStamp = null)
         {
-            return CreateChecked(text, type, null);
+            try
+            {
+                switch (type)
+                {
+                    case WoopsaValueType.Logical:
+                        return new WoopsaValue((bool)value, timeStamp);
+                    case WoopsaValueType.Integer:
+                        return new WoopsaValue(Convert.ToInt64(value), timeStamp);
+                    case WoopsaValueType.Real:
+                        return new WoopsaValue(Convert.ToDouble(value), timeStamp);
+                    case WoopsaValueType.DateTime:
+                        return new WoopsaValue((DateTime)value, timeStamp);
+                    case WoopsaValueType.TimeSpan:
+                        return new WoopsaValue((TimeSpan)value, timeStamp);
+                    case WoopsaValueType.Text:
+                        if (string.IsNullOrEmpty((string)value))
+                            return new WoopsaValue(string.Empty, timeStamp);
+                        else
+                            return new WoopsaValue(WoopsaFormat.ToStringWoopsa(value), timeStamp);
+                    default:
+                        return WoopsaValue.CreateUnchecked(WoopsaFormat.ToStringWoopsa(value), type, timeStamp);
+                }
+            }
+            catch (InvalidCastException)
+            {
+                throw new WoopsaException(String.Format("Cannot typecast object of type {0} to Woopsa Type {1}", value.GetType(), type.ToString()));
+            }
         }
 
         private WoopsaValue(string text, WoopsaValueType type)
@@ -69,45 +88,40 @@ namespace Woopsa
         {
         }
 
-        public WoopsaValue(object value, DateTime? timestamp)
+        public WoopsaValue(WoopsaJsonData jsonData, DateTime? timestamp = null)
         {
-            _jsonData = new WoopsaJsonData(value);
+            _jsonData = jsonData;
             _type = WoopsaValueType.JsonData;
             _timestamp = timestamp;
         }
 
-        public WoopsaValue(object value)
-            : this(value, null)
+        public WoopsaValue(bool value, DateTime? timestamp = null)
+            : this(value ? WoopsaConst.WoopsaTrue : WoopsaConst.WoopsaFalse, WoopsaValueType.Logical, timestamp)
         {
         }
 
-        public WoopsaValue(bool value)
-            : this(value ? WoopsaConst.WoopsaTrue : WoopsaConst.WoopsaFalse, WoopsaValueType.Logical)
+        public WoopsaValue(Int64 value, DateTime? timestamp = null)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Integer, timestamp)
         {
         }
 
-        public WoopsaValue(Int64 value)
-            : this(value.ToStringWoopsa(), WoopsaValueType.Integer)
+        public WoopsaValue(double value, DateTime? timestamp = null)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Real, timestamp)
         {
         }
 
-        public WoopsaValue(double value)
-            : this(value.ToStringWoopsa(), WoopsaValueType.Real)
+        public WoopsaValue(DateTime value, DateTime? timestamp = null)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.DateTime, timestamp)
         {
         }
 
-        public WoopsaValue(DateTime value)
-            : this(value.ToWoopsaDateTime(), WoopsaValueType.DateTime)
+        public WoopsaValue(TimeSpan value, DateTime? timestamp = null)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.TimeSpan, timestamp)
         {
         }
 
-        public WoopsaValue(TimeSpan value)
-            : this(value.ToWoopsaTimeSpan(), WoopsaValueType.TimeSpan)
-        {
-        }
-
-        public WoopsaValue(string value)
-            : this(value.ToString(), WoopsaValueType.Text)
+        public WoopsaValue(string value, DateTime? timestamp = null)
+            : this(value, WoopsaValueType.Text, timestamp)
         {
         }
 
@@ -123,11 +137,11 @@ namespace Woopsa
             else if (obj is bool && _type == WoopsaValueType.Logical)
                 return ((bool)obj) == (bool)this;
             else if (obj is sbyte || obj is Int16 || obj is Int32 || obj is Int64)
-                return Int64.Parse(obj.ToString()) == (Int64)this;
+                return Convert.ToInt64(obj) == (Int64)this;
             else if (obj is Byte || obj is UInt16 || obj is UInt32 || obj is UInt64)
-                return UInt64.Parse(obj.ToString()) == (UInt64)this;
+                return Convert.ToUInt64(obj) == (UInt64)this;
             else if (obj is float || obj is double || obj is decimal)
-                return double.Parse(obj.ToString()) == (double)this;
+                return Convert.ToDouble(obj) == (double)this;
             else if (obj is DateTime)
                 return ((DateTime)obj) == (DateTime)this;
             else if (obj is TimeSpan)
@@ -158,10 +172,10 @@ namespace Woopsa
         {
             get
             {
-                if (_jsonData == null)
-                    return _text;
-                else
-                    return _jsonData.Serialize();
+                if (_jsonData != null)
+                    if (_text == null)
+                        _text = _jsonData.Serialize();
+                return _text;
             }
         }
 
@@ -189,12 +203,12 @@ namespace Woopsa
             }
         }
 
-        public static implicit operator bool(WoopsaValue value)
+        public static implicit operator bool (WoopsaValue value)
         {
             return value.ToBool();
         }
 
-        public static implicit operator sbyte(WoopsaValue value)
+        public static implicit operator sbyte (WoopsaValue value)
         {
             return value.ToSByte();
         }
@@ -214,7 +228,7 @@ namespace Woopsa
             return value.ToInt64();
         }
 
-        public static implicit operator byte(WoopsaValue value)
+        public static implicit operator byte (WoopsaValue value)
         {
             return value.ToByte();
         }
@@ -234,12 +248,12 @@ namespace Woopsa
             return value.ToUInt64();
         }
 
-        public static implicit operator float(WoopsaValue value)
+        public static implicit operator float (WoopsaValue value)
         {
             return value.ToFloat();
         }
 
-        public static implicit operator double(WoopsaValue value)
+        public static implicit operator double (WoopsaValue value)
         {
             return value.ToDouble();
         }
@@ -254,7 +268,7 @@ namespace Woopsa
             return value.ToTimeSpan();
         }
 
-        public static implicit operator string(WoopsaValue value)
+        public static implicit operator string (WoopsaValue value)
         {
             return value._text;
         }
@@ -333,7 +347,9 @@ namespace Woopsa
         private string _text;
         private WoopsaValueType _type;
         private DateTime? _timestamp;
-        private static WoopsaValue _null = new WoopsaValue(string.Empty, WoopsaValueType.Null);
         private WoopsaJsonData _jsonData = null;
+
+        private static readonly WoopsaValue _null = new WoopsaValue(string.Empty, WoopsaValueType.Null);
+
     }
 }

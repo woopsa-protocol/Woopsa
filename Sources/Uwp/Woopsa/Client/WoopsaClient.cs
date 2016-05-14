@@ -8,6 +8,8 @@ namespace Woopsa
 {
     public class WoopsaClient : IDisposable
     {
+        #region Constructors
+
         public WoopsaClient(string url) : this(url, null, null) { }
 
         public WoopsaClient(string url, WoopsaContainer container, string name)
@@ -19,28 +21,20 @@ namespace Woopsa
             //    RefreshAsync();
         }
 
+        #endregion
+
+        #region Public Properties
+
         public string Username
         {
-            get
-            {
-                return _client.Username;
-            }
-            set
-            {
-                _client.Username = value;
-            }
+            get { return _client.Username; }
+            set { _client.Username = value; }
         }
 
         public string Password
         {
-            get
-            {
-                return _client.Password;
-            }
-            set
-            {
-                _client.Password = value;
-            }
+            get { return _client.Password; }
+            set { _client.Password = value; }
         }
 
         //public WoopsaClientObject Root
@@ -48,10 +42,14 @@ namespace Woopsa
         //    get
         //    {
         //        if (_clientObject == null)
-        //            RefreshAsync().Wait();
-        //        return _clientObject;
+        //            Refresh();
+        //        return _clientObject; 
         //    }
         //}
+
+        #endregion
+
+        #region Public Methods
 
         public async Task<WoopsaClientObject> RefreshAsync()
         {
@@ -62,10 +60,9 @@ namespace Woopsa
             return _clientObject;
         }
 
-        private WoopsaBaseClient _client;
-        private WoopsaClientObject _clientObject;
-        private WoopsaContainer _container;
-        private string _name;
+        #endregion
+
+        #region IDisposable
 
         protected virtual void Dispose(bool disposing)
         {
@@ -81,5 +78,16 @@ namespace Woopsa
             Dispose(true);
             GC.SuppressFinalize(this);
         }
+
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaBaseClient _client;
+        private readonly WoopsaContainer _container;
+        private WoopsaClientObject _clientObject;
+        private string _name;
+
+        #endregion
     }
 }

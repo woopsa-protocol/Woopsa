@@ -1,65 +1,58 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
     public class LightWeightTimer : IDisposable
     {
-        public LightWeightTimer(int interval)
-        {
-            Interval = interval;
-            lock (_timers)
-            {
-                _timers.Add(this);
-            }
-        }
+        #region Statics
 
         static LightWeightTimer()
         {
-            //_thread = new Thread(Execute);
-            //_thread.Name = "Thread_LightWeightTimers";
-            //_thread.IsBackground = true;
-            //_thread.Start();
+            _timers = new List<LightWeightTimer>();
+        }
+        private static List<LightWeightTimer> _timers;
+
+        #endregion
+
+        public LightWeightTimer(TimeSpan interval)
+        {
+            Interval = interval;
+            lock (_timers)
+                _timers.Add(this);
+        }
+        public LightWeightTimer(int interval) : this(TimeSpan.FromMilliseconds(interval))
+        {
         }
 
         /// <summary>
-        /// The interval at which to repeat the callback, in milliseconds
+        /// The interval at which to trigger the callbac
         /// </summary>
-        public int Interval { get; private set; }
+        public TimeSpan Interval { get; private set; }
 
         /// <summary>
         /// This value is false by default. You must set this value to
         /// true in order to start this LightWeightTimer.
         /// </summary>
-        public bool Enabled
+        public bool IsEnabled
         {
             get
             {
-                return _isEnabled;
+                return _watch.IsRunning;
             }
             set
             {
                 if (value)
-                {
                     _watch.Start();
-                }
-                _isEnabled = value;
+                else
+                    _watch.Stop();
             }
         }
-        private bool _isEnabled = false;
 
         public event EventHandler<EventArgs> Elapsed;
-
         private Stopwatch _watch = new Stopwatch();
-
-        //private static Thread _thread;
-        private static List<LightWeightTimer> _timers = new List<LightWeightTimer>();
-        private static object _lock = new object();
 
         private static void Execute(object obj)
         {
@@ -76,22 +69,19 @@ namespace Woopsa
                         else
                             break;
                     }
-                    if (timer.Enabled && timer._watch.ElapsedMilliseconds >= timer.Interval)
+                    if (timer.IsEnabled && timer._watch.Elapsed >= timer.Interval)
                     {
-                        timer.OnElapsed();
                         timer._watch.Restart();
+                        timer.OnElapsed();
                     }
                 }
-                //Thread.Sleep(1);
             }
         }
 
         protected virtual void OnElapsed()
         {
             if (Elapsed != null)
-            {
                 Elapsed(this, new EventArgs());
-            }
         }
 
         protected virtual void Dispose(bool disposing)
@@ -101,10 +91,6 @@ namespace Woopsa
                 lock (_timers)
                 {
                     _timers.Remove(this);
-                }
-                if (_timers.Count == 0)
-                {
-                    //_thread = null;
                 }
             }
         }

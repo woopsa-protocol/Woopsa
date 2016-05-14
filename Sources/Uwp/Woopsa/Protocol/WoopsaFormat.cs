@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,19 +9,105 @@ namespace Woopsa
 {
     public static class WoopsaFormat
     {
-        public static string ToWoopsaDateTime(this DateTime dateTime)
+
+        #region Helpers
+
+        public static bool ToBool(string text)
+        {
+            if (text == WoopsaConst.WoopsaTrue)
+                return true;
+            else if (text == WoopsaConst.WoopsaFalse)
+                return false;
+            else
+                throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("bool", text));
+
+        }
+
+        public static bool TryParseWoopsa(string value, out float result)
+        {
+            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out double result)
+        {
+            return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out sbyte result)
+        {
+            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int16 result)
+        {
+            return Int16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int32 result)
+        {
+            return Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out Int64 result)
+        {
+            return Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out byte result)
+        {
+            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out UInt16 result)
+        {
+            return UInt16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static bool TryParseWoopsa(string value, out UInt32 result)
+        {
+            return UInt32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+        public static bool TryParseWoopsa(string value, out UInt64 result)
+        {
+            return UInt64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        }
+
+        public static string ToStringWoopsa(double value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(Int64 value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(int value)
+        {
+            return value.ToString(CultureInfo.InvariantCulture);
+        }
+
+        public static string ToStringWoopsa(DateTime dateTime)
         {
             return dateTime.ToUniversalTime().ToString("o");
         }
 
-        public static string ToWoopsaTimeSpan(this TimeSpan timeSpan)
+        public static string ToStringWoopsa(TimeSpan timeSpan)
         {
-            return timeSpan.TotalSeconds.ToStringWoopsa();
+            return ToStringWoopsa(timeSpan.TotalSeconds);
         }
+
+        public static string ToStringWoopsa(object o)
+        {
+            return Convert.ToString(o, CultureInfo.InvariantCulture);
+        }
+
+        #endregion
+
 
         public static string WoopsaError(Exception e)
         {
-            return String.Format(ErrorFormat, e.Message.JsonEscape(), e.GetType().Name);
+            return String.Format(ErrorFormat, JsonEscape(e.Message), e.GetType().Name);
         }
 
         /// <summary>
@@ -28,39 +115,42 @@ namespace Woopsa
         /// </summary>
         /// <param name="value">The string to escape</param>
         /// <returns>A string with the following special characters handled, in this order: \ " \n \b \f \r \t</returns>
-        public static string JsonEscape(this string value)
+        public static string JsonEscape(string value)
         {
-            var s = new StringBuilder(value);
-            return s
-                .Replace("\\", "\\\\")
-                .Replace("\"", "\\\"")
-                .Replace("\n", "\\n")
-                .Replace("\b", "\\b")
-                .Replace("\f", "\\f")
-                .Replace("\r", "\\r")
-                .Replace("\t", "\\t")
-                .ToString();
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (var item in value)
+                switch (item)
+                {
+                    case '\\': stringBuilder.Append("\\\\"); break;
+                    case '\"': stringBuilder.Append("\\\""); break;
+                    case '\n': stringBuilder.Append("\\n"); break;
+                    case '\b': stringBuilder.Append("\\b"); break;
+                    case '\f': stringBuilder.Append("\\f"); break;
+                    case '\r': stringBuilder.Append("\\r"); break;
+                    case '\t': stringBuilder.Append("\\t"); break;
+                    default: stringBuilder.Append(item); break;
+                }
+            return stringBuilder.ToString();
         }
 
-        //public static string Serialize(this IEnumerable<MultipleRequestResponse> responses)
-        //{
-        //    StringBuilder builder = new StringBuilder();
-        //    bool first = true;
-        //    foreach (var response in responses)
-        //    {
-        //        if (!first)
-        //            builder.Append(MultipleElementsSeparator);
-        //        else
-        //            first = false;
-        //        builder.Append(response.Serialize());
-        //    }
-        //    return String.Format(MultipleElementsFormat, builder.ToString());
-        //}
-
-        //public static string Serialize(this MultipleRequestResponse response)
-        //{
-        //    return String.Format(MultipleRequestResponseFormat, response.Id, response.Result);
-        //}
+        public static string Serialize(this IEnumerable<MultipleRequestResponse> responses)
+        {
+            StringBuilder builder = new StringBuilder();
+            bool first = true;
+            foreach (var response in responses)
+            {
+                if (!first)
+                    builder.Append(MultipleElementsSeparator);
+                else
+                    first = false;
+                builder.Append(response.Serialize());
+            }
+            return String.Format(MultipleElementsFormat, builder.ToString());
+        }
+        public static string Serialize(this MultipleRequestResponse response)
+        {
+            return String.Format(MultipleRequestResponseFormat, response.Id, response.Result);
+        }
 
         public static string Serialize(this IWoopsaNotifications notifications)
         {
@@ -79,36 +169,33 @@ namespace Woopsa
 
         public static string Serialize(this IWoopsaNotification notification)
         {
-            return String.Format(NotificationFormat, notification.Value.Serialise(), notification.SubscriptionId, notification.Id);
+            return String.Format(NotificationFormat, notification.Value.Serialize(), notification.SubscriptionId, notification.Id);
         }
 
-        public static string Serialise(this IWoopsaValue value)
+        public static string Serialize(this IWoopsaValue value)
         {
             StringBuilder valueAsText = new StringBuilder();
-            if (value.Type != WoopsaValueType.JsonData
-                && value.Type != WoopsaValueType.Real
-                && value.Type != WoopsaValueType.Integer
-                && value.Type != WoopsaValueType.Logical
-                && value.Type != WoopsaValueType.TimeSpan)
-                valueAsText.Append(ValueEscapeCharacter).Append(value.AsText.JsonEscape()).Append(ValueEscapeCharacter);
+            if (value.Type != WoopsaValueType.JsonData &&
+                    value.Type != WoopsaValueType.Real &&
+                    value.Type != WoopsaValueType.Integer &&
+                    value.Type != WoopsaValueType.Logical &&
+                    value.Type != WoopsaValueType.TimeSpan)
+                valueAsText.Append(ValueEscapeCharacter).Append(JsonEscape(value.AsText)).Append(ValueEscapeCharacter);
             else
                 valueAsText.Append(value.AsText);
 
             if (value.TimeStamp.HasValue)
-            {
-                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(), value.TimeStamp.Value.ToWoopsaDateTime());
-            }
+                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(),
+                    WoopsaFormat.ToStringWoopsa(value.TimeStamp.Value));
             else
-            {
                 return String.Format(ValueFormatNoDate, valueAsText.ToString(), value.Type.ToString());
-            }
         }
 
         public static string SerializeMetadata(this IWoopsaContainer container, bool justName = false)
         {
             if (justName)
             {
-                return String.Format(StringFormat, container.Name.JsonEscape());
+                return String.Format(StringFormat, JsonEscape(container.Name));
             }
             if (container is IWoopsaObject)
             {
@@ -157,13 +244,13 @@ namespace Woopsa
 
         private static string SerializeMetadata(this IWoopsaProperty property)
         {
-            return String.Format(MetadataProperty, property.Name.JsonEscape(), property.Type, property.IsReadOnly.ToString().ToLower());
+            return String.Format(MetadataProperty, JsonEscape(property.Name), property.Type, property.IsReadOnly.ToString().ToLower());
         }
 
         private static string SerializeMetadata(this IWoopsaMethod method)
         {
             string arguments = method.ArgumentInfos.SerializeMetadata();
-            return String.Format(MetadataMethod, method.Name.JsonEscape(), method.ReturnType, arguments);
+            return String.Format(MetadataMethod, JsonEscape(method.Name), method.ReturnType, arguments);
         }
 
         private static string SerializeMetadata(this IEnumerable<IWoopsaMethodArgumentInfo> argumentInfos)
@@ -183,7 +270,7 @@ namespace Woopsa
 
         private static string SerializeMetadata(this IWoopsaMethodArgumentInfo argumentInfo)
         {
-            return String.Format(MetadataArgumentInfo, argumentInfo.Name.JsonEscape(), argumentInfo.Type);
+            return String.Format(MetadataArgumentInfo, JsonEscape(argumentInfo.Name), argumentInfo.Type);
         }
 
         public const string KeyValue = "Value";
