@@ -156,26 +156,23 @@ namespace Woopsa
 
             if (response.StatusCode != HttpStatusCode.OK)
             {
-                throw new NotImplementedException();
-                //if (response.ContentType == MIMETypes.Application.JSON)
-                //{
-                //    var serializer = new JavaScriptSerializer();
-                //    var error = serializer.Deserialize<WoopsaErrorResult>(resultString);
-
-                //    // Generate one of the possible Woopsa exceptions based
-                //    // on the JSON-serialized error
-                //    if (error.Type == typeof(WoopsaNotFoundException).Name)
-                //        throw new WoopsaNotFoundException(error.Message);
-                //    if (error.Type == typeof(WoopsaNotificationsLostException).Name)
-                //        throw new WoopsaNotificationsLostException(error.Message);
-                //    if (error.Type == typeof(WoopsaInvalidOperationException).Name)
-                //        throw new WoopsaInvalidOperationException(error.Message);
-                //    if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
-                //        throw new WoopsaInvalidSubscriptionChannelException(error.Message);
-                //    if (error.Type == typeof(WoopsaException).Name)
-                //        throw new WoopsaException(error.Message);
-                //    throw new Exception(error.Message);
-                //}
+                var error = JsonConvert.DeserializeObject<WoopsaErrorResult>(resultString);
+                if (error != null)
+                {
+                    // Generate one of the possible Woopsa exceptions based
+                    // on the JSON-serialized error
+                    if (error.Type == typeof(WoopsaNotFoundException).Name)
+                        throw new WoopsaNotFoundException(error.Message);
+                    if (error.Type == typeof(WoopsaNotificationsLostException).Name)
+                        throw new WoopsaNotificationsLostException(error.Message);
+                    if (error.Type == typeof(WoopsaInvalidOperationException).Name)
+                        throw new WoopsaInvalidOperationException(error.Message);
+                    if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
+                        throw new WoopsaInvalidSubscriptionChannelException(error.Message);
+                    if (error.Type == typeof(WoopsaException).Name)
+                        throw new WoopsaException(error.Message);
+                    throw new Exception(error.Message);
+                }
 
                 throw new WoopsaException(response.StatusDescription);
             }
