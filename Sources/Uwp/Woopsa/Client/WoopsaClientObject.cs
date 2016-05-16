@@ -87,7 +87,6 @@ namespace Woopsa
         {
             base.PopulateObject();
 
-            //TODO : Async !
             _meta = _client.MetaAsync(this.GetPath(_root)).Result;
 
             foreach (WoopsaPropertyMeta property in _meta.Properties)
@@ -141,13 +140,11 @@ namespace Woopsa
 
         private WoopsaValue GetProperty(IWoopsaProperty property)
         {
-            //TODO : Async !
             return _client.ReadAsync(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + property.Name).Result;
         }
 
         private void SetProperty(IWoopsaProperty property, IWoopsaValue value)
         {
-            //TODO : Async !
             _client.WriteAsync(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + property.Name, value.AsText).Wait();
         }
 
@@ -161,7 +158,6 @@ namespace Woopsa
             for (int i = 0; i < argumentInfos.Count; i++)
                 namedArguments.Add(argumentInfos[i].Name, woopsaValues[i].AsText);
 
-            //TODO : Async !
             return _client.InvokeAsync(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments).Result;
         }
 

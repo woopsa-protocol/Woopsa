@@ -17,8 +17,8 @@ namespace Woopsa
             _client = new WoopsaBaseClient(url);
             _container = container;
             _name = name;
-            //if (_container != null)
-            //    RefreshAsync();
+            if (_container != null)
+                RefreshAsync().Wait();
         }
 
         #endregion
@@ -37,15 +37,15 @@ namespace Woopsa
             set { _client.Password = value; }
         }
 
-        //public WoopsaClientObject Root
-        //{
-        //    get
-        //    {
-        //        if (_clientObject == null)
-        //            Refresh();
-        //        return _clientObject; 
-        //    }
-        //}
+        public WoopsaClientObject Root
+        {
+            get
+            {
+                if (_clientObject == null)
+                    RefreshAsync().Wait();
+                return _clientObject;
+            }
+        }
 
         #endregion
 

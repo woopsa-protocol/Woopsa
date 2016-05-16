@@ -109,13 +109,12 @@ namespace Woopsa
             Options = options;
             if (targetObject != null)
             {
-                throw new NotImplementedException();
-                //WoopsaVisibilityAttribute woopsaVisibilityAttribute =
-                //    targetObject.GetType().GetCustomAttribute<WoopsaVisibilityAttribute>();
-                //if (woopsaVisibilityAttribute != null)
-                //    Visibility = woopsaVisibilityAttribute.Visibility;
-                //else
-                //    Visibility = defaultVisibility;
+                WoopsaVisibilityAttribute woopsaVisibilityAttribute =
+                    targetObject.GetType().GetTypeInfo().GetCustomAttribute<WoopsaVisibilityAttribute>();
+                if (woopsaVisibilityAttribute != null)
+                    Visibility = woopsaVisibilityAttribute.Visibility;
+                else
+                    Visibility = defaultVisibility;
             }
             else
                 Visibility = defaultVisibility;

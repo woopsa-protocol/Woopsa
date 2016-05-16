@@ -63,6 +63,10 @@ namespace Woopsa
             {
                 if (IsArray)
                 {
+                    var jsonValue = _asArray[index] as JValue;
+                    if(jsonValue != null)
+                        return CreateFromDeserializedData(jsonValue.Value);
+
                     return CreateFromDeserializedData(_asArray[index]);
                 }
                 else
