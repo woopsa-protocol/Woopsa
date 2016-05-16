@@ -11,6 +11,10 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoopsaTest", "WoopsaTest\Wo
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoopsaTestServer", "WoopsaTestServer\WoopsaTestServer.csproj", "{2023F144-5E8D-4481-90BE-ECC09160906A}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{216B4034-827A-478D-A0A1-E3E4DBDDD86E}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Demos", "Demos", "{2AE52B7E-4CE5-4CBF-ACE9-D6D5DB952F0A}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -52,6 +56,7 @@ Global
 		{A6C54778-727C-45EF-B222-156C43961F59}.Debug|x86.Build.0 = Debug|x86
 		{A6C54778-727C-45EF-B222-156C43961F59}.Debug|x86.Deploy.0 = Debug|x86
 		{A6C54778-727C-45EF-B222-156C43961F59}.Release|Any CPU.ActiveCfg = Release|x86
+		{A6C54778-727C-45EF-B222-156C43961F59}.Release|Any CPU.Build.0 = Release|x86
 		{A6C54778-727C-45EF-B222-156C43961F59}.Release|ARM.ActiveCfg = Release|ARM
 		{A6C54778-727C-45EF-B222-156C43961F59}.Release|ARM.Build.0 = Release|ARM
 		{A6C54778-727C-45EF-B222-156C43961F59}.Release|ARM.Deploy.0 = Release|ARM
@@ -73,6 +78,7 @@ Global
 		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Debug|x86.Build.0 = Debug|x86
 		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Debug|x86.Deploy.0 = Debug|x86
 		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Release|Any CPU.ActiveCfg = Release|x86
+		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Release|Any CPU.Build.0 = Release|x86
 		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Release|ARM.ActiveCfg = Release|ARM
 		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Release|ARM.Build.0 = Release|ARM
 		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340}.Release|ARM.Deploy.0 = Release|ARM
@@ -101,5 +107,10 @@ Global
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{A6C54778-727C-45EF-B222-156C43961F59} = {2AE52B7E-4CE5-4CBF-ACE9-D6D5DB952F0A}
+		{5EC3BA47-BDD5-40D2-B5C4-3911B1311340} = {216B4034-827A-478D-A0A1-E3E4DBDDD86E}
+		{2023F144-5E8D-4481-90BE-ECC09160906A} = {216B4034-827A-478D-A0A1-E3E4DBDDD86E}
 	EndGlobalSection
 EndGlobal
