@@ -70,6 +70,12 @@ namespace Woopsa
                 _subscriptionChannel.Unregister(id);
         }
 
+        public void Terminate()
+        {
+            if (_subscriptionChannel != null)
+                _subscriptionChannel.Terminate();
+        }
+
         private void SubscriptionChannel_ValueChange(object sender, WoopsaNotificationsEventArgs notifications)
         {
             foreach (var notification in notifications.Notifications.Notifications)

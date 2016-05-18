@@ -95,6 +95,27 @@ namespace Woopsa
         }
 
         /// <summary>
+        /// Creates an instance of the Woopsa server adding multiRequestHandler and SubscriptionService
+        /// 
+        /// It will automatically create the required HTTP server
+        /// on the specified port and will prefix woopsa verbs with the specified 
+        /// route prefix. It will also add all the necessary native extensions for 
+        /// Publish/Subscribe and Mutli-Requests.
+        /// </summary>
+        /// <param name="root">The root object that will be published via Woopsa.</param>
+        /// <param name="port">The port on which to run the web server</param>
+        /// <param name="routePrefix">
+        /// The prefix to add to all routes for woopsa verbs. For example, specifying
+        /// "myPrefix" will make the server available on http://server/myPrefix
+        /// </param>
+        public WoopsaServer(WoopsaObject root, int port = DefaultPort, string routePrefix = DefaultServerPrefix) :
+            this((IWoopsaContainer)root, port, routePrefix)
+        {
+            new WoopsaMultiRequestHandler(root, this);
+            _subscriptionService = new SubscriptionService(root);
+        }
+
+        /// <summary>
         /// Creates an instance of the Woopsa server with a new Reflector for the object 
         /// passed to it. 
         /// 
@@ -111,9 +132,7 @@ namespace Woopsa
         /// </param>
         public WoopsaServer(object root, int port = DefaultPort, string routePrefix = DefaultServerPrefix) :
             this(new WoopsaObjectAdapter(null, root.GetType().Name, root), port, routePrefix)
-        {
-            new WoopsaMultiRequestHandler((WoopsaObject)_root, this);
-            _subscriptionService = new SubscriptionService((WoopsaObject)_root);
+        {            
         }
 
         /// <summary>
@@ -384,9 +403,16 @@ namespace Woopsa
             if (disposing)
             {
                 RemoveRoutes();
-                _subscriptionService.Dispose();
+                if (_subscriptionService != null)
+                {
+                    _subscriptionService.Dispose();
+                    _subscriptionService = null;
+                }
                 if (_isWebServerEmbedded)
+                {
                     WebServer.Dispose();
+                    WebServer = null;
+                }
             }
         }
 

@@ -53,6 +53,8 @@ namespace Woopsa
 
         public void Refresh()
         {
+            if (_clientObject != null)
+                _clientObject.Dispose();
             WoopsaMetaResult meta = _client.Meta(WoopsaConst.WoopsaRootPath);
             if (_name == null)
                 _name = meta.Name;
@@ -67,15 +69,17 @@ namespace Woopsa
         {
             if (disposing)
             {
-                if (_client != null)
-                {
-                    _client.Dispose();
-                    _client = null;
-                }
+                _clientObject.Terminate();
+                _client.Terminate();
                 if (_clientObject != null)
                 {
                     _clientObject.Dispose();
                     _clientObject = null;
+                }
+                if (_client != null)
+                {
+                    _client.Dispose();
+                    _client = null;
                 }
             }
         }

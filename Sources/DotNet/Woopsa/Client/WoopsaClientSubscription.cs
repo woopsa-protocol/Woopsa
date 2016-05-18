@@ -53,7 +53,6 @@ namespace Woopsa
 
             if (_listenThread== null)
             {
-                _listening = true;
                 _listenThread = new Thread(DoWaitNotification) {Name = "WoopsaClientSubscription_Thread"};
                 _listenThread.Start();
             }
@@ -71,8 +70,6 @@ namespace Woopsa
                     {
                         bool result = subscription.Unregister();
                         _subscriptions.Remove(subscription);
-                        if (!_subscriptions.Any())
-                            _listening = false;
                         return result;
                     }
                 }
@@ -80,7 +77,13 @@ namespace Woopsa
 
             return false;
         }
-                
+
+        public override void Terminate()
+        {
+            _terminate = true;
+        }
+
+
         #endregion
 
         #region Private Helpers
@@ -94,7 +97,7 @@ namespace Woopsa
 
         private void DoWaitNotification()
         {
-            while (_listening)
+            while (!_terminate)
             {
                 if (_subscriptions.Count > 0)
                 {
@@ -114,11 +117,11 @@ namespace Woopsa
                         // This can happen if the server died and was relaunched
                         // => the channel doesn't exist anymore so we need to re-
                         // create it and re-subscribe
-                        Thread.Sleep(_waitNotificationRetryPeriod);
+                        Thread.Sleep(WaitNotificationRetryPeriod);
                         Create(_notificationQueueSize);
                         lock (_subscriptions)
                         {
-                            // Check if we haven't already subscribed to this guy by any chance
+                            // TODO: Check if we haven't already subscribed to this guy by any chance
                             foreach (var sub in _subscriptions)
                                 sub.Register();
                         }
@@ -139,18 +142,26 @@ namespace Woopsa
                             DoValueChanged(notifications);
                         }
                     }
+                    catch (WoopsaException)
+                    {
+
+                    }
                     catch (WebException e)
                     {
-                        if (_listening)
+                        if (!_terminate)
                         {
                             // There was some sort of network error. We will
                             // try again later
-                            Thread.Sleep(_waitNotificationRetryPeriod);
+                            Thread.Sleep(WaitNotificationRetryPeriod);
                         }
                         else
                         {
                             // Cancelled WebRequest, ignore
                         }
+                    }
+                    catch (ObjectDisposedException)
+                    {
+
                     }
                 }
                 else
@@ -268,9 +279,9 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
         {
+            base.Dispose(disposing);
             if (disposing)
             {
-                _listening = false;
                 if (_listenThread != null)
                 {
                     _listenThread.Join();
@@ -285,7 +296,7 @@ namespace Woopsa
 
         private readonly IWoopsaObject _client;
         private readonly List<WoopsaClientSubscription> _subscriptions = new List<WoopsaClientSubscription>();
-        private bool _listening;
+        private bool _terminate;
         private Thread _listenThread;
 
         private IWoopsaObject _subscriptionService;
@@ -295,7 +306,7 @@ namespace Woopsa
 
         private long _lastNotificationId;
 
-        private readonly TimeSpan _waitNotificationRetryPeriod = TimeSpan.FromSeconds(10);
+        private readonly TimeSpan WaitNotificationRetryPeriod = TimeSpan.FromMilliseconds(200);
 
         #endregion
     }

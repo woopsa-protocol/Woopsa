@@ -10,6 +10,8 @@ namespace Woopsa
 
         public abstract bool Unregister(int id);
 
+        public abstract void Terminate();
+
         #endregion
 
         #region Public Events

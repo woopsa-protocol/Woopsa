@@ -10,6 +10,7 @@ namespace Woopsa
         public CustomThreadPoolThread(ThreadPriority priority)
         {
             _startEvent = new AutoResetEvent(false);
+            _terminateEvent = new ManualResetEvent(false);
             Priority = priority;
             _isIdle = true;
         }
@@ -23,6 +24,7 @@ namespace Woopsa
                 {
                     _thread = new Thread(Execute);
                     _thread.Priority = Priority;
+                    _thread.Name = "CustomThreadPoolThread";
                     _thread.Start();
                 }
                 _callBack = callBack;
@@ -34,12 +36,9 @@ namespace Woopsa
         }
         public void Terminate()
         {
-            if (!_aborting)
-            {
-                _aborting = true;
-                if (_startEvent != null)
-                    _startEvent.Dispose();
-            }
+            _terminateEvent.Set();
+            _startEvent.Dispose();
+            _terminateEvent.Dispose();
         }
 
         public bool Join(TimeSpan timeout)
@@ -65,15 +64,15 @@ namespace Woopsa
             {
                 try
                 {
-                    _startEvent.WaitOne();
-                    if (_aborting)
+                    int index = WaitHandle.WaitAny(new WaitHandle[] { _terminateEvent, _startEvent });
+                    if (index == 0) // _terminateEvent
                         break;
-                    _callBack(_parameter);
                 }
                 catch (ObjectDisposedException)
                 {
                     break;
                 }
+                _callBack(_parameter);
                 OnIdle();
             }
         }
@@ -83,10 +82,10 @@ namespace Woopsa
             Terminate();
         }
 
-        bool _aborting;
         bool _isIdle;
         Thread _thread;
         AutoResetEvent _startEvent;
+        ManualResetEvent _terminateEvent;
         WaitCallback _callBack;
         object _parameter;
     }

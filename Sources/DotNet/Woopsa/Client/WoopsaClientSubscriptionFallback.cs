@@ -10,6 +10,7 @@ namespace Woopsa
         {
             _client = client;
             _service = new SubscriptionService(_client);
+            // TODO : 
             _channel = new WoopsaClientSubscriptionChannel(_client);
             _channel.ValueChange += _channel_ValueChange;
         }
@@ -45,6 +46,11 @@ namespace Woopsa
                 _channel.Dispose();
                 _service.Dispose();
             }
+        }
+
+        public override void Terminate()
+        {
+            // TODO : à implémenter
         }
 
         #endregion
