@@ -38,8 +38,24 @@ namespace WoopsaTest
                     Assert.AreEqual(true, isValueChanged);
                 }
             }
-
         }
+
+/*        [TestMethod]
+        public void TestWoopsaClientSubscriptionChannelTimeout()
+        {            
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    int id = client.Root.Subscribe(nameof(TestObjectServer.Votes),
+                        (sender, e) => {  },
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+                    client.Root.Unsubscribe(id);
+                    Thread.Sleep(TimeSpan.FromSeconds(40));
+                }
+            }
+        }*/
 
         [TestMethod]
         public void TestWoopsaClientKeepSubscriptionOpen()

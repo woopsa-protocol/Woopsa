@@ -14,6 +14,7 @@ namespace Woopsa
         public const int MinimumNotificationId = 1;
         public const int MaximumNotificationId = 1000000000;
         public static readonly TimeSpan ClientTimeOut = TimeSpan.FromMinutes(20);
+        
 
         public const string WoopsaServiceSubscriptionName   = "SubscriptionService";
         public const string WoopsaCreateSubscriptionChannel = "CreateSubscriptionChannel";

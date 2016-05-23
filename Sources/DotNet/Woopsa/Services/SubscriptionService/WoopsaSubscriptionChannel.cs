@@ -110,7 +110,7 @@ namespace Woopsa
         {
             bool hasNotifications;
             _watchClientActivity.Restart();
-            // Remove acknowledged notifications already sent to the client
+            
             if (_notificationsLost)
             {
                 if (lastNotificationId == IdResetLostNotification)
@@ -120,6 +120,7 @@ namespace Woopsa
             }
             IWoopsaNotification notification;
             if (lastNotificationId != IdResetLostNotification)
+                // Remove acknowledged notifications already sent to the client
                 while (_pendingNotifications.Count > 0)
                 {
                     if (_pendingNotifications.TryPeek(out notification))
