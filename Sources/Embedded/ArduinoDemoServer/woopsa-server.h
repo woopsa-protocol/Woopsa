@@ -3,7 +3,7 @@
 
 #include "woopsa-config.h"
 
-typedef unsigned long	WoopsaBufferUInt;
+typedef long WoopsaBufferSize;
 typedef short			WoopsaInt16;
 typedef unsigned short	WoopsaUInt16;
 typedef char			WoopsaChar8;
@@ -47,6 +47,9 @@ typedef struct {
 	WoopsaUInt8 size;
 } WoopsaEntry;
 
+typedef WoopsaBufferSize (*WoopsaRequestHandler)(WoopsaChar8*, WoopsaUInt8, WoopsaChar8*, WoopsaBufferSize);
+
+
 typedef struct {
 	// The prefix for all Woopsa routes. Any client request 
 	// made without this prefix will pass the request to
@@ -58,7 +61,7 @@ typedef struct {
 	// content string, and should return an amount of bytes.
 	// If the amount of bytes is 0, then the server will send
 	// a 404 Not Found error.
-	WoopsaBufferUInt(*handleRequest)(WoopsaChar8* requestedPath, WoopsaUInt8 isPost, WoopsaChar8* outputBuffer, WoopsaBufferUInt outputBufferSize);
+	WoopsaRequestHandler requestHandler;
 	// A list of entries to be published by Woopsa
 	WoopsaEntry*	entries;
 	// A small buffer string used in various places in the server
@@ -94,9 +97,11 @@ extern "C"
 {
 #endif
 
+	
+
 // Creates a new Woopsa server using the specified prefix 
 // and a list of entries to publish
-	void WoopsaServerInit(WoopsaServer* server, const WoopsaChar8* prefix, WoopsaEntry entries[], WoopsaBufferUInt(*handleRequest)(WoopsaChar8*, WoopsaUInt8, WoopsaChar8*, WoopsaBufferUInt));
+	void WoopsaServerInit(WoopsaServer* server, const WoopsaChar8* prefix, WoopsaEntry entries[], WoopsaRequestHandler requestHandler);
 
 // Checks if the request contained in inputBuffer
 // is finished. This is useful in the case where
@@ -117,7 +122,8 @@ WoopsaUInt8	WoopsaCheckRequestComplete(WoopsaServer* server, WoopsaChar8* inputB
 #define WOOPSA_OTHER_ERROR 2
 #define WOOPSA_OTHER_RESPONSE 3
 
-WoopsaUInt8	WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBuffer, WoopsaBufferUInt inputBufferLength, WoopsaChar8* outputBuffer, WoopsaBufferUInt outputBufferLength, WoopsaBufferUInt* responseLength);
+WoopsaUInt8	WoopsaHandleRequest(WoopsaServer* server, const WoopsaChar8* inputBuffer, WoopsaBufferSize inputBufferLength, WoopsaChar8* outputBuffer, 
+	WoopsaBufferSize outputBufferLength, WoopsaBufferSize* responseLength);
 
 #ifdef __cplusplus
 }
