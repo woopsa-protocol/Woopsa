@@ -51,38 +51,38 @@ namespace WoopsaDemoClient
         }
 
 
-        static void ExploreItem(WoopsaClientObject obj, int indent = 0)
+        void ExploreItem(WoopsaClientObject obj, int indent = 0)
         {
             // Display all properties and their values
             string indentString = "";
             for (int i = 0; i < indent; i++)
                 indentString += "  ";
-            Debug.WriteLine(indentString + "{0}", obj.Name);
-            Debug.WriteLine(indentString + "Properties and their values:");
+            Print(indentString + "{0}", obj.Name);
+            Print(indentString + "Properties and their values:");
             foreach (WoopsaClientProperty property in obj.Properties)
             {
-                Debug.WriteLine(indentString + " * {0} : {1} = {2}", property.Name, property.Type, property.Value);
+                Print(indentString + " * {0} : {1} = {2}", property.Name, property.Type, property.Value);
                 if (property.Name == "Altitude")
                 {
                     // Create a subscription for example's sake
-                    Debug.WriteLine(indentString + "  => Creating a subscription");
+                    Print(indentString + "  => Creating a subscription");
                     property.Change += property_Change;
 
                     // Actually change the value
-                    Debug.WriteLine(indentString + "  => Changing value to 1");
+                    Print(indentString + "  => Changing value to 1");
                     property.Value = new WoopsaValue(1);
                 }
             }
 
             // Display methods and their arguments
-            Debug.WriteLine(indentString + "Methods and their arguments:");
+            Print(indentString + "Methods and their arguments:");
             foreach (WoopsaMethod method in obj.Methods)
             {
                 // Display the method
-                Debug.WriteLine(indentString + " * {0} : {1}", method.Name, method.ReturnType);
+                Print(indentString + " * {0} : {1}", method.Name, method.ReturnType);
                 foreach (WoopsaMethodArgumentInfo argumentInfo in method.ArgumentInfos)
                 {
-                    Debug.WriteLine(indentString + "  * {0} : {1}", argumentInfo.Name, argumentInfo.Type);
+                    Print(indentString + "  * {0} : {1}", argumentInfo.Name, argumentInfo.Type);
                 }
 
                 // As an example, if we find a SayHello method (like in the demo server),
@@ -90,8 +90,8 @@ namespace WoopsaDemoClient
                 // client!
                 if (method.Name == "GetWeatherAtDate")
                 {
-                    Debug.WriteLine(indentString + "  => GetWeatherAtDate found! Calling it now...");
-                    Debug.WriteLine(indentString + "  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
+                    Print(indentString + "  => GetWeatherAtDate found! Calling it now...");
+                    Print(indentString + "  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
                         {
                             new WoopsaValue(DateTime.Now)
                         })
@@ -99,16 +99,22 @@ namespace WoopsaDemoClient
                 }
             }
 
-            Debug.WriteLine(indentString + "Items:");
+            Print(indentString + "Items:");
             foreach (WoopsaClientObject item in obj.Items)
             {
                 ExploreItem(item, indent + 1);
             }
         }
 
-        static void property_Change(object sender, WoopsaNotificationEventArgs e)
+        void property_Change(object sender, WoopsaNotificationEventArgs e)
         {
-            Debug.WriteLine("Property {0} has changed, new value = {1}", (sender as WoopsaClientProperty).Name, e.Value);
+            Print("Property {0} has changed, new value = {1}", (sender as WoopsaClientProperty).Name, e.Value);
+        }
+
+        public void Print(string format, params object[] args)
+        {
+            this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal,
+                () => textbox.Text += string.Format(format, args) + Environment.NewLine);
         }
     }
 }

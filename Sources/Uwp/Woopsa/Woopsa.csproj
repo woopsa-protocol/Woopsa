@@ -118,12 +118,26 @@
     <Compile Include="Definition\WoopsaInterfaces.cs" />
     <Compile Include="Dynamic\WoopsaDynamicClient.cs" />
     <Compile Include="Dynamic\WoopsaJsonDataDynamic.cs" />
+    <Compile Include="HTTPServer\HTTPServerUtils.cs" />
+    <Compile Include="HTTPServer\Processors\WWWAuthenticator.cs" />
+    <Compile Include="HTTPServer\RouteHandlers\RouteHandlerFileSystem.cs" />
+    <Compile Include="HTTPServer\RouteHandlers\RouteHandlerRedirect.cs" />
+    <Compile Include="HTTPServer\Routing\IHTTPRouteHandler.cs" />
+    <Compile Include="HTTPServer\Routing\Processors.cs" />
+    <Compile Include="HTTPServer\Routing\RouteMapper.cs" />
+    <Compile Include="HTTPServer\Routing\RouteSolver.cs" />
+    <Compile Include="HTTPServer\Server\WebServer.cs" />
+    <Compile Include="HTTPServer\Utils\Constants.cs" />
+    <Compile Include="HTTPServer\Utils\Exceptions.cs" />
+    <Compile Include="HTTPServer\Utils\HTTPRequest.cs" />
+    <Compile Include="HTTPServer\Utils\HTTPResponse.cs" />
     <Compile Include="Implementation\WoopsaJsonData.cs" />
     <Compile Include="Implementation\WoopsaObject.cs" />
     <Compile Include="Implementation\WoopsaObjectAdapter.cs" />
     <Compile Include="Implementation\WoopsaValue.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\WoopsaFormat.cs" />
+    <Compile Include="Protocol\WoopsaServer.cs" />
     <Compile Include="Services\MultiRequest\WoopsaMultiRequest.cs" />
     <Compile Include="Services\SubscriptionService\IWoopsaServiceSubscription.cs" />
     <Compile Include="Services\SubscriptionService\SubscriptionService.cs" />
@@ -133,6 +147,9 @@
     <Compile Include="Utils\LightWeightTimer.cs" />
     <Compile Include="Utils\WoopsaTypeConverter.cs" />
     <EmbeddedResource Include="Properties\Woopsa.rd.xml" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="HTTPServer\HTML\ErrorPage.html" />
   </ItemGroup>
   <PropertyGroup Condition=" '$(VisualStudioVersion)' == '' or '$(VisualStudioVersion)' &lt; '14.0' ">
     <VisualStudioVersion>14.0</VisualStudioVersion>
