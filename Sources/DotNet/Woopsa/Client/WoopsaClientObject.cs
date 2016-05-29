@@ -70,12 +70,6 @@ namespace Woopsa
                 _subscriptionChannel.Unregister(id);
         }
 
-        public void Terminate()
-        {
-            if (_subscriptionChannel != null)
-                _subscriptionChannel.Terminate();
-        }
-
         private void SubscriptionChannel_ValueChange(object sender, WoopsaNotificationsEventArgs notifications)
         {
             foreach (var notification in notifications.Notifications.Notifications)
@@ -173,15 +167,8 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
         {
-            base.Dispose(disposing);
-            if (disposing)
-            {
-                if (_subscriptionChannel != null)
-                {
-                    _subscriptionChannel.Dispose();
-                    _subscriptionChannel = null;
-                }
-            }
+            if (_subscriptionChannel != null)
+                _subscriptionChannel.Dispose();
         }
 
         #endregion
