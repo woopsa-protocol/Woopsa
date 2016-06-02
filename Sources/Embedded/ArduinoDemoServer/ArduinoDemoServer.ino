@@ -41,7 +41,7 @@
 byte mac[] = {
 	0x90, 0xA2, 0xDA, 0x10, 0x32, 0x0B
 };
-IPAddress ip(192, 168, 42, 3);
+IPAddress ip(192, 168, 1, 50);
 
 // Initialize the Ethernet server library
 // with the IP address and port you want to use
@@ -194,7 +194,7 @@ void IoLoop() {
 }
 
 
-WoopsaUInt16 ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaUInt16 dataBufferSize) {
+WoopsaBufferSize ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaBufferSize dataBufferSize) {
 	// Normally, we would write inside the dataBuffer
 	// However, due to the Arduino's extremely limited
 	// RAM (a few kB), we can't write a "huge" 14kB HTML
@@ -207,7 +207,7 @@ WoopsaUInt16 ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataB
 void WoopsaLoop() {
 	char dataBuffer[2048];
 	int bufferAt = 0;
-	short unsigned int responseLength;
+	WoopsaBufferSize responseLength;
 	memset(dataBuffer, 0, sizeof(dataBuffer));
 	// Listen for incoming clients
 	EthernetClient client = server.available();
