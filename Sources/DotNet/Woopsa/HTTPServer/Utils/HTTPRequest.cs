@@ -33,13 +33,13 @@ namespace Woopsa
         /// <summary>
         /// Provides all the HTTP Headers that were sent by the client in a key/value list.
         /// </summary>
-        public IReadOnlyDictionary<string, string> Headers
+        public ReadOnlyHeaderDictionary Headers
         {
             get
             {
                 if (_readOnlyHeaders == null)
                 {
-                    _readOnlyHeaders = new ReadOnlyDictionary<string, string>(_headers);
+                    _readOnlyHeaders = new ReadOnlyHeaderDictionary(_headers);
                 }
                 return _readOnlyHeaders;
             }
@@ -107,7 +107,7 @@ namespace Woopsa
         #endregion
 
         #region Private/Protected/Internal Members
-        private ReadOnlyDictionary<string, string> _readOnlyHeaders = null;
+        private ReadOnlyHeaderDictionary _readOnlyHeaders = null;
 
         private string _fullURL;
         private string _baseURL;
@@ -118,5 +118,25 @@ namespace Woopsa
         private NameValueCollection _query;
         private NameValueCollection _body;
         #endregion
+    }
+
+    public class ReadOnlyHeaderDictionary
+    {
+        public ReadOnlyHeaderDictionary(Dictionary<string, string> headers)
+        {
+            _headers = headers;
+        }
+
+        public string this[string key]
+        {
+            get { return _headers[key]; }
+        }
+        
+        public bool ContainsKey(string key)
+        {
+            return _headers.ContainsKey(key);
+        }
+
+        private Dictionary<string, string> _headers;
     }
 }

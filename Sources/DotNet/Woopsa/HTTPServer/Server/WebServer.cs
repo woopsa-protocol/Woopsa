@@ -235,7 +235,7 @@ namespace Woopsa
                         stream = processor.ProcessStream(stream);
                     }
                     // Do not dispose the reader so that the inner stream stays open (no using)
-                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096, true);
+                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096); 
                     bool leaveOpen = true;
                     HTTPResponse response = null;
                     HTTPRequest request = null;
@@ -420,7 +420,7 @@ namespace Woopsa
             }
             else
             {
-                baseUrl = WebUtility.UrlDecode(url);
+                baseUrl = Uri.UnescapeDataString(url); 
                 queryString = "";
             }
             request.BaseURL = baseUrl;

@@ -57,6 +57,8 @@
     </Otherwise>
   </Choose>
   <ItemGroup>
+    <Compile Include="UnitTestWoopsaDynamicNotification.cs" />
+    <Compile Include="UnitTestWoopsaNotification.cs" />
     <Compile Include="UnitTestWoopsaObjectAdapter.cs" />
     <Compile Include="UnitTestWoopsaClient.cs" />
     <Compile Include="UnitTestWoopsaObject.cs" />

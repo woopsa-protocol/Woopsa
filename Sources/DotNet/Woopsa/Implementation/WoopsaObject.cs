@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    public interface IWoopsaElementReadOnlyList<T>: IReadOnlyCollection<T>
+    public interface IWoopsaElementReadOnlyList<T>: IEnumerable, IEnumerable<T>
     {
         T this[string name] { get; }
 
@@ -18,6 +18,8 @@ namespace Woopsa
         bool Contains(string Name);
 
         bool Contains(T element);
+
+        int Count { get; }
     }
 
     public abstract class WoopsaElement : IWoopsaElement, IDisposable

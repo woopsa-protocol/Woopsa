@@ -45,18 +45,29 @@ namespace WoopsaTest
                         WoopsaMethod methodRegisterScubscription = subscription.Methods.ByNameOrNull("RegisterSubscription");
                         if (methodRegisterScubscription != null)
                             // call the method "registerScubscription" on the server
-                            result = methodRegisterScubscription.Invoke(channel, WoopsaValue.WoopsaRelativeLink("/Votes"), 0.2, 0.2);
+                            result = methodRegisterScubscription.Invoke(channel, WoopsaValue.WoopsaRelativeLink("/Votes"), 0.01, 0.01);
                         int subscriptionNbr = result;
 
                         WoopsaJsonData jData;
                         WoopsaMethod methodWaitNotification = subscription.Methods.ByNameOrNull("WaitNotification");
                         if (methodWaitNotification != null)
                         {
+                            Stopwatch watch = new Stopwatch();
+                            watch.Start();
                             // call the method "WaitNotification" on the server
-                            jData = methodWaitNotification.Invoke(channel, lastNotification).JsonData;
+                            do
+                            {
+                                jData = methodWaitNotification.Invoke(channel, lastNotification).JsonData;
+                                if (watch.ElapsedMilliseconds > 1000)
+                                    Assert.Fail("timeout waiting notifications");
+                            }
+                            while (jData.Length == 0);
                             lastNotification = jData[jData.Length - 1]["Id"];
                             Assert.AreEqual(lastNotification, 1);
                         }
+                           
+
+
 
                     }
                 }

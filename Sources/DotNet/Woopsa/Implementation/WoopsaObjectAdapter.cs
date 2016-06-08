@@ -110,7 +110,7 @@ namespace Woopsa
             if (targetObject != null)
             {
                 WoopsaVisibilityAttribute woopsaVisibilityAttribute =
-                    targetObject.GetType().GetCustomAttribute<WoopsaVisibilityAttribute>();
+                    GetCustomAttribute<WoopsaVisibilityAttribute>(targetObject.GetType());
                 if (woopsaVisibilityAttribute != null)
                     Visibility = woopsaVisibilityAttribute.Visibility;
                 else
@@ -171,7 +171,7 @@ namespace Woopsa
 
         protected bool IsMemberWoopsaVisible(MemberInfo member)
         {
-            var woopsaVisibleAttribute = member.GetCustomAttribute<WoopsaVisibleAttribute>();
+            var woopsaVisibleAttribute = GetCustomAttribute<WoopsaVisibleAttribute>(member);
             bool isVisible;
             if (woopsaVisibleAttribute != null)
                 isVisible = woopsaVisibleAttribute.Visible;
@@ -268,7 +268,7 @@ namespace Woopsa
             foreach (var propertyInfo in properties)
                 if (IsMemberWoopsaVisible(propertyInfo))
                 {
-                    WoopsaValueTypeAttribute attribute = propertyInfo.GetCustomAttribute<WoopsaValueTypeAttribute>();
+                    WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(propertyInfo);
                     WoopsaValueType woopsaPropertyType;
                     bool isValidWoopsaProperty = false;
                     if (attribute != null)
@@ -290,7 +290,7 @@ namespace Woopsa
                         newPropertyDescription.Type = woopsaPropertyType;
                         propertyDescriptions.Add(newPropertyDescription);
                     }
-                    else if (!propertyInfo.PropertyType.IsValueType)                    
+                    else if (!propertyInfo.PropertyType.IsValueType)
                     {
                         // This property is not of a WoopsaType, if it is a reference type, assume it is an inner item
                         ItemDescription newItem = new ItemDescription();
@@ -308,7 +308,7 @@ namespace Woopsa
             foreach (var methodInfo in methods)
                 if (IsMemberWoopsaVisible(methodInfo))
                 {
-                    WoopsaValueTypeAttribute attribute = methodInfo.GetCustomAttribute<WoopsaValueTypeAttribute>();
+                    WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
                     WoopsaValueType woopsaReturnType;
                     bool isValidWoopsaMethod = false;
                     if (attribute != null)
@@ -362,12 +362,12 @@ namespace Woopsa
         {
             if (property.ReadOnly)
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
-                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject), property.Type, GetTimeStamp()))
+                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.Type, GetTimeStamp()))
                 );
             else
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
-                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject), property.Type, GetTimeStamp())),
-                    (sender, value) => property.PropertyInfo.SetValue(TargetObject, value.ConvertTo(property.PropertyInfo.PropertyType))
+                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.Type, GetTimeStamp())),
+                    (sender, value) => property.PropertyInfo.SetValue(TargetObject, value.ConvertTo(property.PropertyInfo.PropertyType), null)
                 );
         }
 
@@ -375,10 +375,10 @@ namespace Woopsa
         {
             try
             {
-                object value = item.PropertyInfo.GetValue(TargetObject);
+                object value = item.PropertyInfo.GetValue(TargetObject, EmptyParameters);
                 // If an inner item is null, ignore it for the Woopsa hierarchy
                 if (value != null)
-                    new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject),
+                    new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject, EmptyParameters),
                         Options, DefaultVisibility);
             }
             catch (Exception)
@@ -428,6 +428,7 @@ namespace Woopsa
                 // This can happen when methods are overloaded. This isn't supported in Woopsa.
                 // Ignore silently, the method won't be published
             }
+
         }
 
         #endregion
@@ -477,6 +478,15 @@ namespace Woopsa
             public IList<ItemDescription> Items { get; private set; }
             public IList<PropertyDescription> Properties { get; private set; }
             public IList<MethodDescription> Methods { get; private set; }
+
         }
+
+        private static readonly object[] EmptyParameters = new object[] { };
+
+        private static T GetCustomAttribute<T>(MemberInfo element) where T : Attribute
+        {
+            return element.GetCustomAttributes(true).OfType<T>().FirstOrDefault();
+        }
+
     }
 }

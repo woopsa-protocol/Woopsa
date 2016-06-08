@@ -41,17 +41,25 @@ namespace WoopsaTest
                             TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
                         Assert.Fail("Nonexistent variable"); 
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
                         // just catch the exception (normal behaviour)
                     }
 
+                    Stopwatch watch = new Stopwatch();
                     WoopsaValue lastNotifications;
                     WoopsaJsonData jsonData;
                     int lastNotificationId;
-                    lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
-                    Assert.AreEqual(lastNotifications.Type, WoopsaValueType.JsonData);
-                    jsonData = lastNotifications.JsonData;
+                    watch.Start();
+                    do
+                    {
+                        lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
+                        Assert.AreEqual(lastNotifications.Type, WoopsaValueType.JsonData);
+                        jsonData = lastNotifications.JsonData;
+                        if (watch.ElapsedMilliseconds > 1000)
+                            Assert.Fail("Timeout without receveiving any notification");
+                    }
+                    while (jsonData.Length == 0);
                     lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
                     Assert.AreEqual(lastNotificationId, 1);
                     //TODO: voir avec FBG si OK: array vide

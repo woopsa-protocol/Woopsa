@@ -188,16 +188,19 @@ namespace Woopsa
                 ResponseLength = _bufferStream.Length;
                 SetHeader(HTTPHeader.ContentLength, ResponseLength.ToString());
                 SetHeader(HTTPHeader.Date, DateTime.Now.ToHTTPDate());
-                StreamWriter writer = new StreamWriter(responseStream, new UTF8Encoding(false), 4096, true);
-                writer.Write("HTTP/1.1 " + ResponseCode + " " + ResponseMessage + "\r\n");
-                foreach (string header in Headers)
-                    writer.Write(header + "\r\n");
-                writer.Write("\r\n");
-                writer.Flush();
-                _bufferStream.Position = 0;
-                _bufferStream.CopyTo(responseStream);
-                responseStream.Position = 0;
-                responseStream.CopyTo(outputStream);
+                using (StreamWriter writer = new StreamWriter(responseStream, new UTF8Encoding(false), 4096)) 
+                {
+                    writer.Write("HTTP/1.1 " + ResponseCode + " " + ResponseMessage + "\r\n");
+                    foreach (string header in Headers)
+                        writer.Write(header + "\r\n");
+                    writer.Write("\r\n");
+                    writer.Flush();
+
+                    _bufferStream.Position = 0;
+                    _bufferStream.CopyTo(responseStream);
+                    responseStream.Position = 0;
+                    responseStream.CopyTo(outputStream);
+                }
             }
             catch (IOException e)
             {

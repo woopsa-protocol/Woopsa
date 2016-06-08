@@ -120,7 +120,7 @@ namespace Woopsa
 
         public bool StartUserWorkItem(WaitCallback callBack, object parameter = null)
         {
-            return StartUserWorkItem(callBack, parameter, Timeout.InfiniteTimeSpan);
+            return StartUserWorkItem(callBack, parameter, InfiniteTimeSpan);
         }
 
         public bool StartUserWorkItem(WaitCallback callBack, TimeSpan timeout)
@@ -183,7 +183,7 @@ namespace Woopsa
             foreach (var item in threads)
             {
                 TimeSpan remaining;
-                if (timeout != Timeout.InfiniteTimeSpan)
+                if (timeout != InfiniteTimeSpan)
                 {
                     TimeSpan elapsed = DateTime.Now - waitStart;
                     remaining = timeout - elapsed;
@@ -191,7 +191,7 @@ namespace Woopsa
                         remaining = TimeSpan.Zero;
                 }
                 else
-                    remaining = Timeout.InfiniteTimeSpan;
+                    remaining = InfiniteTimeSpan;
                 if (!item.Join(remaining))
                     return false;
             }
@@ -200,7 +200,7 @@ namespace Woopsa
         }
         public void Join()
         {
-            Join(Timeout.InfiniteTimeSpan);
+            Join(InfiniteTimeSpan);
         }
 
         public void Dispose()
@@ -216,5 +216,8 @@ namespace Woopsa
         private Semaphore _semaphore;
         private bool _aborting;
         private int _threadPoolSize;
+
+        static readonly TimeSpan InfiniteTimeSpan = new TimeSpan(0, 0, 0, 0, Timeout.Infinite);
+
     }
 }
