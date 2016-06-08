@@ -95,44 +95,47 @@ namespace Woopsa
 
             _meta = _client.Meta(this.GetPath(_root));
 
-            foreach (WoopsaPropertyMeta property in _meta.Properties)
-            {
-                if (property.ReadOnly)
+            if (_meta.Properties != null)
+                foreach (WoopsaPropertyMeta property in _meta.Properties)
                 {
-                    new WoopsaClientProperty(this,
-                        property.Name,
-                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
-                        GetProperty);
+                    if (property.ReadOnly)
+                    {
+                        new WoopsaClientProperty(this,
+                            property.Name,
+                            (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
+                            GetProperty);
+                    }
+                    else
+                    {
+                        new WoopsaClientProperty(this,
+                            property.Name,
+                            (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
+                            GetProperty,
+                            SetProperty);
+                    }
                 }
-                else
+
+            if (_meta.Methods != null)
+                foreach (WoopsaMethodMeta method in _meta.Methods)
                 {
-                    new WoopsaClientProperty(this,
-                        property.Name,
-                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
-                        GetProperty,
-                        SetProperty);
+                    var argumentInfos = method.ArgumentInfos.Select(argumentInfo => new WoopsaMethodArgumentInfo(argumentInfo.Name,
+                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType),
+                        argumentInfo.Type))).ToList();
+
+                    string methodName = method.Name;
+
+                    new WoopsaMethod(this,
+                        methodName,
+                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), method.ReturnType),
+                        argumentInfos,
+                        args => Invoke(args, argumentInfos, methodName));
                 }
-            }
 
-            foreach (WoopsaMethodMeta method in _meta.Methods)
-            {
-                var argumentInfos = method.ArgumentInfos.Select(argumentInfo => new WoopsaMethodArgumentInfo(argumentInfo.Name,
-                    (WoopsaValueType)Enum.Parse(typeof (WoopsaValueType),
-                    argumentInfo.Type))).ToList();
-
-                string methodName = method.Name;
-
-                new WoopsaMethod(this,
-                    methodName,
-                    (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), method.ReturnType),
-                    argumentInfos,
-                    args => Invoke(args, argumentInfos, methodName));
-            }
-
-            foreach (string item in _meta.Items)
-            {
-                new WoopsaClientObject(_client, this, item, _root);
-            }
+            if (_meta.Items != null)
+                foreach (string item in _meta.Items)
+                {
+                    new WoopsaClientObject(_client, this, item, _root);
+                }
         }
 
         #endregion

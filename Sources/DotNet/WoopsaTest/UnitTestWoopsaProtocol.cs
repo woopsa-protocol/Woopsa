@@ -18,6 +18,22 @@ namespace WoopsaTest
     {
 
         [TestMethod]
+        public void TestWoopsaProtocolRootContainer()
+        {
+            WoopsaRoot root = new WoopsaRoot();
+            TestObjectServer objectServer = new TestObjectServer();
+            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(root, "TestObject", objectServer);
+            using (WoopsaServer server = new WoopsaServer(root))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    (client.Root.Items.ByName("TestObject") as WoopsaObject).Properties.ByName("Votes").Value = 17;
+                    Assert.AreEqual(objectServer.Votes, 17);
+                }
+            }
+        }
+
+        [TestMethod]
         public void TestWoopsaProtocol()
         {
             TestObjectServer objectServer = new TestObjectServer();
