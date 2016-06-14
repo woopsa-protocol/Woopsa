@@ -22,7 +22,6 @@ namespace WoopsaTest
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    int lastNotification = 0;
                     // Just to show how to see all items
                     foreach (var item in client.Root.Items)
                     {
@@ -55,20 +54,19 @@ namespace WoopsaTest
                             Stopwatch watch = new Stopwatch();
                             watch.Start();
                             // call the method "WaitNotification" on the server
-                            do
-                            {
-                                jData = methodWaitNotification.Invoke(channel, lastNotification).JsonData;
-                                if (watch.ElapsedMilliseconds > 1000)
-                                    Assert.Fail("timeout waiting notifications");
-                            }
-                            while (jData.Length == 0);
-                            lastNotification = jData[jData.Length - 1]["Id"];
+                            Thread.Sleep(100);
+                            jData = methodWaitNotification.Invoke(channel, 0).JsonData;
+                            Assert.IsTrue(jData.Length > 0);
+                            int lastNotification;
+                            lastNotification = jData[0]["Id"];
+                            Assert.AreEqual(lastNotification, 1);
+                            // Get notifications again
+                            Thread.Sleep(100);
+                            jData = methodWaitNotification.Invoke(channel, 0).JsonData;
+                            Assert.IsTrue(jData.Length > 0);
+                            lastNotification = jData[0]["Id"];
                             Assert.AreEqual(lastNotification, 1);
                         }
-                           
-
-
-
                     }
                 }
 

@@ -14,8 +14,8 @@ namespace WoopsaTest
     public class UnitTestWoopsaDynamicNotification
     {
         const int QUEUE_SIZE = 1000;
-        const int MONITOR_INTERVAL = 100;
-        const int PUBLISH_INTERVAL = 100;
+        const int MONITOR_INTERVAL = 10;
+        const int PUBLISH_INTERVAL = 10;
 
         [TestMethod]
         public void TestWoopsaDynamicNotification()
@@ -62,24 +62,38 @@ namespace WoopsaTest
                     while (jsonData.Length == 0);
                     lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
                     Assert.AreEqual(lastNotificationId, 1);
-                    //TODO: voir avec FBG si OK: array vide
-                    //for (int index = 0; index < 10; index++)
-                    //{
-                    //    lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, lastNotificationId);
-                    //    Assert.AreEqual(lastNotifications.Type, WoopsaValueType.JsonData);
-                    //    jsonData = lastNotifications.JsonData;
-                    //    Assert.AreEqual(lastNotificationId, index + 2);  // first loop with ID of 2
-                    //    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
-                    //}
+                    // Get again the same notification
                     lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
                     jsonData = lastNotifications.JsonData;
                     Assert.IsTrue(jsonData.IsArray);
-                    //Assert.IsTrue(jsonData[jsonData.Length - 1].IsDictionary);
-                    //lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
-                    //Assert.AreEqual(lastNotificationId, 1);
-                    //lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, lastNotificationId);
+                    Assert.AreEqual(jsonData.Length, 1);
+                    Assert.IsTrue(jsonData[0].IsDictionary);
+                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(lastNotificationId, 1);
+                    // Generate a new notification
+                    objectServer.Votes++;
+                    Thread.Sleep(PUBLISH_INTERVAL * 10);
+                    // Check we have now 2
+                    lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
+                    jsonData = lastNotifications.JsonData;
+                    Assert.IsTrue(jsonData.IsArray);
+                    Assert.AreEqual(jsonData.Length, 2);
+                    Assert.IsTrue(jsonData[0].IsDictionary);
+                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(lastNotificationId, 2);
+                    // Check we can remove 1 and still have 1
+                    lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 1);
+                    jsonData = lastNotifications.JsonData;
+                    Assert.AreEqual(jsonData.Length, 1);
+                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(lastNotificationId, 2);
+                    // Enable the code below to test the wait of the timeout when they are 0 notifications pending
+                    /*
+                    // Check we can remove 1 and have 0. This takes 5 seconds (we wait the timeout)
+                    lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, lastNotificationId);
                     jsonData = lastNotifications.JsonData;
                     Assert.AreEqual(jsonData.Length, 0);
+                    */
                 }
             }
         } //end TestWoopsaDynamicNotification

@@ -203,12 +203,12 @@ namespace Woopsa
                 if (parts.Length == 1)
                 {
                     woopsaServerUrl = null;
-                    woopsaItemPath = parts[0];
+                    woopsaItemPath = parts[0].TrimStart(WoopsaConst.WoopsaPathSeparator);
                 }
                 else if (parts.Length == 2)
                 {
                     woopsaServerUrl = parts[0];
-                    woopsaItemPath = parts[1];
+                    woopsaItemPath = parts[1].TrimStart(WoopsaConst.WoopsaPathSeparator);
                 }
                 else
                     throw new WoopsaException(string.Format("Badly formed WoopsaLink {0} ", value.AsText));
@@ -216,6 +216,18 @@ namespace Woopsa
             else
                 throw new WoopsaException(string.Format("Cannot decode WoopsaValue of type {0} as a WoopsaLink", value.Type));
         }
+
+        public static string DecodeWoopsaLocalLink(this IWoopsaValue value)
+        {
+            string woopsaServerUrl;
+            string woopsaItemPath;
+            DecodeWoopsaLink(value, out woopsaServerUrl, out woopsaItemPath);
+            if (woopsaServerUrl == null) // it is a local path
+                return woopsaItemPath;
+            else
+                throw new WoopsaException(String.Format("{0} is not a local woopsa link", value.AsText));
+        }
+
         #endregion IWoopsaValue
 
         #region IWoopsaObject

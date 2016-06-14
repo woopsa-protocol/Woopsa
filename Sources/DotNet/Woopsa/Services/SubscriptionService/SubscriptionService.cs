@@ -70,6 +70,13 @@ namespace Woopsa
             _timerCheckChannelTimedOut.IsEnabled = true;
         }
 
+        public override void Refresh()
+        {
+            base.Refresh();
+            foreach (var item in _channels.Values)
+                item.Refresh();
+
+        }
         private void _timerCheckChannelTimedOut_Elapsed(object sender, EventArgs e)
         {
             WoopsaSubscriptionChannel[] timedoutChannels;

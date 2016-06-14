@@ -8,62 +8,53 @@ namespace Woopsa
 {
     public class WoopsaSubscription : IDisposable
     {
-        public WoopsaSubscription(WoopsaContainer container, int id, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public WoopsaSubscription(WoopsaContainer container, int subscriptionId, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            Id = id;
+            Container = container;
+            SubscriptionId = subscriptionId;
             PropertyLink = propertyLink;
             MonitorInterval = monitorInterval;
             PublishInterval = publishInterval;
 
             //Get the property from the link
-            string server, path;
+            PropertyPath = propertyLink.DecodeWoopsaLocalLink();
             string channelContainerPath = null;
-            propertyLink.DecodeWoopsaLink(out server, out path);
-            if ( server == null )
+            // Are there any Subscription Services up to this path?
+            string[] pathParts = PropertyPath.Split(WoopsaConst.WoopsaPathSeparator);
+            string searchPath = WoopsaConst.WoopsaRootPath + pathParts[0] + WoopsaConst.WoopsaPathSeparator;
+            for (int i = 1; i < pathParts.Length; i++)
             {
-                // Are there any Subscription Services up to this path?
-                string[] pathParts = path.TrimStart(WoopsaConst.WoopsaPathSeparator).Split(WoopsaConst.WoopsaPathSeparator);
-                string searchPath = WoopsaConst.WoopsaRootPath + pathParts[0] + WoopsaConst.WoopsaPathSeparator;
-                for (int i = 1; i < pathParts.Length; i++)
+                if (_subscriptionChannels.ContainsKey(searchPath))
+                    _subscriptionChannel = _subscriptionChannels[searchPath];
+                else
                 {
-                    if (_subscriptionChannels.ContainsKey(searchPath))
+                    try
                     {
-                        _subscriptionChannel = _subscriptionChannels[searchPath];
+                        WoopsaObject subscriptionService = (WoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+                        channelContainerPath = subscriptionService.Owner.GetPath();
+                        _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
+                        break;
                     }
-                    else
+                    catch (WoopsaNotFoundException)
                     {
-                        try
-                        {
-                            WoopsaObject subscriptionService = (WoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
-                            channelContainerPath = subscriptionService.Owner.GetPath();
-                            _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
-                            break;
-                        }
-                        catch (WoopsaNotFoundException)
-                        {
-                        }
-                        searchPath += pathParts[i] + WoopsaConst.WoopsaPathSeparator;
                     }
-                }
-
-                if (_subscriptionChannel == null)
-                {
-                    var elem = container.ByPath(path);
-                    if (elem is IWoopsaProperty)
-                    {
-                        _watchedProperty = elem as IWoopsaProperty;
-                    }
-                    else
-                        throw new WoopsaException(String.Format("Can only create a subscription to an IWoopsaProperty. Attempted path={0}", path));
+                    searchPath += pathParts[i] + WoopsaConst.WoopsaPathSeparator;
                 }
             }
-            else
-                throw new WoopsaException("Creating a subscription on another server is not yet supported.");
+
+            if (_subscriptionChannel == null)
+            {
+                var item = container.ByPath(PropertyPath);
+                if (item is IWoopsaProperty)
+                    __watchedProperty = item as IWoopsaProperty;
+                else
+                    throw new WoopsaException(String.Format("Can only create a subscription to an IWoopsaProperty. Attempted path={0}", PropertyPath));
+            }
 
             // If we found a subscription service along the way, use that instead of polling
             if (_subscriptionChannel != null)
             {
-                string subscribePath = path;
+                string subscribePath = PropertyPath;
                 if (subscribePath.StartsWith(channelContainerPath))
                     subscribePath = subscribePath.Substring(channelContainerPath.Length);
                 _subscriptionId = _subscriptionChannel.Register(subscribePath, monitorInterval, publishInterval);
@@ -93,13 +84,13 @@ namespace Woopsa
                     hasNotifications = true;
                 }
             }
-            if ( hasNotifications )
+            if (hasNotifications)
                 DoPublish();
         }
 
         void _publishTimer_Elapsed(object sender, EventArgs e)
         {
-            if ( _notifications.Count != 0 )
+            if (_notifications.Count != 0)
             {
                 DoPublish();
             }
@@ -114,10 +105,16 @@ namespace Woopsa
             }
         }
 
+        public void Refresh()
+        {
+            __watchedProperty = null;
+        }
+
+        public WoopsaContainer Container { get; private set; }
         /// <summary>
         /// The auto-generated Id for this Subscription
         /// </summary>
-        public int Id { get; private set; }
+        public int SubscriptionId { get; private set; }
 
         /// <summary>
         /// The Monitoring Interval is the interval at which this
@@ -133,16 +130,18 @@ namespace Woopsa
 
         public IWoopsaValue PropertyLink { get; private set; }
 
+        public string PropertyPath { get; private set; }
+
         public delegate void PublishEventHandler(object sender, PublishEventArgs e);
         public event PublishEventHandler Publish;
 
         public WoopsaNotification Execute()
         {
-            IWoopsaValue newValue = _watchedProperty.Value;
+            IWoopsaValue newValue = WatchedProperty.Value;
             if (!newValue.Equals(_oldValue))
             {
                 _oldValue = newValue;
-                return new WoopsaNotification(WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now), Id);
+                return new WoopsaNotification(WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now), SubscriptionId);
             }
             else
             {
@@ -150,8 +149,22 @@ namespace Woopsa
             }
         }
 
+        private IWoopsaProperty WatchedProperty
+        {
+            get
+            {
+                if (__watchedProperty == null)
+                {
+                    var item = Container.ByPath(PropertyPath);
+                    if (item is IWoopsaProperty)
+                        __watchedProperty = item as IWoopsaProperty;
+                }
+                return __watchedProperty;
+            }
+        }
+
         private IWoopsaValue _oldValue = null;
-        private IWoopsaProperty _watchedProperty = null;
+        private IWoopsaProperty __watchedProperty = null;
         private Queue<IWoopsaNotification> _notifications = new Queue<IWoopsaNotification>();
         private LightWeightTimer _monitorTimer;
         private LightWeightTimer _publishTimer;
@@ -192,7 +205,7 @@ namespace Woopsa
                     _monitorTimer = null;
                 }
                 if (_publishTimer != null)
-                { 
+                {
                     _publishTimer.Dispose();
                     _publishTimer = null;
                 }
