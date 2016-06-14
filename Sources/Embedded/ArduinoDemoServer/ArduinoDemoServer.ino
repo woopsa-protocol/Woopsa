@@ -39,9 +39,9 @@
 // Enter a MAC address and IP address for your controller below.
 // The IP address will be dependent on your local network:
 byte mac[] = {
-	0x90, 0xA2, 0xDA, 0x10, 0x32, 0x0B
+	0x90, 0xA2, 0xDA, 0x10, 0x32, 0x35
 };
-IPAddress ip(192, 168, 1, 50);
+IPAddress ip(192, 168, 42, 3);
 
 // Initialize the Ethernet server library
 // with the IP address and port you want to use
@@ -242,12 +242,18 @@ void WoopsaLoop() {
 }
 
 void setup() {
+        int error = 0;
 	// Open serial communications and wait for port to open:
 	Serial.begin(9600);
 	while (!Serial); // wait for serial port to connect. Needed for native USB port only
 
-	// start the Ethernet connection and the server:
-	Ethernet.begin(mac, ip);
+        // start the Ethernet connection and the server:
+	error = Ethernet.begin(mac); // Start at DHCP IP address
+        if (error == 0) // if DHCP fails
+        {
+            Serial.println("DHCP failure, continue with fixed IP address ...");
+	    Ethernet.begin(mac, ip); // Start at the defined IP address
+        }
 	server.begin();
 	
 	// Initialize the woopsa server with a path prefix of 

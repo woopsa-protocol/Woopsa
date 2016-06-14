@@ -72,22 +72,22 @@ char* GetWeather() {
 }
 
 WOOPSA_BEGIN(woopsaEntries)
-	WOOPSA_PROPERTY_READONLY(Temperature, WOOPSA_TYPE_REAL)
-	WOOPSA_PROPERTY(IsRaining, WOOPSA_TYPE_LOGICAL)
-	WOOPSA_PROPERTY(Altitude, WOOPSA_TYPE_INTEGER)
-	WOOPSA_PROPERTY(Sensitivity, WOOPSA_TYPE_REAL)
-	WOOPSA_PROPERTY(City, WOOPSA_TYPE_TEXT)
-	WOOPSA_PROPERTY(TimeSinceLastRain, WOOPSA_TYPE_TIME_SPAN)
-	WOOPSA_METHOD(GetWeather, WOOPSA_TYPE_TEXT)
+WOOPSA_PROPERTY_READONLY(Temperature, WOOPSA_TYPE_REAL)
+WOOPSA_PROPERTY(IsRaining, WOOPSA_TYPE_LOGICAL)
+WOOPSA_PROPERTY(Altitude, WOOPSA_TYPE_INTEGER)
+WOOPSA_PROPERTY(Sensitivity, WOOPSA_TYPE_REAL)
+WOOPSA_PROPERTY(City, WOOPSA_TYPE_TEXT)
+WOOPSA_PROPERTY(TimeSinceLastRain, WOOPSA_TYPE_TIME_SPAN)
+WOOPSA_METHOD(GetWeather, WOOPSA_TYPE_TEXT)
 WOOPSA_END;
 
 #define WOOPSA_PORT 8000
 #define BUFFER_SIZE 1024
 
 
-WoopsaBufferUInt ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaBufferUInt dataBufferSize) {
+WoopsaBufferSize ServeHTML(WoopsaChar8 path[], WoopsaUInt8 isPost, WoopsaChar8 dataBuffer[], WoopsaBufferSize dataBufferSize) {
 	strcpy(dataBuffer, "Hello world!");
-	return (WoopsaBufferUInt)strlen("Hellow world!");
+	return (WoopsaBufferSize)strlen("Hellow world!");
 }
 
 int main(int argc, char * argv[]) {
@@ -97,7 +97,7 @@ int main(int argc, char * argv[]) {
 	char buffer[BUFFER_SIZE];
 	int clientAddrSize = 0, readBytes = 0;
 	WoopsaServer server;
-	WoopsaBufferUInt responseLength;
+	WoopsaBufferSize responseLength;
 
 	memset(buffer, 0, sizeof(buffer));
 	WoopsaServerInit(&server, "/woopsa/", woopsaEntries, ServeHTML);
