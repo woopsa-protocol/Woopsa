@@ -127,10 +127,10 @@ namespace Woopsa
 
         public override bool Equals(object obj)
         {
-            if (obj is WoopsaValue)
+            if (obj is IWoopsaValue)
             {
-                WoopsaValue right = (WoopsaValue)obj;
-                return right._type == _type && right._text == _text;
+                IWoopsaValue right = (IWoopsaValue)obj;
+                return right.Type == _type && right.AsText == _text;
             }
             else if (obj == null && _type == WoopsaValueType.Null)
                 return true;

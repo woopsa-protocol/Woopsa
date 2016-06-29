@@ -10,6 +10,21 @@ namespace Woopsa
     {
         #region IWoopsaValue
 
+        /// <summary>
+        /// Compare the values ignoring the timestamp
+        /// </summary>
+        public static bool IsSameValue(this IWoopsaValue left, IWoopsaValue right)
+        {
+            if (left != null)
+                if (right != null)
+                    return left.Type == right.Type &&
+                        left.AsText == right.AsText;
+                else
+                    return false;
+            else
+                return true;
+        }
+
         public static bool ToBool(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Logical)

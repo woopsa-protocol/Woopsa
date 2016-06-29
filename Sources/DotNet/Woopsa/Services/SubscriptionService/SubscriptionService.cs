@@ -13,6 +13,7 @@ namespace Woopsa
         public SubscriptionService(WoopsaContainer container)
             : base(container, WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName)
         {
+            _channels = new Dictionary<int, WoopsaSubscriptionChannel>();
             _createSubscriptionChannel = new WoopsaMethod(
                 this,
                 WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel,
@@ -139,9 +140,10 @@ namespace Woopsa
             int channelId = subscriptionChannel.ToInt32();
             lock (_channels)
                 if (_channels.ContainsKey(channelId))
-                    return new WoopsaValue(_channels[channelId].UnregisterSubscription(subscriptionId.ToInt32()));
+                    return _channels[channelId].UnregisterSubscription(subscriptionId.ToInt32());
                 else
-                    throw new WoopsaException(string.Format("Tried to unregister a subscription on channel with id={0} that does not exist", subscriptionChannel.ToInt32()));
+                    // if the channel does not exist anymore, unregistration is considered successful
+                    return true;
         }
 
         public WoopsaValue WaitNotification(IWoopsaValue subscriptionChannel, IWoopsaValue lastNotificationId)
@@ -171,7 +173,7 @@ namespace Woopsa
         private WoopsaMethod _registerSubscription;
         private WoopsaMethod _unregisterSubscription;
         private WoopsaMethod _waitNotification;
-        private Dictionary<int, WoopsaSubscriptionChannel> _channels = new Dictionary<int, WoopsaSubscriptionChannel>();
+        private Dictionary<int, WoopsaSubscriptionChannel> _channels;
         private LightWeightTimer _timerCheckChannelTimedOut;
 
         #endregion

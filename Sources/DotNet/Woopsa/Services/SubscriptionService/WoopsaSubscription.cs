@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -138,15 +135,15 @@ namespace Woopsa
         public WoopsaNotification Execute()
         {
             IWoopsaValue newValue = WatchedProperty.Value;
-            if (!newValue.Equals(_oldValue))
+            if (!newValue.IsSameValue(_oldValue))
             {
                 _oldValue = newValue;
-                return new WoopsaNotification(WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now), SubscriptionId);
+                if (newValue.TimeStamp == null)
+                    newValue = WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now);
+                return new WoopsaNotification(newValue, SubscriptionId);
             }
             else
-            {
                 return null;
-            }
         }
 
         private IWoopsaProperty WatchedProperty

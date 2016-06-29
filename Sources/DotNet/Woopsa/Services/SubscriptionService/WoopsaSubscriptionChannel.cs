@@ -42,6 +42,7 @@ namespace Woopsa
         {
             WoopsaSubscription newSubscription;
             int subscriptionId;
+            _watchClientActivity.Restart();
             lock (_idLock)
             {
                 _lastSubscriptionId++;
@@ -51,7 +52,6 @@ namespace Woopsa
             newSubscription.Publish += newSubscription_Publish;
             lock (_subscriptions)
                 _subscriptions.Add(newSubscription.SubscriptionId, newSubscription);
-            _watchClientActivity.Restart();
             return newSubscription.SubscriptionId;
         }
 
@@ -81,6 +81,7 @@ namespace Woopsa
         public bool UnregisterSubscription(int subscriptionId)
         {
             WoopsaSubscription subscription;
+            _watchClientActivity.Restart();
             lock (_subscriptions)
             {
                 if (_subscriptions.ContainsKey(subscriptionId))
@@ -93,7 +94,6 @@ namespace Woopsa
                 subscription.Dispose();
                 lock (_subscriptions)
                     _subscriptions.Remove(subscriptionId);
-                _watchClientActivity.Restart();
                 return true;
             }
             else

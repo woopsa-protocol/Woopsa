@@ -19,6 +19,11 @@ namespace Woopsa
 
     public class WoopsaNotifications : IWoopsaNotifications
     {
+        public WoopsaNotifications()
+        {
+            _notifications = new List<IWoopsaNotification>();
+        }
+
         public void Add(IWoopsaNotification notification)
         {
             _notifications.Add(notification);
@@ -29,6 +34,6 @@ namespace Woopsa
             get { return _notifications; }
         }
 
-        private readonly List<IWoopsaNotification> _notifications = new List<IWoopsaNotification>();
+        private readonly List<IWoopsaNotification> _notifications;
     }
 }
