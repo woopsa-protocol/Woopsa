@@ -26,7 +26,6 @@ namespace WoopsaTest
                 // Solution with dynamic client
                 using (dynamic dynamicClient = new WoopsaDynamicClient("http://localhost/woopsa"))
                 {
-
                     int channel = dynamicClient.SubscriptionService.CreateSubscriptionChannel(QUEUE_SIZE);
                     // Subscription for a valid variable
                     dynamicClient.SubscriptionService.RegisterSubscription(channel,

@@ -28,7 +28,7 @@ namespace WoopsaDemoServer
 
         public string City { get; set; }
 
-        public DateTime Time { get; set; }
+        public DateTime Time { get { return DateTime.Now; } }
 
         public TimeSpan TimeSinceLastRain { get; set; }
 
@@ -40,8 +40,7 @@ namespace WoopsaDemoServer
             IsRaining = false;
             Altitude = 430;
             Sensitivity = 0.5;
-            City = "Geneva";
-            Time = DateTime.Now;
+            City = "Geneva";            
             TimeSinceLastRain = TimeSpan.FromDays(3);
             Thermostat = new Thermostat();
         }
@@ -82,7 +81,7 @@ namespace WoopsaDemoServer
             }
             catch (SocketException e)
             {
-                // A SocketException is caused by an application already listening on a port in 90% of cases
+                // A SocketException is caused by an application already listening on a port in most cases
                 // Applications known to use port 80:
                 //  - On Windows 10, IIS is on by default on some configurations. Disable it here: 
                 //    http://stackoverflow.com/questions/30758894/apache-server-xampp-doesnt-run-on-windows-10-port-80

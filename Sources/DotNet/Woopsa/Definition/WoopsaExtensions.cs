@@ -245,15 +245,38 @@ namespace Woopsa
 
         #endregion IWoopsaValue
 
+        #region IWoopsaElement
+
+        public static IWoopsaContainer GetRoot(this IWoopsaElement element)
+        {
+            if (element == null)
+                return null;
+            else if (element is IWoopsaContainer)
+                return GetContainerRoot(element as IWoopsaContainer);
+            else
+                return GetContainerRoot(element.Owner);
+        }
+
+        private static IWoopsaContainer GetContainerRoot(IWoopsaContainer element)
+        {
+            IWoopsaContainer result = element;
+            if (result != null)
+                while (result.Owner != null)
+                    result = result.Owner;
+            return result;
+        }
+
+        #endregion
+
         #region IWoopsaObject
 
         /// <summary>
-		/// Gets the path of a WoopsaElement relative to a root
-		/// </summary>
-		/// <param name="element">The WoopsaElement to get the path for</param>
-		/// <param name="root">The root WoopsaElement to consider as root. Must be in the element's Owner chain.</param>
-		/// <returns></returns>
-		public static string GetPath(this IWoopsaElement element, IWoopsaContainer root)
+        /// Gets the path of a WoopsaElement relative to a root
+        /// </summary>
+        /// <param name="element">The WoopsaElement to get the path for</param>
+        /// <param name="root">The root WoopsaElement to consider as root. Must be in the element's Owner chain.</param>
+        /// <returns></returns>
+        public static string GetPath(this IWoopsaElement element, IWoopsaContainer root)
         {
             StringBuilder stringBuilder = new StringBuilder();
             BuildPath(stringBuilder, element, root);

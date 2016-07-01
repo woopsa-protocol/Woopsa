@@ -37,6 +37,10 @@ namespace Woopsa
                         Boolean.Parse(text);
                         text = text.ToLower(); // .NET and JSON serialize booleans differently (.NET uses a capital first letter) :/
                         break;
+                    case WoopsaValueType.Text:
+                        if (text == null)
+                            text = string.Empty;
+                        break;
                     case WoopsaValueType.DateTime:
                         DateTime.Parse(text, CultureInfo.InvariantCulture);
                         break;
@@ -121,7 +125,7 @@ namespace Woopsa
         }
 
         public WoopsaValue(string value, DateTime? timestamp = null)
-            : this(value, WoopsaValueType.Text, timestamp)
+            : this(value ?? string.Empty, WoopsaValueType.Text, timestamp)
         {
         }
 

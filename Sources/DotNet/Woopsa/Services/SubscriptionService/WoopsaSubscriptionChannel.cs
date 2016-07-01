@@ -176,7 +176,8 @@ namespace Woopsa
             return age;
         }
 
-        private static int _lastChannelId = 0;
+        private static Random _random = new Random();
+        private static int _lastChannelId = _random.Next();
         private bool _notificationsLost = false;
         private int _lastSubscriptionId = 0;
         private int _lastNotificationId = 0;

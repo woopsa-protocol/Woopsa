@@ -334,8 +334,16 @@ namespace Woopsa
                     {
                         if (response != null)
                         {
-                            response.WriteError(e.Status, e.ErrorMessage);
-                            response.Respond(stream);
+                            try
+                            {
+                                // try to return the response
+                                response.WriteError(e.Status, e.ErrorMessage);
+                                response.Respond(stream);
+                            }
+                            catch
+                            {
+                                // ignore silently if it is not posible
+                            }
                             OnLog(request, response);
                         }
                     }
@@ -347,8 +355,16 @@ namespace Woopsa
                     {
                         if (response != null)
                         {
-                            response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
-                            response.Respond(stream);
+                            try
+                            {
+                                // try to return the response
+                                response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
+                                response.Respond(stream);
+                            }
+                            catch
+                            {
+                                // ignore silently if it is not posible
+                            }
                             OnLog(request, response);
                         }
                     }
