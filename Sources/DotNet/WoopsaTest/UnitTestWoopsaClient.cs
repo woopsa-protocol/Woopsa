@@ -1,9 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 using System.Threading;
-using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Diagnostics;
@@ -23,7 +19,7 @@ namespace WoopsaTest
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
-                    int id = root.Subscribe(nameof(TestObjectServer.Votes),
+                    WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
                         (sender, e) => { isValueChanged = true; },
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
                     objectServer.Votes = 2;
@@ -35,7 +31,7 @@ namespace WoopsaTest
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
                     else
                         Console.WriteLine("No notification received");
-                    root.Unsubscribe(id);
+                    subscription.Unsubscribe();
                     Assert.AreEqual(true, isValueChanged);
                 }
             }
@@ -51,13 +47,13 @@ namespace WoopsaTest
                 using (WoopsaServer server = new WoopsaServer(objectServer))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
-                    int id = root.Subscribe(nameof(TestObjectServer.Votes),
+                    WoopsaClientSubscription sub = root.Subscribe(nameof(TestObjectServer.Votes),
                         (sender, e) => { isValueChanged = true; },
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
-                    int id2 = root.Subscribe(nameof(TestObjectServer.Votes),
+                    WoopsaClientSubscription sub2 = root.Subscribe(nameof(TestObjectServer.Votes),
                         (sender, e) => { isValueChanged = true; },
                         TimeSpan.FromMilliseconds(50), TimeSpan.FromMilliseconds(100));
-                    int id3 = root.Subscribe(nameof(TestObjectServer.Votes),
+                    WoopsaClientSubscription sub3 = root.Subscribe(nameof(TestObjectServer.Votes),
                         (sender, e) => { isValueChanged = true; },
                         TimeSpan.FromMilliseconds(100), TimeSpan.FromMilliseconds(200));
                     objectServer.Votes = 2;
@@ -86,7 +82,7 @@ namespace WoopsaTest
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     try
                     {
-                        int id = root.Subscribe("ThisDoesNotExistInTheServer",
+                        WoopsaClientSubscription sub = root.Subscribe("ThisDoesNotExistInTheServer",
                             (sender, e) => { },
                             TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
                         Assert.Fail();

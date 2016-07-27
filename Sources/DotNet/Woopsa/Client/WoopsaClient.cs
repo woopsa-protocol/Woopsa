@@ -6,42 +6,55 @@ namespace Woopsa
     {
         #region Constructors
 
+        const int DefaultNotificationQueueSize = 1000;
+
         public WoopsaClient(string url) : this(url, null) { }
 
-        public WoopsaClient(string url, WoopsaContainer container)
+        public WoopsaClient(string url, WoopsaContainer container,
+            int notificationQueueSize = DefaultNotificationQueueSize)
         {
-            _client = new WoopsaClientProtocol(url);
+            ClientProtocol = new WoopsaClientProtocol(url);
             _container = container;
+            SubscriptionChannel = new WoopsaClientSubscriptionChannel(CreateUnboundRoot(""), notificationQueueSize);
         }
 
         #endregion
 
         #region Public Properties
 
+        public WoopsaClientProtocol ClientProtocol { get; private set; }
+
         public string Username
         {
-            get { return _client.Username; }
-            set { _client.Username = value; }
+            get { return ClientProtocol.Username; }
+            set { ClientProtocol.Username = value; }
         }
 
         public string Password
         {
-            get { return _client.Password; }
-            set { _client.Password = value; }
+            get { return ClientProtocol.Password; }
+            set { ClientProtocol.Password = value; }
         }
+
+        public WoopsaClientSubscriptionChannel SubscriptionChannel { get; private set; }
+
+        #endregion
+
+        #region public methods
 
         public WoopsaBoundClientObject CreateBoundRoot(string name = null)
         {
-            WoopsaMetaResult meta = _client.Meta(WoopsaConst.WoopsaRootPath);
-            return new WoopsaBoundClientObject(_client, _container, name ?? meta.Name, null);
+            WoopsaMetaResult meta = ClientProtocol.Meta(WoopsaConst.WoopsaRootPath);
+            return new WoopsaBoundClientObject(this, _container, name ?? meta.Name, null);
         }
 
         public WoopsaUnboundClientObject CreateUnboundRoot(string name)
         {
-            return new WoopsaUnboundClientObject(_client, _container, name, null);
+            return new WoopsaUnboundClientObject(this, _container, name, null);
         }
 
         #endregion
+
 
         #region IDisposable
 
@@ -49,18 +62,16 @@ namespace Woopsa
         {
             if (disposing)
             {
-                // TODO : a deplacer
-/*                _clientObject.Terminate();
-                _client.Terminate();
-                if (_clientObject != null)
+                if (SubscriptionChannel != null)
                 {
-                    _clientObject.Dispose();
-                    _clientObject = null;
-                }*/
-                if (_client != null)
+                    SubscriptionChannel.Dispose();
+                    SubscriptionChannel = null;
+                }
+                ClientProtocol.Terminate();
+                if (ClientProtocol != null)
                 {
-                    _client.Dispose();
-                    _client = null;
+                    ClientProtocol.Dispose();
+                    ClientProtocol = null;
                 }
             }
         }
@@ -75,7 +86,6 @@ namespace Woopsa
 
         #region Private Members
 
-        private WoopsaClientProtocol _client;
         private readonly WoopsaContainer _container;
 
         #endregion

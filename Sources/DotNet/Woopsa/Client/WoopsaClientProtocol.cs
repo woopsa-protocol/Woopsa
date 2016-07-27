@@ -238,6 +238,7 @@ namespace Woopsa
 
         private List<WebRequest> _pendingRequests;
         private bool _terminating;
+
         #endregion
 
         #region Private Nested Classes
@@ -256,7 +257,7 @@ namespace Woopsa
 
         #endregion
     }
-    
+
     public class WoopsaMetaResult
     {
         public string Name { get; set; }
@@ -285,14 +286,4 @@ namespace Woopsa
         public string Type { get; set; }
     }
 
-    public class WoopsaNotificationsEventArgs : EventArgs
-    {
-        public WoopsaNotificationsEventArgs(IWoopsaNotifications notifications)
-        {
-            Notifications = notifications;
-        }
-
-        public IWoopsaNotifications Notifications { get; private set; }
-        
-    }
 }

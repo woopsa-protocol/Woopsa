@@ -3,9 +3,9 @@ using System.Collections.Generic;
 
 namespace Woopsa
 {
-    public class WoopsaSubscription : IDisposable
+    public class WoopsaServerSubscription : IDisposable
     {
-        public WoopsaSubscription(WoopsaContainer container, int subscriptionId, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public WoopsaServerSubscription(WoopsaContainer container, int subscriptionId, IWoopsaValue propertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             Container = container;
             SubscriptionId = subscriptionId;
@@ -31,7 +31,7 @@ namespace Woopsa
                     {
                         WoopsaObject subscriptionService = (WoopsaObject)container.ByPath(searchPath + WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
                         channelContainerPath = subscriptionService.Owner.GetPath();
-                        _subscriptionChannel = new WoopsaClientSubscriptionChannel((IWoopsaObject)subscriptionService.Owner);
+       //                 _subscriptionChannel = new WoopsaClientSubscriptionChannelOLD((IWoopsaObject)subscriptionService.Owner);
                         break;
                     }
                     catch (WoopsaNotFoundException)
@@ -56,8 +56,8 @@ namespace Woopsa
                 string subscribePath = PropertyPath;
                 if (subscribePath.StartsWith(channelContainerPath))
                     subscribePath = subscribePath.Substring(channelContainerPath.Length);
-                _subscriptionId = _subscriptionChannel.Register(subscribePath, monitorInterval, publishInterval);
-                _subscriptionChannel.ValueChange += subscriptionChannel_ValueChange;
+   //             _subscriptionId = _subscriptionChannel.Register(subscribePath, monitorInterval, publishInterval);
+     //           _subscriptionChannel.ValueChange += subscriptionChannel_ValueChange;
             }
             else
             {
@@ -194,8 +194,8 @@ namespace Woopsa
             {
                 if (_subscriptionChannel != null)
                 {
-                    _subscriptionChannel.ValueChange -= subscriptionChannel_ValueChange;
-                    _subscriptionChannel.Unregister(_subscriptionId.Value);
+  //                  _subscriptionChannel.ValueChange -= subscriptionChannel_ValueChange;
+    //                _subscriptionChannel.Unregister(_subscriptionId.Value);
                     _subscriptionChannel = null;
                 }
                 if (_monitorTimer != null)

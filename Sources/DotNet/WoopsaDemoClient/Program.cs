@@ -57,7 +57,7 @@ namespace WoopsaDemoClient
                 {
                     // Create a subscription for example's sake
                     Console.WriteLine(indentString + "  => Creating a subscription");
-                    property.Change += property_Change;
+                    property.Subscribe(property_Change);
 
                     // Actually change the value
                     Console.WriteLine(indentString + "  => Changing value to 1");
@@ -99,7 +99,8 @@ namespace WoopsaDemoClient
 
         static void property_Change(object sender, WoopsaNotificationEventArgs e)
         {
-            Console.WriteLine("Property {0} has changed, new value = {1}", (sender as WoopsaClientProperty).Name, e.Value);
+            // TODO : type de sender incorrect
+            Console.WriteLine("Property {0} has changed, new value = {1}", (sender as WoopsaClientProperty).Name, e.Notification.Value);
         }
     }
 }

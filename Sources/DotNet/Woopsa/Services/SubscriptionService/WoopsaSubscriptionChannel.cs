@@ -40,7 +40,7 @@ namespace Woopsa
 
         public int RegisterSubscription(WoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            WoopsaSubscription newSubscription;
+            WoopsaServerSubscription newSubscription;
             int subscriptionId;
             _watchClientActivity.Restart();
             lock (_idLock)
@@ -48,7 +48,7 @@ namespace Woopsa
                 _lastSubscriptionId++;
                 subscriptionId = _lastSubscriptionId;
             }
-            newSubscription = new WoopsaSubscription(container, subscriptionId, woopsaPropertyLink, monitorInterval, publishInterval);
+            newSubscription = new WoopsaServerSubscription(container, subscriptionId, woopsaPropertyLink, monitorInterval, publishInterval);
             newSubscription.Publish += newSubscription_Publish;
             lock (_subscriptions)
                 _subscriptions.Add(newSubscription.SubscriptionId, newSubscription);
@@ -80,7 +80,7 @@ namespace Woopsa
 
         public bool UnregisterSubscription(int subscriptionId)
         {
-            WoopsaSubscription subscription;
+            WoopsaServerSubscription subscription;
             _watchClientActivity.Restart();
             lock (_subscriptions)
             {
@@ -182,7 +182,7 @@ namespace Woopsa
         private int _lastSubscriptionId = 0;
         private int _lastNotificationId = 0;
         private int _lastRemovedNotificationId = 0;
-        private Dictionary<int, WoopsaSubscription> _subscriptions = new Dictionary<int, WoopsaSubscription>();
+        private Dictionary<int, WoopsaServerSubscription> _subscriptions = new Dictionary<int, WoopsaServerSubscription>();
         private ConcurrentQueue<IWoopsaNotification> _pendingNotifications;
 
         private AutoResetEvent _waitNotificationEvent = new AutoResetEvent(false);

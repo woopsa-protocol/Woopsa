@@ -286,6 +286,13 @@ namespace Woopsa
                 return stringBuilder.ToString();
         }
 
+        public static string CombinePath(string basePath, string relativePath)
+        {
+            return basePath.TrimEnd(WoopsaConst.WoopsaPathSeparator) + 
+                WoopsaConst.WoopsaPathSeparator +
+                relativePath.TrimStart(WoopsaConst.WoopsaPathSeparator);
+        }
+
         /// <summary>
         /// Gets the path of a WoopsaElement, going all the way to the root
         /// </summary>
