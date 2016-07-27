@@ -15,6 +15,8 @@ namespace Woopsa
 
             //Get the property from the link
             PropertyPath = propertyLink.DecodeWoopsaLocalLink();
+//            container.
+
             string channelContainerPath = null;
             // Are there any Subscription Services up to this path?
             string[] pathParts = PropertyPath.Split(WoopsaConst.WoopsaPathSeparator);

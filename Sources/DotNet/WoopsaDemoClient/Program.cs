@@ -33,7 +33,8 @@ namespace WoopsaDemoClient
             
             Console.WriteLine("Woopsa client created on URL: {0}", serverUrl);
 
-            ExploreItem(client.Root);
+            WoopsaBoundClientObject root = client.CreateBoundRoot();
+            ExploreItem(root);
 
             // Leave the DOS window open
             Console.WriteLine("Press any key to exit...");
@@ -41,7 +42,7 @@ namespace WoopsaDemoClient
             client.Dispose();
         }
 
-        static void ExploreItem(WoopsaClientObject obj, int indent = 0)
+        static void ExploreItem(IWoopsaObject obj, int indent = 0)
         {
             // Display all properties and their values
             string indentString = "";
@@ -90,7 +91,7 @@ namespace WoopsaDemoClient
             }
 
             Console.WriteLine(indentString + "Items:");
-            foreach (WoopsaClientObject item in obj.Items)
+            foreach (WoopsaBoundClientObject item in obj.Items)
             {
                 ExploreItem(item, indent+1);
             }

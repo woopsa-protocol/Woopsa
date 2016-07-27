@@ -22,8 +22,9 @@ namespace WoopsaTest
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
                     // Just to show how to see all items
-                    foreach (var item in client.Root.Items)
+                    foreach (var item in root.Items)
                     {
                         Console.WriteLine("Item = " + item.Name);
                         if (item.Name == "SubscriptionService")
@@ -31,7 +32,7 @@ namespace WoopsaTest
                     }
 
                     // create a subscription object
-                    WoopsaObject subscription = client.Root.Items.ByNameOrNull("SubscriptionService") as WoopsaObject;
+                    WoopsaObject subscription = root.Items.ByNameOrNull("SubscriptionService") as WoopsaObject;
                     if (subscription != null)
                     {
                         int result = 0;

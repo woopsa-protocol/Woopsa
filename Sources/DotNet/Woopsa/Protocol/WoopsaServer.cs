@@ -21,8 +21,6 @@ namespace Woopsa
         public bool KeepInCache { get; set; }
     }
 
-    public delegate bool CachePathDelegate(object sender, EventArgsCachePath args);
-
     public class WoopsaServer : IDisposable
     {
         public const string DefaultServerPrefix = "/woopsa/";
@@ -38,7 +36,7 @@ namespace Woopsa
 
         public bool AllowCrossOrigin { get; set; }
 
-        public event CachePathDelegate PathCaching;
+        public event EventHandler<EventArgsCachePath> PathCaching;
 
         /// <summary>
         /// Creates an instance of the Woopsa server without using the Reflector. You

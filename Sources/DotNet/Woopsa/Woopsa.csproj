@@ -45,7 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="Client\WoopsaBaseClient.cs" />
+    <Compile Include="Client\WoopsaClientProtocol.cs" />
     <Compile Include="Client\WoopsaClient.cs" />
     <Compile Include="Client\WoopsaClientObject.cs" />
     <Compile Include="Client\WoopsaClientSubscription.cs" />

@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Woopsa
 {
-    public interface IWoopsaElementReadOnlyList<T>: IEnumerable, IEnumerable<T>
+    public interface IWoopsaElementReadOnlyList<T> : IEnumerable, IEnumerable<T>
     {
         T this[string name] { get; }
 
@@ -100,7 +100,7 @@ namespace Woopsa
         {
             foreach (var item in _items)
                 item.Refresh();
-            // Refresh must not call clear, as WoopsaContainer and WoopsaObject can be used to create
+            // Refresh must not call clear here, as WoopsaContainer and WoopsaObject can be used to create
             // static hierarchy.
             // Inheriting classes containing dynamic hierarchy should call clear in their Refresh method implementation
         }
@@ -135,8 +135,15 @@ namespace Woopsa
 
         protected virtual void Clear()
         {
-            _items.Clear();
+            DisposeWoopsaElements(_items);
             _populated = false;
+        }
+
+        protected void DisposeWoopsaElements(IEnumerable<WoopsaElement> elements)
+        {
+            var items = elements.ToArray();
+            foreach (var item in items)
+                item.Dispose();
         }
 
         #endregion
@@ -145,8 +152,9 @@ namespace Woopsa
 
         protected override void Dispose(bool disposing)
         {
-            if (Owner != null)
-                Owner.Remove(this);
+            if (disposing)
+                if (Owner != null)
+                    Owner.Remove(this);
             base.Dispose(disposing);
         }
 
@@ -283,7 +291,7 @@ namespace Woopsa
         {
             return _methodInvoke(arguments.ToArray());
         }
-        
+
         IWoopsaValue IWoopsaMethod.Invoke(IWoopsaValue[] arguments)
         {
             return Invoke(arguments);
@@ -370,8 +378,8 @@ namespace Woopsa
 
         protected override void Clear()
         {
-            _properties.Clear();
-            _methods.Clear();
+            DisposeWoopsaElements(_properties);
+            DisposeWoopsaElements(_methods);
             base.Clear();
         }
 
@@ -423,7 +431,7 @@ namespace Woopsa
         }
     }
 
-    public class WoopsaElementList<T> : IWoopsaElementReadOnlyList<T> where T :WoopsaElement
+    public class WoopsaElementList<T> : IWoopsaElementReadOnlyList<T> where T : WoopsaElement
     {
         public WoopsaElementList()
         {

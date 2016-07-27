@@ -412,5 +412,31 @@ namespace Woopsa
         }
 
         #endregion
+
+        #region IArgumentInfos 
+
+        static public bool IsSame(this IEnumerable<IWoopsaMethodArgumentInfo> left,
+            IEnumerable<IWoopsaMethodArgumentInfo> right)
+        {
+            var rightCount = 0;
+            Dictionary<string, IWoopsaMethodArgumentInfo> dictionaryLeft = new Dictionary<string, IWoopsaMethodArgumentInfo>();
+            foreach (var item in left)
+                dictionaryLeft.Add(item.Name, item);
+            foreach (var item in right)
+            {
+                rightCount++;
+                if (!dictionaryLeft.ContainsKey(item.Name))
+                    return false;
+                else
+                {
+                    var leftItem = dictionaryLeft[item.Name];
+                    if (leftItem.Type != item.Type)
+                        return false;
+                }
+            }
+            return (dictionaryLeft.Count == rightCount);
+        }
+
+#endregion
     }
 }

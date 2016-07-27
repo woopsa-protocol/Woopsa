@@ -6,7 +6,7 @@ namespace Woopsa
     {
         #region Constructors
 
-        public WoopsaClientSubscriptionChannelFallback(WoopsaClientObject client)
+        public WoopsaClientSubscriptionChannelFallback(WoopsaBaseClientObject client)
         {
             _client = client;
             _service = new SubscriptionService(_client);
@@ -57,7 +57,7 @@ namespace Woopsa
 
         #region Private Members
 
-        private readonly WoopsaClientObject _client;
+        private readonly WoopsaBaseClientObject _client;
         private readonly SubscriptionService _service;
         private readonly WoopsaClientSubscriptionChannel _channel;
 

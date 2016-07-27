@@ -5,31 +5,25 @@ using System.Linq;
 
 namespace Woopsa
 {
-    public class WoopsaClientObject : WoopsaObject
+    public class WoopsaBaseClientObject : WoopsaObject
     {
         #region Constructors
 
-        internal WoopsaClientObject(WoopsaBaseClient client, WoopsaContainer container, string name, IWoopsaContainer root)
+        internal WoopsaBaseClientObject(WoopsaClientProtocol client, WoopsaContainer container, string name, IWoopsaContainer root)
             : base(container, name)
         {
-            _client = client;
-            _root = root ?? this;
+            Client = client;
+            Root = root ?? this;
         }
 
         #endregion
+
+        public WoopsaClientProtocol Client { get; private set; }
+        public IWoopsaContainer Root { get; private set; }
 
         #region Public Delegates
 
         public delegate void PropertyChanged(object sender, IWoopsaNotification notification);
-
-        #endregion
-
-        #region Public Methods
-
-        public override void Refresh()
-        {
-            Clear();
-        }
 
         #endregion
 
@@ -43,9 +37,9 @@ namespace Woopsa
                 // When we subscribe to a property that's within nested items,
                 // we need to navigate back to the root of this client to find
                 // the subscription service, and that's where we can subscribe
-                WoopsaClientObject rootObject = this;
-                while (rootObject.Owner is WoopsaClientObject)
-                    rootObject = (WoopsaClientObject)rootObject.Owner;
+                WoopsaBaseClientObject rootObject = this;
+                while (rootObject.Owner is WoopsaBoundClientObject)
+                    rootObject = (WoopsaBoundClientObject)rootObject.Owner;
 
                 if (HasSubscriptionService(rootObject))
                     _subscriptionChannel = new WoopsaClientSubscriptionChannel(rootObject);
@@ -72,6 +66,7 @@ namespace Woopsa
 
         public void Terminate()
         {
+            // TODO : à déplacer
             if (_subscriptionChannel != null)
                 _subscriptionChannel.Terminate();
         }
@@ -85,89 +80,60 @@ namespace Woopsa
             }
         }
 
+        private bool HasSubscriptionService(WoopsaBaseClientObject obj)
+        {
+            return obj.Items.ByNameOrNull(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName) != null;
+        }
+
+        private readonly Dictionary<int, PropertyChanged> _subscriptionsDictionary = new Dictionary<int, PropertyChanged>();
+        private WoopsaClientSubscriptionChannelBase _subscriptionChannel;
+
         #endregion
 
-        #region Override PopulateObject
+        #region protected 
 
-        protected override void PopulateObject()
+        protected WoopsaClientProperty CreateProperty(string name, WoopsaValueType type, bool readOnly)
         {
-            base.PopulateObject();
+            if (readOnly)
+                return new WoopsaClientProperty(this, name, type, GetProperty);
+            else
+                return new WoopsaClientProperty(this, name, type, GetProperty, SetProperty);
+        }
 
-            _meta = _client.Meta(this.GetPath(_root));
-
-            if (_meta.Properties != null)
-                foreach (WoopsaPropertyMeta property in _meta.Properties)
-                {
-                    if (property.ReadOnly)
-                    {
-                        new WoopsaClientProperty(this,
-                            property.Name,
-                            (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
-                            GetProperty);
-                    }
-                    else
-                    {
-                        new WoopsaClientProperty(this,
-                            property.Name,
-                            (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
-                            GetProperty,
-                            SetProperty);
-                    }
-                }
-
-            if (_meta.Methods != null)
-                foreach (WoopsaMethodMeta method in _meta.Methods)
-                {
-                    var argumentInfos = method.ArgumentInfos.Select(argumentInfo => new WoopsaMethodArgumentInfo(argumentInfo.Name,
-                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType),
-                        argumentInfo.Type))).ToList();
-
-                    string methodName = method.Name;
-
-                    new WoopsaMethod(this,
-                        methodName,
-                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), method.ReturnType),
+        protected WoopsaMethod CreateMethod(string name, WoopsaMethodArgumentInfo[] argumentInfos, 
+            WoopsaValueType returnType)
+        {
+            return new WoopsaMethod(this,
+                        name,
+                        returnType,
                         argumentInfos,
-                        args => Invoke(args, argumentInfos, methodName));
-                }
-
-            if (_meta.Items != null)
-                foreach (string item in _meta.Items)
-                {
-                    new WoopsaClientObject(_client, this, item, _root);
-                }
+                        args => Invoke(args, argumentInfos, name));
         }
 
         #endregion
 
         #region Private Methods
-
-        private bool HasSubscriptionService(WoopsaClientObject obj)
-        {
-            return obj.Items.ByNameOrNull(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName) != null;
-        }
-
         private WoopsaValue GetProperty(IWoopsaProperty property)
         {
-            return _client.Read(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + property.Name);
+            return Client.Read(this.GetPath(Root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + property.Name);
         }
 
         private void SetProperty(IWoopsaProperty property, IWoopsaValue value)
         {
-            _client.Write(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + property.Name, value.AsText);
+            Client.Write(this.GetPath(Root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + property.Name, value.AsText);
         }
 
-        private WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments, List<WoopsaMethodArgumentInfo> argumentInfos, string methodName)
+        private WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments, WoopsaMethodArgumentInfo[] argumentInfos, string methodName)
         {
             // This line is needed to avoid multiple enumeration of arguments.
             IWoopsaValue[] woopsaValues = arguments as IWoopsaValue[] ?? arguments.ToArray();
 
             var namedArguments = new NameValueCollection();
 
-            for (int i = 0; i < argumentInfos.Count; i++)
+            for (int i = 0; i < argumentInfos.Length; i++)
                 namedArguments.Add(argumentInfos[i].Name, woopsaValues[i].AsText);
 
-            return _client.Invoke(this.GetPath(_root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments);
+            return Client.Invoke(this.GetPath(Root).TrimEnd(WoopsaConst.WoopsaPathSeparator) + WoopsaConst.WoopsaPathSeparator + methodName, namedArguments);
         }
 
         #endregion
@@ -189,22 +155,13 @@ namespace Woopsa
 
         #endregion
 
-        #region Private Members
-
-        private readonly WoopsaBaseClient _client;
-        private WoopsaMetaResult _meta;
-        private readonly Dictionary<int, PropertyChanged> _subscriptionsDictionary = new Dictionary<int, PropertyChanged>();
-        private WoopsaClientSubscriptionChannelBase _subscriptionChannel;
-        private readonly IWoopsaContainer _root;
-
-        #endregion
     }
 
     public class WoopsaClientProperty : WoopsaProperty
     {
         #region Constructors
 
-        public WoopsaClientProperty(WoopsaClientObject container, string name, WoopsaValueType type, WoopsaPropertyGet get, WoopsaPropertySet set)
+        public WoopsaClientProperty(WoopsaBaseClientObject container, string name, WoopsaValueType type, WoopsaPropertyGet get, WoopsaPropertySet set)
             : base(container, name, type, get, set)
         {
             if (container == null)
@@ -214,7 +171,7 @@ namespace Woopsa
             _subscriptions = new Dictionary<int, EventHandler<WoopsaNotificationEventArgs>>();
         }
 
-        public WoopsaClientProperty(WoopsaClientObject container, string name, WoopsaValueType type, WoopsaPropertyGet get)
+        public WoopsaClientProperty(WoopsaBaseClientObject container, string name, WoopsaValueType type, WoopsaPropertyGet get)
             : this(container, name, type, get, null) { }
 
         #endregion
@@ -288,7 +245,7 @@ namespace Woopsa
         #region Private Members
 
         private readonly Dictionary<int, EventHandler<WoopsaNotificationEventArgs>> _subscriptions;
-        private readonly WoopsaClientObject _container;
+        private readonly WoopsaBaseClientObject _container;
 
         #endregion
     }
@@ -319,5 +276,132 @@ namespace Woopsa
         {
             return properties.FirstOrDefault(item => item.Name == name);
         }
+    }
+
+    public class WoopsaBoundClientObject : WoopsaBaseClientObject
+    {
+        #region Constructors
+
+        internal WoopsaBoundClientObject(WoopsaClientProtocol client, WoopsaContainer container, string name, IWoopsaContainer root)
+            : base(client, container, name, root)
+        {
+        }
+
+        #endregion
+
+        #region Public Methods
+
+        public override void Refresh()
+        {
+            Clear();
+        }
+
+        #endregion
+
+        #region Override PopulateObject
+
+        protected override void PopulateObject()
+        {
+            WoopsaMetaResult meta;
+            base.PopulateObject();
+
+            meta = Client.Meta(this.GetPath(Root));
+            // Create properties
+            if (meta.Properties != null)
+                foreach (WoopsaPropertyMeta property in meta.Properties)
+                    CreateProperty(
+                        property.Name,
+                            (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
+                            property.ReadOnly);
+            // Create methods
+            if (meta.Methods != null)
+                foreach (WoopsaMethodMeta method in meta.Methods)
+                {
+                    var argumentInfos = method.ArgumentInfos.Select(argumentInfo => new WoopsaMethodArgumentInfo(argumentInfo.Name,
+                        (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType),
+                        argumentInfo.Type))).ToArray();
+                    CreateMethod(method.Name, argumentInfos, (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), method.ReturnType));
+                }
+            // Create items
+            if (meta.Items != null)
+                foreach (string item in meta.Items)
+                {
+                    new WoopsaBoundClientObject(Client, this, item, Root);
+                }
+        }
+
+        #endregion
+
+    }
+
+    public class WoopsaUnboundClientObject : WoopsaBaseClientObject
+    {
+        #region Constructors
+
+        internal WoopsaUnboundClientObject(WoopsaClientProtocol client, WoopsaContainer container, string name, IWoopsaContainer root)
+            : base(client, container, name, root)
+        {
+        }
+
+        #endregion
+
+        #region public methods
+
+        public WoopsaClientProperty GetProperty(string name, WoopsaValueType type, bool readOnly)
+        {
+            WoopsaProperty result = Properties.ByNameOrNull(name);
+            if (result != null)
+            {
+                if (result.Type != type)
+                    throw new Exception(string.Format(
+                        "A property with then name {0} exists, but with the type {1} instead of {2}",
+                        name, result.Type, type));
+                else if (result.IsReadOnly != readOnly)
+                    throw new Exception(string.Format(
+                        "A property with then name {0} exists, but with the readonly flag {1} instead of {2}",
+                        name, result.IsReadOnly, readOnly));
+                else if (!(result is WoopsaClientProperty))
+                    throw new Exception(string.Format(
+                        "A property with then name {0} exists, but it is not of the type WoopsaClientProperty", name));
+                else
+                    return result as WoopsaClientProperty;
+            }
+            else
+                return base.CreateProperty(name, type, readOnly);
+        }
+
+        public WoopsaMethod GetMethod(string name, WoopsaMethodArgumentInfo[] argumentInfos,
+            WoopsaValueType returnType)
+        {
+            WoopsaMethod result = Methods.ByNameOrNull(name);
+            if (result != null)
+            {
+                if (result.ReturnType != returnType)
+                    throw new Exception(string.Format(
+                        "A method with then name {0} exists, but with the return type {1} instead of {2}",
+                        name, result.ReturnType, returnType));
+                else if (result.ArgumentInfos.IsSame(argumentInfos))
+                    throw new Exception(string.Format(
+                        "A method with then name {0} exists, but with different arguments",
+                        name));
+                else
+                    return result;
+            }
+            else
+                return base.CreateMethod(name, argumentInfos, returnType);
+        }
+
+        public WoopsaUnboundClientObject GetUnboundItem(string name)
+        {
+            return new WoopsaUnboundClientObject(Client, this, name, Root);
+        }
+
+        public WoopsaBoundClientObject GetBoundItem(string name)
+        {
+            return new WoopsaBoundClientObject(Client, this, name, Root);
+        }
+
+        #endregion
+
     }
 }

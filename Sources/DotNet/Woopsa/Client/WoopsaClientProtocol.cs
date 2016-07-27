@@ -9,11 +9,11 @@ using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
-    internal class WoopsaBaseClient : IDisposable
+    public class WoopsaClientProtocol : IDisposable
     {
         #region Constructors
 
-        public WoopsaBaseClient(string url)
+        public WoopsaClientProtocol(string url)
         {
             _pendingRequests = new List<WebRequest>();
             if (!url.EndsWith(WoopsaConst.WoopsaPathSeparator.ToString()))
@@ -68,7 +68,6 @@ namespace Woopsa
         {
             _terminating = true;
             AbortPendingRequests();
-
         }
 
         #endregion
@@ -249,16 +248,15 @@ namespace Woopsa
             public string Type { get; set; }
             public string TimeStamp { get; set; }
         }
+        private class WoopsaErrorResult
+        {
+            public string Type { get; set; }
+            public string Message { get; set; }
+        }
 
         #endregion
     }
-
-    public class WoopsaErrorResult
-    {
-        public string Type { get; set; }
-        public string Message { get; set; }
-    }
-
+    
     public class WoopsaMetaResult
     {
         public string Name { get; set; }
@@ -294,6 +292,7 @@ namespace Woopsa
             Notifications = notifications;
         }
 
-        public IWoopsaNotifications Notifications { get; set; }
+        public IWoopsaNotifications Notifications { get; private set; }
+        
     }
 }

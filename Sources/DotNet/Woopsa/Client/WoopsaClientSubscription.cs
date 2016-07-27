@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
 using System.Threading;
 
@@ -47,7 +46,7 @@ namespace Woopsa
             var subscription = new WoopsaClientSubscription(this, _client, path, monitorInterval, publishInterval);
             lock (_subscriptions)
             {
-                // Check if we haven't already subscribed to this guy by any chance
+                // TODO?: Check if we haven't already subscribed to this guy by any chance
                 _subscriptions.Add(subscription);
             }
 
@@ -203,78 +202,6 @@ namespace Woopsa
 
         #endregion
 
-        #region Internal Nested Classes
-
-        internal class WoopsaClientSubscription
-        {
-            #region Constructors
-
-            public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
-            {
-                _channel = channel;
-                _client = client;
-                _monitorInterval = monitorInterval;
-                _publishInterval = publishInterval;
-                _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
-                _registerSubscription = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription);
-                _unregisterSubscription = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription);
-                Path = path;
-                Register();
-            }
-
-            #endregion
-
-            #region Public Properties
-
-            public int Id { get; private set; }
-
-            public string Path { get; private set; }
-
-            #endregion
-
-            #region Public Methods
-
-            public void Register()
-            {
-                Id = Register(_monitorInterval, _publishInterval);
-            }
-
-            public bool Unregister()
-            {                
-                IWoopsaValue result = _unregisterSubscription.Invoke(new WoopsaValue[]
-                    { _channel.ChannelId, Id});
-                return result.ToBool();
-            }
-
-            #endregion
-
-            #region Private Helpers
-
-            private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
-            {
-                IWoopsaValue result = _registerSubscription.Invoke(
-                    new WoopsaValue[] {_channel.ChannelId,
-                        WoopsaValue.WoopsaRelativeLink(Path), monitorInterval, publishInterval});                  
-                return result.ToInt32();
-            }
-
-            #endregion
-
-            #region Private Members
-
-            private readonly WoopsaClientSubscriptionChannel _channel;
-            private readonly IWoopsaObject _client;
-            private readonly IWoopsaObject _subscriptionService;
-            private readonly IWoopsaMethod _registerSubscription;
-            private readonly IWoopsaMethod _unregisterSubscription;
-            private readonly TimeSpan _monitorInterval;
-            private readonly TimeSpan _publishInterval;
-
-            #endregion
-        }
-
-        #endregion
-
         #region IDisposable
 
         protected override void Dispose(bool disposing)
@@ -310,4 +237,78 @@ namespace Woopsa
 
         #endregion
     }
+
+    #region Internal Class
+
+    internal class WoopsaClientSubscription
+    {
+        #region Constructors
+
+        public WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel, IWoopsaObject client, string path, TimeSpan monitorInterval, TimeSpan publishInterval)
+        {
+            _channel = channel;
+            _client = client;
+            _monitorInterval = monitorInterval;
+            _publishInterval = publishInterval;
+            _subscriptionService = (IWoopsaObject)_client.Items.ByName(WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+            _registerSubscription = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription);
+            _unregisterSubscription = _subscriptionService.Methods.ByName(WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription);
+            Path = path;
+            Register();
+        }
+
+        #endregion
+
+        #region Public Properties
+
+        public int Id { get; private set; }
+
+        public string Path { get; private set; }
+
+        #endregion
+
+        #region Public Methods
+
+        public void Register()
+        {
+            Id = Register(_monitorInterval, _publishInterval);
+        }
+
+        public bool Unregister()
+        {
+            IWoopsaValue result = _unregisterSubscription.Invoke(new WoopsaValue[]
+                { _channel.ChannelId, Id});
+            return result.ToBool();
+        }
+
+        #endregion
+
+        #region Private Helpers
+
+        private int Register(TimeSpan monitorInterval, TimeSpan publishInterval)
+        {
+            IWoopsaValue result = _registerSubscription.Invoke(
+                new WoopsaValue[] {_channel.ChannelId,
+                        WoopsaValue.WoopsaRelativeLink(Path), monitorInterval, publishInterval});
+            return result.ToInt32();
+        }
+
+        #endregion
+
+        #region Private Members
+
+        private readonly WoopsaClientSubscriptionChannel _channel;
+        private readonly IWoopsaObject _client;
+        private readonly IWoopsaObject _subscriptionService;
+        private readonly IWoopsaMethod _registerSubscription;
+        private readonly IWoopsaMethod _unregisterSubscription;
+        private readonly TimeSpan _monitorInterval;
+        private readonly TimeSpan _publishInterval;
+
+        #endregion
+    }
+
+    #endregion
+
+
 }

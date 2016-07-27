@@ -20,14 +20,15 @@ namespace WoopsaTest
         [TestMethod]
         public void TestWoopsaProtocolRootContainer()
         {
-            WoopsaRoot root = new WoopsaRoot();
+            WoopsaRoot serverRoot = new WoopsaRoot();
             TestObjectServer objectServer = new TestObjectServer();
-            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(root, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer(root))
+            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
+            using (WoopsaServer server = new WoopsaServer(serverRoot))
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    (client.Root.Items.ByName("TestObject") as WoopsaObject).Properties.ByName("Votes").Value = 17;
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    (root.Items.ByName("TestObject") as WoopsaObject).Properties.ByName("Votes").Value = 17;
                     Assert.AreEqual(objectServer.Votes, 17);
                 }
             }
@@ -41,10 +42,29 @@ namespace WoopsaTest
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    client.Root.Properties.ByName("Votes").Value = new WoopsaValue(11);
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    root.Properties.ByName("Votes").Value = new WoopsaValue(11);
                     Assert.AreEqual(objectServer.Votes, 11);
-                    var result = client.Root.Properties.ByName("Votes").Value;
+                    var result = root.Properties.ByName("Votes").Value;
                     Assert.AreEqual(result.ToInt64(), 11);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestWoopsaProtocolUnboundClient()
+        {
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+            {
+                WoopsaUnboundClientObject root = client.CreateUnboundRoot("root");
+                WoopsaProperty propertyVote = root.GetProperty("Votes", WoopsaValueType.Integer, false);
+                using (WoopsaServer server = new WoopsaServer(objectServer))
+                {
+                    propertyVote.Value = new WoopsaValue(123);
+                    Assert.AreEqual(objectServer.Votes, 123);
+                    var result = propertyVote.Value;
+                    Assert.AreEqual(result.ToInt64(), 123);
                 }
             }
         }
@@ -57,7 +77,8 @@ namespace WoopsaTest
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    IWoopsaProperty property = client.Root.Properties.ByName("Votes");
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    IWoopsaProperty property = root.Properties.ByName("Votes");
                     property.Value = new WoopsaValue(0);
                     int n = property.Value.ToInt32();
                     Stopwatch watch = new Stopwatch();

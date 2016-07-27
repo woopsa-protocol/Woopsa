@@ -1,8 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -10,15 +6,12 @@ namespace Woopsa
     {
         #region Constructors
 
-        public WoopsaClient(string url) : this(url, null, null) { }
+        public WoopsaClient(string url) : this(url, null) { }
 
-        public WoopsaClient(string url, WoopsaContainer container, string name)
+        public WoopsaClient(string url, WoopsaContainer container)
         {
-            _client = new WoopsaBaseClient(url);
+            _client = new WoopsaClientProtocol(url);
             _container = container;
-            _name = name;
-            if (_container != null)
-                Refresh();
         }
 
         #endregion
@@ -37,28 +30,15 @@ namespace Woopsa
             set { _client.Password = value; }
         }
 
-        public WoopsaClientObject Root
+        public WoopsaBoundClientObject CreateBoundRoot(string name = null)
         {
-            get
-            {
-                if (_clientObject == null)
-                    Refresh();
-                return _clientObject; 
-            }
+            WoopsaMetaResult meta = _client.Meta(WoopsaConst.WoopsaRootPath);
+            return new WoopsaBoundClientObject(_client, _container, name ?? meta.Name, null);
         }
 
-        #endregion
-
-        #region Public Methods
-
-        public void Refresh()
+        public WoopsaUnboundClientObject CreateUnboundRoot(string name)
         {
-            if (_clientObject != null)
-                _clientObject.Dispose();
-            WoopsaMetaResult meta = _client.Meta(WoopsaConst.WoopsaRootPath);
-            if (_name == null)
-                _name = meta.Name;
-            _clientObject = new WoopsaClientObject(_client, _container, _name, null);
+            return new WoopsaUnboundClientObject(_client, _container, name, null);
         }
 
         #endregion
@@ -69,13 +49,14 @@ namespace Woopsa
         {
             if (disposing)
             {
-                _clientObject.Terminate();
+                // TODO : a deplacer
+/*                _clientObject.Terminate();
                 _client.Terminate();
                 if (_clientObject != null)
                 {
                     _clientObject.Dispose();
                     _clientObject = null;
-                }
+                }*/
                 if (_client != null)
                 {
                     _client.Dispose();
@@ -94,10 +75,8 @@ namespace Woopsa
 
         #region Private Members
 
-        private WoopsaBaseClient _client;
+        private WoopsaClientProtocol _client;
         private readonly WoopsaContainer _container;
-        private WoopsaClientObject _clientObject;
-        private string _name;
 
         #endregion
     }
