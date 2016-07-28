@@ -134,15 +134,15 @@ namespace Woopsa
         public delegate void PublishEventHandler(object sender, PublishEventArgs e);
         public event PublishEventHandler Publish;
 
-        public WoopsaNotification Execute()
+        public WoopsaServerNotification Execute()
         {
-            IWoopsaValue newValue = WatchedProperty.Value;
+           IWoopsaValue newValue = WatchedProperty.Value;
             if (!newValue.IsSameValue(_oldValue))
             {
                 _oldValue = newValue;
                 if (newValue.TimeStamp == null)
                     newValue = WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now);
-                return new WoopsaNotification(newValue, SubscriptionId);
+                return new WoopsaServerNotification(newValue, SubscriptionId);
             }
             else
                 return null;

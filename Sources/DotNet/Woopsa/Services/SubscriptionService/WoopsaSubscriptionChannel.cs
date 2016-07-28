@@ -114,7 +114,7 @@ namespace Woopsa
 
         public IWoopsaNotifications WaitNotification(TimeSpan timeout, int lastNotificationId)
         {
-            WoopsaNotifications result = new WoopsaNotifications();
+            WoopsaServerNotifications result = new WoopsaServerNotifications();
 
             _watchClientActivity.Restart();
             if (lastNotificationId != IdResetLostNotification)
@@ -214,11 +214,11 @@ namespace Woopsa
 
     public class NotificationEventArgs : EventArgs
     {
-        public NotificationEventArgs(WoopsaNotification notification)
+        public NotificationEventArgs(WoopsaServerNotification notification)
         {
             Notification = notification;
         }
 
-        public WoopsaNotification Notification { get; private set; }
+        public WoopsaServerNotification Notification { get; private set; }
     }
 }

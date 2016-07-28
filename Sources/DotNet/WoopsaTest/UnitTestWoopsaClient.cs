@@ -38,12 +38,40 @@ namespace WoopsaTest
         }
 
         [TestMethod]
+        public void TestWoopsaClientSubscriptionChannelServerStartAfter()
+        {
+            bool isValueChanged = false;
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+            {
+                WoopsaUnboundClientObject root = client.CreateUnboundRoot("");
+                WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
+                    (sender, e) => { isValueChanged = true; },
+                    TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+                using (WoopsaServer server = new WoopsaServer(objectServer))
+                {
+                    objectServer.Votes = 2;
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
+                        Thread.Sleep(10);
+                    if (isValueChanged)
+                        Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No notification received");
+                    subscription.Unsubscribe();
+                    Assert.AreEqual(true, isValueChanged);
+                }
+            }
+        }
+
+        [TestMethod]
         public void TestWoopsaClientKeepSubscriptionOpen()
         {
             bool isValueChanged = false;
             TestObjectServer objectServer = new TestObjectServer();
             using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
-            {                
+            {
                 using (WoopsaServer server = new WoopsaServer(objectServer))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
@@ -73,7 +101,7 @@ namespace WoopsaTest
 
         [TestMethod]
         public void TestWoopsaClientSubscriptionChannelUnexistingItem()
-        {            
+        {
             TestObjectServer objectServer = new TestObjectServer();
             using (WoopsaServer server = new WoopsaServer(objectServer))
             {
@@ -87,16 +115,15 @@ namespace WoopsaTest
                             TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
                         Assert.Fail();
                     }
-                    catch (Exception e)
+                    catch (Exception)
                     {
-
                     }
 
                 }
             }
 
         }
-        
+
 
         /*        [TestMethod]
         public void TestWoopsaClientSubscriptionChannelTimeout()

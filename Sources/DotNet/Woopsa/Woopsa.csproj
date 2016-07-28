@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client\WoopsaClientNotification.cs" />
     <Compile Include="Client\WoopsaClientProtocol.cs" />
     <Compile Include="Client\WoopsaClient.cs" />
     <Compile Include="Client\WoopsaClientObject.cs" />
@@ -71,8 +72,8 @@
     <Compile Include="HTTPServer\Utils\Exceptions.cs" />
     <Compile Include="HTTPServer\Utils\HTTPRequest.cs" />
     <Compile Include="HTTPServer\Utils\HTTPResponse.cs" />
-    <Compile Include="Services\SubscriptionService\WoopsaNotification.cs" />
     <Compile Include="Services\SubscriptionService\SubscriptionService.cs" />
+    <Compile Include="Services\SubscriptionService\WoopsaServerNotification.cs" />
     <Compile Include="Services\SubscriptionService\WoopsaServerSubscription.cs" />
     <Compile Include="Services\SubscriptionService\WoopsaSubscriptionChannel.cs" />
     <Compile Include="Implementation\WoopsaObjectAdapter.cs" />

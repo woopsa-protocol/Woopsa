@@ -2,9 +2,9 @@
 
 namespace Woopsa
 {
-    public class WoopsaNotification : IWoopsaNotification
+    public class WoopsaServerNotification : IWoopsaNotification
     {
-        public WoopsaNotification(IWoopsaValue value, int subscriptionId)
+        public WoopsaServerNotification(IWoopsaValue value, int subscriptionId)
         {
             Value = value;
             SubscriptionId = subscriptionId;
@@ -17,9 +17,9 @@ namespace Woopsa
         public int Id { get; set; }
     }
 
-    public class WoopsaNotifications : IWoopsaNotifications
+    public class WoopsaServerNotifications : IWoopsaNotifications
     {
-        public WoopsaNotifications()
+        public WoopsaServerNotifications()
         {
             _notifications = new List<IWoopsaNotification>();
         }

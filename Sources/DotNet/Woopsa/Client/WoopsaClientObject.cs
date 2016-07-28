@@ -28,13 +28,13 @@ namespace Woopsa
             return Client.SubscriptionChannel.Subscribe(
                         WoopsaExtensions.CombinePath(this.GetPath(), relativePath),
                         relativePath,
-                        monitorInterval,
-                        publishInterval,
                         (sender, e) =>
                             {
                                 if (propertyChangedHandler != null)
                                     propertyChangedHandler(this, e);
-                            }
+                            },
+                        monitorInterval,
+                        publishInterval
                         );
         }
         

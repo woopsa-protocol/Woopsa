@@ -62,12 +62,12 @@ namespace Woopsa
         {
             if (disposing)
             {
+                ClientProtocol.Terminate();
                 if (SubscriptionChannel != null)
                 {
                     SubscriptionChannel.Dispose();
                     SubscriptionChannel = null;
                 }
-                ClientProtocol.Terminate();
                 if (ClientProtocol != null)
                 {
                     ClientProtocol.Dispose();

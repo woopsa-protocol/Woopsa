@@ -33,6 +33,13 @@ namespace Woopsa
         public const ThreadPriority DefaultThreadPriority = ThreadPriority.Normal;
 
         /// <summary>
+        /// returns the current web server in which we are executing.
+        /// return null if the current context is not a thread of the webserver.
+        /// </summary>
+        public static WebServer CurrentWebServer { get { return _currentWebServer; } }
+
+
+        /// <summary>
         /// Creates a WebServer that runs on the specified port and can be multithreaded
         /// </summary>
         /// <param name="port">
@@ -87,6 +94,8 @@ namespace Woopsa
         /// </summary>
         public int Port { get; private set; }
 
+        public bool Aborted { get { return _aborted; } }
+
         public List<PreRouteProcessor> PreRouteProcessors { get; private set; }
         #endregion
 
@@ -95,6 +104,9 @@ namespace Woopsa
         private Thread _listenerThread;
         private List<TcpClient> _openTcpClients;
         private CustomThreadPool _threadPool;
+
+        [ThreadStatic]
+        private static WebServer _currentWebServer;
 
         private Dictionary<string, HTTPMethod> _supportedMethods = new Dictionary<string, HTTPMethod>()
         {
@@ -105,7 +117,7 @@ namespace Woopsa
             {"OPTIONS", HTTPMethod.OPTIONS}
         };
 
-        private bool _abort = false;
+        private bool _aborted = false;
         private bool _started = false;
         #endregion
 
@@ -126,13 +138,13 @@ namespace Woopsa
         /// </summary>
         public void Shutdown()
         {
-            if (!_abort)
+            if (!_aborted)
             {
                 _listener.Stop();
                 lock (_openTcpClients)
                     foreach (var item in _openTcpClients)
                         item.Close();
-                _abort = true;
+                _aborted = true;
                 if (_threadPool != null)
                 {
                     _threadPool.Terminate();
@@ -165,7 +177,8 @@ namespace Woopsa
         #region Private Methods
         private void Listen()
         {
-            while (!_abort && _started)
+            _currentWebServer = this;
+            while (!_aborted && _started)
             {
                 try
                 {
@@ -182,6 +195,7 @@ namespace Woopsa
                             _threadPool.StartUserWorkItem(
                                 (o) =>
                                 {
+                                    _currentWebServer = this;
                                     try
                                     {
                                         HandleClient(client);
@@ -214,7 +228,7 @@ namespace Woopsa
                 {
                     if (e.SocketErrorCode == SocketError.Interrupted)
                     {
-                        _abort = true;
+                        _aborted = true;
                     }
                 }
             }
@@ -242,7 +256,7 @@ namespace Woopsa
 
                     try
                     {
-                        while (leaveOpen && !_abort)
+                        while (leaveOpen && !_aborted)
                         {
                             response = new HTTPResponse();
                             /*
