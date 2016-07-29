@@ -4,6 +4,9 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
 
+using PairSubscriptionNotification = System.Collections.Generic.KeyValuePair<
+    Woopsa.BaseWoopsaSubscriptionServiceSubscription, Woopsa.IWoopsaNotification>;
+
 namespace Woopsa
 {
     public class WoopsaSubscriptionChannel : IDisposable
@@ -20,13 +23,13 @@ namespace Woopsa
             _waitNotificationEvent = new AutoResetEvent(false);
             _waitStopEvent = new ManualResetEvent(false);
             _idLock = new Object();
-                lock (_idLock)
+            lock (_idLock)
             {
                 _lastChannelId++;
                 Id = _lastChannelId;
             }
             NotificationQueueSize = notificationQueueSize;
-            _pendingNotifications = new ConcurrentQueue<IWoopsaNotification>();
+            _pendingNotifications = new NotificationConcurrentQueue(notificationQueueSize);
             _watchClientActivity = new Stopwatch();
             _watchClientActivity.Start();
 
@@ -49,7 +52,7 @@ namespace Woopsa
             get { return _watchClientActivity.Elapsed > WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTime; }
         }
 
-        public int RegisterSubscription(WoopsaContainer root, bool isServerSide, 
+        public int RegisterSubscription(WoopsaContainer root, bool isServerSide,
             string woopsaPropertyPath, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             BaseWoopsaSubscriptionServiceSubscription newSubscription;
@@ -81,25 +84,21 @@ namespace Woopsa
             return newSubscription.SubscriptionId;
         }
 
-        internal void SubscriptionPublishNotifications(List<IWoopsaNotification> notifications)
+        internal void SubscriptionPublishNotifications(
+            BaseWoopsaSubscriptionServiceSubscription subscription,
+            List<IWoopsaNotification> notifications)
         {
             foreach (var notification in notifications)
             {
-                if (_pendingNotifications.Count >= NotificationQueueSize)
-                {
-                    // If the queue is full, raise the notificationsLost flag
-                    // and remove the oldest notification in the queue.
-                    // The WaitNotification method will then throw an exception
-                    // until the client has acknowledged the loss of notifications
-                    _notificationsLost = true;
-                    IWoopsaNotification discardedNotification;
-                    _pendingNotifications.TryDequeue(out discardedNotification);
-                }
+                bool itemDiscarded;
+
                 _lastNotificationId++;
                 if (_lastNotificationId >= WoopsaSubscriptionServiceConst.MaximumNotificationId)
                     _lastNotificationId = WoopsaSubscriptionServiceConst.MinimumNotificationId;
                 notification.Id = _lastNotificationId;
-                _pendingNotifications.Enqueue(notification);
+                _pendingNotifications.Enqueue(subscription, notification, out itemDiscarded);
+                if (itemDiscarded)
+                    _notificationsLost = true;
             }
             _waitNotificationEvent.Set();
         }
@@ -138,6 +137,28 @@ namespace Woopsa
         }
         public const int IdResetLostNotification = 0;
 
+        #region IDisposable
+
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                Stop();
+                foreach (var item in _subscriptions.Values)
+                    item.Dispose();
+                _waitNotificationEvent.Dispose();
+                _waitStopEvent.Dispose();
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
         public IWoopsaNotifications WaitNotification(TimeSpan timeout, int lastNotificationId)
         {
             WoopsaServerNotifications result = new WoopsaServerNotifications();
@@ -145,32 +166,17 @@ namespace Woopsa
             _watchClientActivity.Restart();
             if (lastNotificationId != IdResetLostNotification)
             {
-                IWoopsaNotification notification;
                 if (!_notificationsLost)
                 {
-                    // Remove acknowledged notifications already sent to the client
-                    while (_pendingNotifications.Count > 0)
-                    {
-                        if (_pendingNotifications.TryPeek(out notification))
-                        {
-                            if (notificationAge(notification.Id) <= notificationAge(lastNotificationId))
-                            {
-                                if (_pendingNotifications.TryDequeue(out notification))
-                                    _lastRemovedNotificationId = notification.Id;
-                            }
-                            else
-                                break;
-                        }
-                    }
+                    _lastRemovedNotificationId = _pendingNotifications.RemoveOlder(_lastRemovedNotificationId, lastNotificationId);
                     // Wait notifications if none is available
                     if (_pendingNotifications.Count == 0)
                     {
                         _waitNotificationEvent.Reset();
                         WaitHandle.WaitAny(new WaitHandle[] { _waitStopEvent, _waitNotificationEvent }, timeout);
                     }
-                    // prepare result with all available notifications
-                    while (_pendingNotifications.TryDequeue(out notification))
-                        result.Add(notification);
+                    // prepare result with all available notifications without dequeueing
+                    result.AddRange(_pendingNotifications.PeekNotifications());
                 }
                 else
                     throw new WoopsaNotificationsLostException("Notifications have been lost because the queue was full. Acknowledge the error by calling WaitNotification with LastNotificationId = 0");
@@ -185,21 +191,10 @@ namespace Woopsa
                     WaitHandle.WaitAny(new WaitHandle[] { _waitStopEvent, _waitNotificationEvent }, timeout);
                 }
                 // prepare result with all available notifications without dequeueing
-                IWoopsaNotification[] notifications = _pendingNotifications.ToArray();
-                foreach (var item in notifications)
-                    result.Add(item);
+                result.AddRange(_pendingNotifications.PeekNotifications());
             }
             _watchClientActivity.Restart();
             return result;
-        }
-
-        private int notificationAge(int notificationId)
-        {
-            // _lastRemovedNotificationId used as a moving age reference
-            int age = notificationId - _lastRemovedNotificationId;
-            if (age < 0) // Id restart from 1
-                age += WoopsaSubscriptionServiceConst.MaximumNotificationId + age;
-            return age;
         }
 
         private bool FindWoopsaClientAlongPath(WoopsaContainer root, string path,
@@ -242,7 +237,7 @@ namespace Woopsa
         private int _lastRemovedNotificationId;
 
         private Dictionary<int, BaseWoopsaSubscriptionServiceSubscription> _subscriptions;
-        private ConcurrentQueue<IWoopsaNotification> _pendingNotifications;
+        private NotificationConcurrentQueue _pendingNotifications;
 
         private AutoResetEvent _waitNotificationEvent;
         private ManualResetEvent _waitStopEvent;
@@ -252,23 +247,101 @@ namespace Woopsa
         private Stopwatch _watchClientActivity;
 
 
-        protected virtual void Dispose(bool disposing)
+    }
+
+    internal class NotificationConcurrentQueue
+    {
+        public NotificationConcurrentQueue(int maxQueueSize)
         {
-            if (disposing)
+            _notifications = new LinkedList<PairSubscriptionNotification>();
+            MaxQueueSize = maxQueueSize;
+        }
+
+        public int MaxQueueSize { get; private set; }
+
+        public int Count
+        {
+            get
             {
-                Stop();
-                foreach (var item in _subscriptions.Values)
-                    item.Dispose();
-                _waitNotificationEvent.Dispose();
-                _waitStopEvent.Dispose();
+                lock (_notifications)
+                    return _notifications.Count;
             }
         }
 
-        public void Dispose()
+        public void Enqueue(BaseWoopsaSubscriptionServiceSubscription subscription, IWoopsaNotification notification,
+            out bool itemDiscarded)
         {
-            Dispose(true);
-            GC.SuppressFinalize(this);
+            PairSubscriptionNotification pair = new PairSubscriptionNotification(subscription, notification);
+            lock (_notifications)
+            {
+                if (subscription.MonitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly)
+                {
+                    // remove any existing notification from this subscription, as we want to keep only the last
+                    LinkedListNode<PairSubscriptionNotification> node = _notifications.First;
+                    while (node != null)
+                    {
+                        var next = node.Next;
+                        if (node.Value.Key == subscription)
+                            _notifications.Remove(node);
+                        node = next;
+                    }
+                }
+                itemDiscarded = _notifications.Count >= MaxQueueSize;
+                if (itemDiscarded)
+                    while (_notifications.Count >= MaxQueueSize)
+                        _notifications.RemoveFirst();
+                _notifications.AddLast(pair);
+            }
         }
+        public IWoopsaNotification[] PeekNotifications()
+        {
+            lock (_notifications)
+            {
+                IWoopsaNotification[] result = new IWoopsaNotification[_notifications.Count];
+                LinkedListNode<PairSubscriptionNotification> node = _notifications.First;
+                int i = 0;
+                while (node != null)
+                {
+                    result[i] = node.Value.Value;
+                    i++;
+                    node = node.Next;
+                }
+                return result;
+            }
+        }
+
+        public int RemoveOlder(int notificationIdAgeOrigin, int notificationIdToRemoveUpTo)
+        {
+            int newAgeOrigin = notificationIdAgeOrigin;
+            lock (_notifications)
+            {
+                LinkedListNode<PairSubscriptionNotification> node = _notifications.First;
+                while (node != null)
+                {
+                    var next = node.Next;
+                    if (notificationAge(notificationIdAgeOrigin, node.Value.Value.Id) <=
+                        notificationAge(notificationIdAgeOrigin, notificationIdToRemoveUpTo))
+                    {
+                        _notifications.Remove(node);
+                        newAgeOrigin = node.Value.Value.Id;
+                    }
+                    else
+                        break;
+                    node = next;
+                }
+            }
+            return newAgeOrigin;
+        }
+
+        private int notificationAge(int notificationIdOrigin, int notificationId)
+        {
+            int age = notificationId - notificationIdOrigin;
+            if (age < 0) 
+                age += WoopsaSubscriptionServiceConst.MaximumNotificationId + age; // Note : Id restart from 1
+            return age;
+        }
+
+        private LinkedList<PairSubscriptionNotification> _notifications;
     }
 
     public class NotificationEventArgs : EventArgs

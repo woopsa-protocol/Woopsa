@@ -29,6 +29,11 @@ namespace Woopsa
             _notifications.Add(notification);
         }
 
+        public void AddRange(IEnumerable<IWoopsaNotification> notification)
+        {
+            _notifications.AddRange(notification);
+        }
+
         public IEnumerable<IWoopsaNotification> Notifications
         {
             get { return _notifications; }

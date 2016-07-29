@@ -17,6 +17,8 @@ namespace Woopsa
             MonitorInterval = monitorInterval;
             PublishInterval = publishInterval;
             PropertyPath = propertyPath;
+            _lock = new object();
+            _notifications = new List<IWoopsaNotification>();
             _publishTimer = new LightWeightTimer(publishInterval);
             _publishTimer.Elapsed += _publishTimer_Elapsed;
             _publishTimer.IsEnabled = true;
@@ -55,7 +57,13 @@ namespace Woopsa
                 _oldValue = newValue;
                 if (newValue.TimeStamp == null)
                     newValue = WoopsaValue.CreateUnchecked(newValue.AsText, newValue.Type, DateTime.Now);
-                _notifications.Enqueue(new WoopsaServerNotification(newValue, SubscriptionId));
+                WoopsaServerNotification newNotification = new WoopsaServerNotification(newValue, SubscriptionId);
+                lock (_lock)
+                {
+                    if (MonitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly)
+                        _notifications.Clear();
+                    _notifications.Add(newNotification);
+                }
             }
         }
 
@@ -83,21 +91,25 @@ namespace Woopsa
 
         private void _publishTimer_Elapsed(object sender, EventArgs e)
         {
-            if (_notifications.Count != 0)
+            List<IWoopsaNotification> notificationsList;
+            lock (_lock)
             {
-                List<IWoopsaNotification> notificationsList = new List<IWoopsaNotification>();
-                while (_notifications.Count > 0)
+                if (_notifications.Count > 0)
                 {
-                    IWoopsaNotification notification = _notifications.Dequeue();
-                    notificationsList.Add(notification);
+                    notificationsList = _notifications;
+                    _notifications = new List<IWoopsaNotification>();
                 }
-                Channel.SubscriptionPublishNotifications(notificationsList);
+                else
+                    notificationsList = null;
             }
+            if (notificationsList != null)
+                Channel.SubscriptionPublishNotifications(this, notificationsList);
         }
 
         private IWoopsaValue _oldValue;
         private LightWeightTimer _publishTimer;
-        private Queue<IWoopsaNotification> _notifications = new Queue<IWoopsaNotification>();
+        private List<IWoopsaNotification> _notifications;
+        private object _lock;
     }
 
     public abstract class WoopsaSubscriptionServiceSubscriptionMonitor :
