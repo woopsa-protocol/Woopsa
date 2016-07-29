@@ -49,7 +49,7 @@
     <Compile Include="Client\WoopsaClientProtocol.cs" />
     <Compile Include="Client\WoopsaClient.cs" />
     <Compile Include="Client\WoopsaClientObject.cs" />
-    <Compile Include="Client\WoopsaClientSubscription.cs" />
+    <Compile Include="Client\WoopsaClientSubscriptionChannel.cs" />
     <Compile Include="Dynamic\WoopsaJsonDataDynamic.cs" />
     <Compile Include="HTTPServer\Processors\TlsProcessor.cs" />
     <Compile Include="HTTPServer\RouteHandlers\RouteHandlerRedirect.cs" />
@@ -72,9 +72,8 @@
     <Compile Include="HTTPServer\Utils\Exceptions.cs" />
     <Compile Include="HTTPServer\Utils\HTTPRequest.cs" />
     <Compile Include="HTTPServer\Utils\HTTPResponse.cs" />
-    <Compile Include="Services\SubscriptionService\SubscriptionService.cs" />
+    <Compile Include="Services\SubscriptionService\IWoopsaSubscriptionService.cs" />
     <Compile Include="Services\SubscriptionService\WoopsaServerNotification.cs" />
-    <Compile Include="Services\SubscriptionService\WoopsaServerSubscription.cs" />
     <Compile Include="Services\SubscriptionService\WoopsaSubscriptionChannel.cs" />
     <Compile Include="Implementation\WoopsaObjectAdapter.cs" />
     <Compile Include="Implementation\WoopsaValue.cs" />
@@ -83,9 +82,12 @@
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Protocol\WoopsaServer.cs" />
     <Compile Include="Implementation\WoopsaObject.cs" />
-    <Compile Include="Services\SubscriptionService\IWoopsaServiceSubscription.cs" />
+    <Compile Include="Services\SubscriptionService\WoopsaSubscriptionService.cs" />
+    <Compile Include="Services\SubscriptionService\WoopsaSubscriptionServiceImplementation.cs" />
+    <Compile Include="Services\SubscriptionService\WoopsaSubscriptionServiceSubscription.cs" />
     <Compile Include="Utils\LightWeightTimer.cs" />
     <Compile Include="Utils\WoopsaTypeConverter.cs" />
+    <Compile Include="Utils\WoopsaUtils.cs" />
   </ItemGroup>
   <ItemGroup />
   <ItemGroup>

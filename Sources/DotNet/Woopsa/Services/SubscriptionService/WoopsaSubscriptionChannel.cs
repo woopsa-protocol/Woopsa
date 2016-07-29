@@ -8,9 +8,19 @@ namespace Woopsa
 {
     public class WoopsaSubscriptionChannel : IDisposable
     {
+        static WoopsaSubscriptionChannel()
+        {
+            _random = new Random();
+            _lastChannelId = _random.Next();
+        }
+
         public WoopsaSubscriptionChannel(int notificationQueueSize)
         {
-            lock (_idLock)
+            _subscriptions = new Dictionary<int, BaseWoopsaSubscriptionServiceSubscription>();
+            _waitNotificationEvent = new AutoResetEvent(false);
+            _waitStopEvent = new ManualResetEvent(false);
+            _idLock = new Object();
+                lock (_idLock)
             {
                 _lastChannelId++;
                 Id = _lastChannelId;
@@ -19,6 +29,7 @@ namespace Woopsa
             _pendingNotifications = new ConcurrentQueue<IWoopsaNotification>();
             _watchClientActivity = new Stopwatch();
             _watchClientActivity.Start();
+
         }
 
         /// <summary>
@@ -35,12 +46,13 @@ namespace Woopsa
 
         public bool ClientTimedOut
         {
-            get { return _watchClientActivity.Elapsed > WoopsaServiceSubscriptionConst.ClientTimeOut; }
+            get { return _watchClientActivity.Elapsed > WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTime; }
         }
 
-        public int RegisterSubscription(WoopsaContainer container, IWoopsaValue woopsaPropertyLink, TimeSpan monitorInterval, TimeSpan publishInterval)
+        public int RegisterSubscription(WoopsaContainer root, bool isServerSide, 
+            string woopsaPropertyPath, TimeSpan monitorInterval, TimeSpan publishInterval)
         {
-            WoopsaServerSubscription newSubscription;
+            BaseWoopsaSubscriptionServiceSubscription newSubscription;
             int subscriptionId;
             _watchClientActivity.Restart();
             lock (_idLock)
@@ -48,16 +60,30 @@ namespace Woopsa
                 _lastSubscriptionId++;
                 subscriptionId = _lastSubscriptionId;
             }
-            newSubscription = new WoopsaServerSubscription(container, subscriptionId, woopsaPropertyLink, monitorInterval, publishInterval);
-            newSubscription.Publish += newSubscription_Publish;
+            if (isServerSide)
+            {
+                WoopsaBaseClientObject subclient;
+                string relativePath;
+                if (FindWoopsaClientAlongPath(root, woopsaPropertyPath, out subclient, out relativePath))
+                    // subscribe directly instead of polling
+                    newSubscription = new WoopsaSubscriptionServiceSubscriptionServerSubClient(
+                        this, root, subscriptionId, woopsaPropertyPath, monitorInterval, publishInterval,
+                        subclient, relativePath);
+                else
+                    newSubscription = new WoopsaSubscriptionServiceSubscriptionMonitorServer(
+                        this, root, subscriptionId, woopsaPropertyPath, monitorInterval, publishInterval);
+            }
+            else
+                newSubscription = new WoopsaSubscriptionServiceSubscriptionMonitorClient(
+                    this, (WoopsaBaseClientObject)root, subscriptionId, woopsaPropertyPath, monitorInterval, publishInterval);
             lock (_subscriptions)
                 _subscriptions.Add(newSubscription.SubscriptionId, newSubscription);
             return newSubscription.SubscriptionId;
         }
 
-        private void newSubscription_Publish(object sender, PublishEventArgs e)
+        internal void SubscriptionPublishNotifications(List<IWoopsaNotification> notifications)
         {
-            foreach (var notification in e.Notifications)
+            foreach (var notification in notifications)
             {
                 if (_pendingNotifications.Count >= NotificationQueueSize)
                 {
@@ -70,8 +96,8 @@ namespace Woopsa
                     _pendingNotifications.TryDequeue(out discardedNotification);
                 }
                 _lastNotificationId++;
-                if (_lastNotificationId >= WoopsaServiceSubscriptionConst.MaximumNotificationId)
-                    _lastNotificationId = WoopsaServiceSubscriptionConst.MinimumNotificationId;
+                if (_lastNotificationId >= WoopsaSubscriptionServiceConst.MaximumNotificationId)
+                    _lastNotificationId = WoopsaSubscriptionServiceConst.MinimumNotificationId;
                 notification.Id = _lastNotificationId;
                 _pendingNotifications.Enqueue(notification);
             }
@@ -80,7 +106,7 @@ namespace Woopsa
 
         public bool UnregisterSubscription(int subscriptionId)
         {
-            WoopsaServerSubscription subscription;
+            BaseWoopsaSubscriptionServiceSubscription subscription;
             _watchClientActivity.Restart();
             lock (_subscriptions)
             {
@@ -172,23 +198,56 @@ namespace Woopsa
             // _lastRemovedNotificationId used as a moving age reference
             int age = notificationId - _lastRemovedNotificationId;
             if (age < 0) // Id restart from 1
-                age += WoopsaServiceSubscriptionConst.MaximumNotificationId + age;
+                age += WoopsaSubscriptionServiceConst.MaximumNotificationId + age;
             return age;
         }
 
-        private static Random _random = new Random();
-        private static int _lastChannelId = _random.Next();
-        private bool _notificationsLost = false;
-        private int _lastSubscriptionId = 0;
-        private int _lastNotificationId = 0;
-        private int _lastRemovedNotificationId = 0;
-        private Dictionary<int, WoopsaServerSubscription> _subscriptions = new Dictionary<int, WoopsaServerSubscription>();
+        private bool FindWoopsaClientAlongPath(WoopsaContainer root, string path,
+            out WoopsaBaseClientObject client, out string relativePath)
+        {
+            string[] pathParts = path.Split(WoopsaConst.WoopsaPathSeparator);
+            WoopsaContainer container = root;
+            bool found = false;
+
+            client = null;
+            relativePath = string.Empty;
+            for (int i = 0; i < pathParts.Length; i++)
+            {
+                if (container is WoopsaBaseClientObject)
+                {
+                    client = (WoopsaBaseClientObject)container;
+                    for (int j = i; j < pathParts.Length; j++)
+                        relativePath += WoopsaConst.WoopsaPathSeparator + pathParts[j];
+                    found = true;
+                    break;
+                }
+                else if (container == null)
+                    break;
+                else if (!string.IsNullOrEmpty(pathParts[i]))
+                    container = container.ByNameOrNull(pathParts[i]) as WoopsaContainer;
+            }
+            return found;
+        }
+
+        // Static
+
+        private static Random _random;
+        private static int _lastChannelId;
+
+        // Instance
+
+        private bool _notificationsLost;
+        private int _lastSubscriptionId;
+        private int _lastNotificationId;
+        private int _lastRemovedNotificationId;
+
+        private Dictionary<int, BaseWoopsaSubscriptionServiceSubscription> _subscriptions;
         private ConcurrentQueue<IWoopsaNotification> _pendingNotifications;
 
-        private AutoResetEvent _waitNotificationEvent = new AutoResetEvent(false);
-        private ManualResetEvent _waitStopEvent = new ManualResetEvent(false);
+        private AutoResetEvent _waitNotificationEvent;
+        private ManualResetEvent _waitStopEvent;
 
-        private object _idLock = new Object();
+        private object _idLock;
 
         private Stopwatch _watchClientActivity;
 

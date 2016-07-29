@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Net;
 using System.Threading;
 
@@ -21,7 +20,7 @@ namespace Woopsa
         {
             _woopsaRoot = woopsaRoot;
             _woopsaSubscribeService = _woopsaRoot.GetUnboundItem(
-                WoopsaServiceSubscriptionConst.WoopsaServiceSubscriptionName);
+                WoopsaSubscriptionServiceConst.WoopsaServiceSubscriptionName);
             CreateWoopsaSubscriptionServiceMethods();
             _notificationQueueSize = notificationQueueSize;
             _subscriptions = new List<WoopsaClientSubscription>();
@@ -35,7 +34,29 @@ namespace Woopsa
             return Subscribe(path, path, handler, monitorInterval, publishInterval);
         }
 
+        public WoopsaClientSubscription Subscribe(string path,
+            EventHandler<WoopsaNotificationEventArgs> handler)
+        {
+            return Subscribe(path, path, handler, 
+                WoopsaSubscriptionServiceConst.DefaultMonitorInterval,
+                WoopsaSubscriptionServiceConst.DefaultPublishInterval);
+        }
+
         public bool Terminated { get { return _terminated; } }
+
+        public List<WoopsaClientSubscription> GetFailedSubscriptions()
+        {
+            List<WoopsaClientSubscription> failedSubscriptions = null;
+            lock (_subscriptions)
+                foreach (var item in _subscriptions)
+                    if (item.FailedSubscription)
+                    {
+                        if (failedSubscriptions == null)
+                            failedSubscriptions = new List<WoopsaClientSubscription>();
+                        failedSubscriptions.Add(item);
+                    }
+            return failedSubscriptions;
+        }
 
         internal WoopsaClientSubscription Subscribe(string servicePath, string relativePath,
              EventHandler<WoopsaNotificationEventArgs> handler,
@@ -47,19 +68,6 @@ namespace Woopsa
                 _subscriptions.Add(subscription);
             EnsureServiceThreadStarted();
             return subscription;
-        }
-
-        internal void Unsubscribe(WoopsaClientSubscription woopsaClientSubscription)
-        {
-            _methodUnregisterSubscription.Invoke(_subscriptionOpenChannel,
-                woopsaClientSubscription.SubscriptionId);
-            woopsaClientSubscription.SubscriptionId = null;
-            lock (_subscriptions)
-            {
-                if (woopsaClientSubscription.SubscriptionId.HasValue)
-                    _registeredSubscriptions.Remove(woopsaClientSubscription.SubscriptionId.Value);
-                _subscriptions.Remove(woopsaClientSubscription);
-            }
         }
 
         private void EnsureServiceThreadStarted()
@@ -122,15 +130,22 @@ namespace Woopsa
         {
             try
             {
-                _subscriptionOpenChannel = _methodCreateSubscriptionChannel.Invoke(_notificationQueueSize);
+                _subscriptionOpenChannel = CreateSubscriptionChannel(_notificationQueueSize);
             }
             catch (WoopsaNotFoundException)
             {
-                // TODO : this does not work. make local calls to the localSubscriptionService !
-                // no subscription service available, create a local one
-                _localSubscriptionService = new SubscriptionService(_woopsaRoot);
-                _subscriptionOpenChannel = _methodCreateSubscriptionChannel.Invoke(_notificationQueueSize);
-                //TODO : détecter la perte de connection du service de souscription et fermer le canal
+                // No subscription service available, create a local one
+                _localSubscriptionService = new WoopsaSubscriptionServiceImplementation(_woopsaRoot, false);
+                try
+                {
+                    _subscriptionOpenChannel = CreateSubscriptionChannel(_notificationQueueSize);
+                    //TODO : détecter la perte de connection du service de souscription et fermer le canal
+                }
+                catch
+                {
+                    _localSubscriptionService.Dispose();
+                    throw;
+                }
             }
         }
 
@@ -167,9 +182,34 @@ namespace Woopsa
             if (newSubscriptions != null)
                 foreach (var item in newSubscriptions)
                 {
-                    item.SubscriptionId = _methodRegisterSubscription.Invoke(
-                        _subscriptionOpenChannel, item.ServicePath, item.MonitorInterval, item.PublishInterval);
-                    _registeredSubscriptions[item.SubscriptionId.Value] = item;
+                    item.SubscriptionId = RegisterSubscription(
+                        _subscriptionOpenChannel.Value, item.ServicePath, item.MonitorInterval, item.PublishInterval);
+                    item.FailedSubscription = item.SubscriptionId == null;
+                    if (!item.FailedSubscription)
+                        _registeredSubscriptions[item.SubscriptionId.Value] = item;
+                }
+            // New unsubscriptions
+            List<WoopsaClientSubscription> newUnsubscriptions = null;
+            lock (_subscriptions)
+                foreach (var item in _subscriptions)
+                    if (item.UnsubscriptionRequested)
+                    {
+                        if (newSubscriptions == null)
+                            newUnsubscriptions = new List<WoopsaClientSubscription>();
+                        newUnsubscriptions.Add(item);
+                    }
+            if (newUnsubscriptions != null)
+                foreach (var item in newUnsubscriptions)
+                {
+                    if (item.SubscriptionId.HasValue)
+                        UnregisterSubscription(_subscriptionOpenChannel.Value, item.SubscriptionId.Value);
+                    item.SubscriptionId = null;
+                    lock (_subscriptions)
+                    {
+                        if (item.SubscriptionId.HasValue)
+                            _registeredSubscriptions.Remove(item.SubscriptionId.Value);
+                        _subscriptions.Remove(item);
+                    }
                 }
         }
 
@@ -178,7 +218,7 @@ namespace Woopsa
             WoopsaClientNotifications notifications;
             try
             {
-                if (WaitNotification(out notifications, _lastNotificationId) > 0)
+                if (RetrieveNotification(out notifications, _lastNotificationId) > 0)
                     ExecuteNotifications(notifications);
             }
             catch (WoopsaNotificationsLostException)
@@ -187,16 +227,14 @@ namespace Woopsa
                 // fast enough and the queue has been filled up completely,
                 // forcing past notifications to be erased. We must 
                 // acknowledge to the server.
-                if (WaitNotification(out notifications, 0) > 0)
+                if (RetrieveNotification(out notifications, 0) > 0)
                     ExecuteNotifications(notifications);
             }
         }
 
-        private int WaitNotification(out WoopsaClientNotifications notificationsResult, long lastNotificationId)
+        private int RetrieveNotification(out WoopsaClientNotifications notificationsResult, int lastNotificationId)
         {
-            var arguments = new WoopsaValue[] { _subscriptionOpenChannel, lastNotificationId };
-            IWoopsaValue val = _methodWaitNotification.Invoke(arguments);
-            WoopsaJsonData results = ((WoopsaValue)val).JsonData;
+            WoopsaJsonData results = WaitNotification(_subscriptionOpenChannel.Value, lastNotificationId);
 
             var notificationsList = new WoopsaClientNotifications();
 
@@ -235,12 +273,12 @@ namespace Woopsa
             if (disposing)
             {
                 _terminated = true;
+                CloseChannel();
                 if (_thread != null)
                 {
                     _thread.Join();
                     _thread = null;
                 }
-                CloseChannel();
             }
         }
 
@@ -254,61 +292,99 @@ namespace Woopsa
 
         private void CreateWoopsaSubscriptionServiceMethods()
         {
-            _methodCreateSubscriptionChannel = _woopsaSubscribeService.GetMethod(
-                WoopsaServiceSubscriptionConst.WoopsaCreateSubscriptionChannel,
+            _remoteMethodCreateSubscriptionChannel = _woopsaSubscribeService.GetMethod(
+                WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannel,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaNotificationQueueSize,
+                        WoopsaSubscriptionServiceConst.WoopsaNotificationQueueSize,
                         WoopsaValueType.Integer)
                 },
                 WoopsaValueType.Integer);
-            _methodRegisterSubscription = _woopsaSubscribeService.GetMethod(
-                WoopsaServiceSubscriptionConst.WoopsaRegisterSubscription,
+            _remoteMethodRegisterSubscription = _woopsaSubscribeService.GetMethod(
+                WoopsaSubscriptionServiceConst.WoopsaRegisterSubscription,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel,
+                        WoopsaSubscriptionServiceConst.WoopsaSubscriptionChannel,
                         WoopsaValueType.Integer),
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaPropertyLink,
+                        WoopsaSubscriptionServiceConst.WoopsaPropertyLink,
                         WoopsaValueType.WoopsaLink),
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaMonitorInterval,
+                        WoopsaSubscriptionServiceConst.WoopsaMonitorInterval,
                         WoopsaValueType.TimeSpan),
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaPublishInterval,
+                        WoopsaSubscriptionServiceConst.WoopsaPublishInterval,
                         WoopsaValueType.TimeSpan)
                 },
                 WoopsaValueType.Integer);
-            _methodUnregisterSubscription = _woopsaSubscribeService.GetMethod(
-                WoopsaServiceSubscriptionConst.WoopsaUnregisterSubscription,
+            _remoteMethodUnregisterSubscription = _woopsaSubscribeService.GetMethod(
+                WoopsaSubscriptionServiceConst.WoopsaUnregisterSubscription,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel,
+                        WoopsaSubscriptionServiceConst.WoopsaSubscriptionChannel,
                         WoopsaValueType.Integer),
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaSubscriptionId,
+                        WoopsaSubscriptionServiceConst.WoopsaSubscriptionId,
                         WoopsaValueType.Integer)
                 },
                 WoopsaValueType.Integer);
-            _methodWaitNotification = _woopsaSubscribeService.GetMethod(
-                WoopsaServiceSubscriptionConst.WoopsaWaitNotification,
+            _remoteMethodWaitNotification = _woopsaSubscribeService.GetMethod(
+                WoopsaSubscriptionServiceConst.WoopsaWaitNotification,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaSubscriptionChannel,
+                        WoopsaSubscriptionServiceConst.WoopsaSubscriptionChannel,
                         WoopsaValueType.Integer),
                     new WoopsaMethodArgumentInfo(
-                        WoopsaServiceSubscriptionConst.WoopsaLastNotificationId,
+                        WoopsaSubscriptionServiceConst.WoopsaLastNotificationId,
                         WoopsaValueType.Integer)
                 },
                 WoopsaValueType.JsonData);
+        }
+
+        private int CreateSubscriptionChannel(int notificationQueueSize)
+        {
+            if (_localSubscriptionService == null)
+                return _remoteMethodCreateSubscriptionChannel.Invoke(notificationQueueSize);
+            else
+                return _localSubscriptionService.CreateSubscriptionChannel(notificationQueueSize);
+        }
+
+        private WoopsaJsonData WaitNotification(int subscriptionChannel, int lastNotificationId)
+        {
+            if (_localSubscriptionService == null)
+                return _remoteMethodWaitNotification.Invoke(subscriptionChannel, lastNotificationId).JsonData;
+            else
+                return _localSubscriptionService.WaitNotification(subscriptionChannel, lastNotificationId);
+        }
+
+        private int? RegisterSubscription(int subscriptionOpenChannel, string servicePath, TimeSpan monitorInterval, TimeSpan publishInterval)
+        {
+            try
+            {
+                if (_localSubscriptionService == null)
+                    return _remoteMethodRegisterSubscription.Invoke(subscriptionOpenChannel, servicePath, monitorInterval, publishInterval);
+                else
+                    return _localSubscriptionService.RegisterSubscription(subscriptionOpenChannel, servicePath, monitorInterval, publishInterval);
+            }
+            catch (Exception)
+            {
+                return null;
+            }
+        }
+        private bool UnregisterSubscription(int subscriptionOpenChannel, int subscriptionId)
+        {
+            if (_localSubscriptionService == null)
+                return _remoteMethodUnregisterSubscription.Invoke(subscriptionOpenChannel, subscriptionId);
+            else
+                return _localSubscriptionService.UnregisterSubscription(subscriptionOpenChannel, subscriptionId);
         }
 
         [ThreadStatic]
         private static WoopsaClientSubscriptionChannel _currentChannel;
 
         private WoopsaUnboundClientObject _woopsaRoot, _woopsaSubscribeService;
-        private WoopsaMethod _methodCreateSubscriptionChannel, _methodWaitNotification,
-            _methodRegisterSubscription, _methodUnregisterSubscription;
+        private WoopsaMethod _remoteMethodCreateSubscriptionChannel, _remoteMethodWaitNotification,
+            _remoteMethodRegisterSubscription, _remoteMethodUnregisterSubscription;
 
         private int _notificationQueueSize;
         private List<WoopsaClientSubscription> _subscriptions;
@@ -317,11 +393,11 @@ namespace Woopsa
         private bool _terminated;
 
         private int? _subscriptionOpenChannel;
-        private SubscriptionService _localSubscriptionService;
-        private long _lastNotificationId;
+        private WoopsaSubscriptionServiceImplementation _localSubscriptionService;
+        private int _lastNotificationId;
     }
 
-    public class WoopsaClientSubscription
+    public class WoopsaClientSubscription : IDisposable
     {
         internal WoopsaClientSubscription(WoopsaClientSubscriptionChannel channel,
             string servicePath, string relativePath, TimeSpan monitorInterval, TimeSpan publishInterval,
@@ -337,16 +413,34 @@ namespace Woopsa
 
         public void Unsubscribe()
         {
-            Channel.Unsubscribe(this);
+            UnsubscriptionRequested = true;
         }
 
         internal void Execute(WoopsaClientNotification notification)
         {
-            if (Handler != null)
+            if (Handler != null && !UnsubscriptionRequested)
                 Handler(Channel, new WoopsaNotificationEventArgs(notification, this));
         }
 
-        public bool IsSubscribed { get { return SubscriptionId != null; } }
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+                Unsubscribe();
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
+
+        public bool IsSubscribed
+        {
+            get { return SubscriptionId != null && !UnsubscriptionRequested; }
+        }
 
         public TimeSpan MonitorInterval { get; private set; }
         public TimeSpan PublishInterval { get; private set; }
@@ -356,6 +450,9 @@ namespace Woopsa
         public WoopsaClientSubscriptionChannel Channel { get; private set; }
 
         internal int? SubscriptionId { get; set; }
+
+        internal bool FailedSubscription { get; set; }
+        internal bool UnsubscriptionRequested { get; private set; }
     }
 
     public class WoopsaNotificationEventArgs : EventArgs
@@ -370,19 +467,5 @@ namespace Woopsa
         public WoopsaClientNotification Notification { get; private set; }
         public WoopsaClientSubscription Subscription { get; private set; }
     }
-
-
-    // TODO : Enlever ?
-    public class WoopsaNotificationsEventArgs : EventArgs
-    {
-        public WoopsaNotificationsEventArgs(IWoopsaNotifications notifications)
-        {
-            Notifications = notifications;
-        }
-
-        public IWoopsaNotifications Notifications { get; private set; }
-
-    }
-
 
 }

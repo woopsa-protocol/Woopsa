@@ -32,18 +32,10 @@ namespace WoopsaTest
                        WoopsaValue.WoopsaRelativeLink("/Votes"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
                        TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
 
-                    // Subscription for an nonexistent variable (just for test)
-                    try
-                    {
-                        dynamicClient.SubscriptionService.RegisterSubscription(channel,
-                            WoopsaValue.WoopsaRelativeLink("/Vote"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
-                            TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
-                        Assert.Fail("Nonexistent variable"); 
-                    }
-                    catch (Exception)
-                    {
-                        // just catch the exception (normal behaviour)
-                    }
+                    // Subscription for an nonexistent variable (should work)
+                    dynamicClient.SubscriptionService.RegisterSubscription(channel,
+                        WoopsaValue.WoopsaRelativeLink("/Vote"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
+                        TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
 
                     Stopwatch watch = new Stopwatch();
                     WoopsaValue lastNotifications;

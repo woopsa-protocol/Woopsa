@@ -110,7 +110,7 @@ namespace Woopsa
             this((IWoopsaContainer)root, port, routePrefix)
         {
             new WoopsaMultiRequestHandler(root, this);
-            _subscriptionService = new SubscriptionService(root);
+            _subscriptionService = new WoopsaSubscriptionService(root);
         }
 
         /// <summary>
@@ -135,8 +135,8 @@ namespace Woopsa
 
         /// <summary>
         /// Clear all the knowledge of IWoopsaContainer stored in cache for performance optimization.
-        /// Call this method when the underlying structure of cached IWoopContainer has changed
-        /// For IWoopsaContainer with a frequently changing structure, it is preferible to avoi caching
+        /// Call this method when the underlying structure of cached IWoopsaContainer has changed
+        /// For IWoopsaContainer with a frequently changing structure, it is preferible to avoid caching
         /// </summary>
         /// <seealso cref="PathCaching"/>
         public void ClearCache()
@@ -228,7 +228,6 @@ namespace Woopsa
             WebServer.Routes.Remove(_writeRouteMapper);
             WebServer.Routes.Remove(_invokeRouteMapper);
         }
-
         private void HandleRequest(WoopsaVerb verb, HTTPRequest request, HTTPResponse response)
         {
             try
@@ -342,16 +341,6 @@ namespace Woopsa
         }
         #endregion
 
-        private SubscriptionService _subscriptionService;
-        private IWoopsaContainer _root;
-        private string _routePrefix;
-        private bool _isWebServerEmbedded = false;
-        private Dictionary<string, IWoopsaElement> _pathCache = new Dictionary<string, IWoopsaElement>();
-        private AccessControlProcessor _accessControlProcessor = new AccessControlProcessor();
-
-        private RouteMapper _prefixRouteMapper, _readRouteMapper, _writeRouteMapper, 
-            _metaRouteMapper, _invokeRouteMapper;
-
         private IWoopsaElement FindByPath(string path)
         {
             if (path.Equals(WoopsaConst.WoopsaPathSeparator.ToString())) //This is the root object
@@ -421,20 +410,30 @@ namespace Woopsa
         }
         #endregion
 
-        private class AccessControlProcessor : PostRouteProcessor, IRequestProcessor
-        {
-            public static readonly TimeSpan MaxAge = TimeSpan.FromDays(20);
+        private WoopsaSubscriptionService _subscriptionService;
+        private IWoopsaContainer _root;
+        private string _routePrefix;
+        private bool _isWebServerEmbedded = false;
+        private Dictionary<string, IWoopsaElement> _pathCache = new Dictionary<string, IWoopsaElement>();
+        private AccessControlProcessor _accessControlProcessor = new AccessControlProcessor();
 
-            public bool Process(HTTPRequest request, HTTPResponse response)
-            {
-                response.SetHeader("Access-Control-Allow-Headers", "Authorization");
-                response.SetHeader("Access-Control-Allow-Origin", "*");
-                response.SetHeader("Access-Control-Allow-Credentials", "true");
-                response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString(CultureInfo.InvariantCulture));
-                // Make IE stop cacheing AJAX requests
-                response.SetHeader("Cache-Control", "no-cache, no-store");
-                return true;
-            }
+        private RouteMapper _prefixRouteMapper, _readRouteMapper, _writeRouteMapper,
+            _metaRouteMapper, _invokeRouteMapper;
+
+    }
+    internal class AccessControlProcessor : PostRouteProcessor, IRequestProcessor
+    {
+        public static readonly TimeSpan MaxAge = TimeSpan.FromDays(20);
+
+        public bool Process(HTTPRequest request, HTTPResponse response)
+        {
+            response.SetHeader("Access-Control-Allow-Headers", "Authorization");
+            response.SetHeader("Access-Control-Allow-Origin", "*");
+            response.SetHeader("Access-Control-Allow-Credentials", "true");
+            response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString(CultureInfo.InvariantCulture));
+            // Make IE stop cacheing AJAX requests
+            response.SetHeader("Cache-Control", "no-cache, no-store");
+            return true;
         }
     }
 }
