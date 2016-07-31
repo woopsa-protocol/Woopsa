@@ -117,6 +117,17 @@ namespace Woopsa
                 PopulateContainer(_items);
                 _populated = true;
             }
+            else
+                UpdateItems();
+        }
+
+        /// <summary>
+        /// This method give the opportunity to update items, when the list of contained Items may change dynamically
+        /// Typical usage is when publishing a list.
+        /// This method is called every time Items are requested
+        /// </summary>
+        protected virtual void UpdateItems()
+        {
         }
 
         #region Items Management Add / Remove / Clear
@@ -139,7 +150,7 @@ namespace Woopsa
             _populated = false;
         }
 
-        protected void DisposeWoopsaElements(IEnumerable<WoopsaElement> elements)
+        internal void DisposeWoopsaElements(IEnumerable<WoopsaElement> elements)
         {
             var items = elements.ToArray();
             foreach (var item in items)
@@ -376,13 +387,6 @@ namespace Woopsa
         {
         }
 
-        protected override void Clear()
-        {
-            DisposeWoopsaElements(_properties);
-            DisposeWoopsaElements(_methods);
-            base.Clear();
-        }
-
         #region Properties Management Add / Remove / Clear
 
         internal void Add(WoopsaProperty item)
@@ -411,6 +415,13 @@ namespace Woopsa
         internal void Remove(WoopsaMethod item)
         {
             _methods.Remove(item);
+        }
+
+        protected override void Clear()
+        {
+            DisposeWoopsaElements(_properties);
+            DisposeWoopsaElements(_methods);
+            base.Clear();
         }
 
         #endregion

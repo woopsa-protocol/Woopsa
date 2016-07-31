@@ -41,7 +41,7 @@ namespace Woopsa
         /// <summary>
         /// For members not decorated with WoopsaVisibleAttribute, consider the default value of WoopsaVisible as true
         /// </summary>
-        DefaultVisible = 1,
+        DefaultIsVisible = 1,
         /// <summary>
         /// Publish methods with special names (like property getters, setters).
         /// </summary>
@@ -57,7 +57,7 @@ namespace Woopsa
         /// <summary>
         /// Publish members inherited from Object, like ToString. Requires flag Inherited to have an effect.
         /// </summary>
-        Object = 16
+        ObjectClassMembers = 16
     }
 
     [AttributeUsage(AttributeTargets.Class)]
@@ -91,8 +91,6 @@ namespace Woopsa
         public bool IsVisible { get; set; }
     }
 
-    public delegate void MemberVisibilityCheck(object sender, EventArgsMemberVisibilityCheck e);
-
     public class WoopsaObjectAdapter : WoopsaObject
     {
         public const string IEnumerableIndexerFormat = "{0}[{1}]";
@@ -101,7 +99,7 @@ namespace Woopsa
 
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
-            WoopsaVisibility defaultVisibility = WoopsaVisibility.DefaultVisible)
+            WoopsaVisibility defaultVisibility = WoopsaVisibility.DefaultIsVisible)
             : base(container, name)
         {
             TargetObject = targetObject;
@@ -126,7 +124,7 @@ namespace Woopsa
         /// This event is triggered for every member, including the members of the inner items.
         /// It can be used to force the visibility of any member to true or false.
         /// </summary>
-        public event MemberVisibilityCheck MemberWoopsaVisibilityCheck;
+        public event EventHandler<EventArgsMemberVisibilityCheck> MemberWoopsaVisibilityCheck;
 
         public object TargetObject { get; private set; }
         public WoopsaObjectAdapterOptions Options { get; private set; }
@@ -176,7 +174,7 @@ namespace Woopsa
             if (woopsaVisibleAttribute != null)
                 isVisible = woopsaVisibleAttribute.Visible;
             else
-                isVisible = Visibility.HasFlag(WoopsaVisibility.DefaultVisible);
+                isVisible = Visibility.HasFlag(WoopsaVisibility.DefaultIsVisible);
             if (isVisible)
             {
                 if (TargetObject != null)
@@ -186,7 +184,7 @@ namespace Woopsa
             if (isVisible)
             {
                 if (member.DeclaringType == typeof(object))
-                    isVisible = Visibility.HasFlag(WoopsaVisibility.Object);
+                    isVisible = Visibility.HasFlag(WoopsaVisibility.ObjectClassMembers);
             }
             if (isVisible)
             {
@@ -322,14 +320,33 @@ namespace Woopsa
                     {
                         bool argumentsTypeCompatible = true;
                         List<ArgumentDescription> arguments = new List<ArgumentDescription>();
+                        int parameterIndex = 0;
                         foreach (var parameter in methodInfo.GetParameters())
                         {
                             WoopsaValueType argumentType;
                             if (WoopsaTypeUtils.InferWoopsaType(parameter.ParameterType, out argumentType))
                             {
                                 ArgumentDescription newArgument = new ArgumentDescription();
+                                string parameterName;
                                 newArgument.Type = parameter.ParameterType;
-                                newArgument.ArgumentInfo = new WoopsaMethodArgumentInfo(parameter.Name, argumentType);
+                                parameterName = parameter.Name;
+                                if (string.IsNullOrEmpty(parameterName))
+                                {
+                                    if (TargetObject is Array)
+                                        if (methodInfo.Name == "Set")
+                                        {
+                                            if (parameterIndex == 0)
+                                                parameterName = "index";
+                                            else if (parameterIndex == 1)
+                                                parameterName = "value";
+                                        }
+                                        else if (methodInfo.Name == "Get")
+                                            if (parameterIndex == 0)
+                                                parameterName = "index";
+                                    if (parameterName == null)
+                                        parameterName = "p" + parameterIndex.ToString();
+                                }
+                                newArgument.ArgumentInfo = new WoopsaMethodArgumentInfo(parameterName, argumentType);
                                 arguments.Add(newArgument);
                             }
                             else
@@ -337,6 +354,7 @@ namespace Woopsa
                                 argumentsTypeCompatible = false;
                                 break;
                             }
+                            parameterIndex++;
                         }
                         if (argumentsTypeCompatible)
                         {
@@ -378,14 +396,18 @@ namespace Woopsa
                 object value = item.PropertyInfo.GetValue(TargetObject, EmptyParameters);
                 // If an inner item is null, ignore it for the Woopsa hierarchy
                 if (value != null)
-                    new WoopsaObjectAdapter(this, item.PropertyInfo.Name, item.PropertyInfo.GetValue(TargetObject, EmptyParameters),
-                        Options, DefaultVisibility);
+                    CreateItemWoopsaAdapter(item.PropertyInfo.Name, value);
             }
             catch (Exception)
             {
                 // Items from property getters that throw exceptions are not added to the object hierarchy
                 // Ignore silently
             }
+        }
+
+        protected virtual WoopsaObjectAdapter CreateItemWoopsaAdapter(string itemName, object item)
+        {
+            return new WoopsaObjectAdapter(this, itemName, item, Options, DefaultVisibility);
         }
 
         protected void AddWoopsaMethod(MethodDescription method)

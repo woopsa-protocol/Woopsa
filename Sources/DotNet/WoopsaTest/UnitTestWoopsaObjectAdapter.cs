@@ -5,7 +5,7 @@ using System.Collections;
 
 namespace WoopsaTest
 {
-    [WoopsaVisibility(WoopsaVisibility.DefaultVisible | WoopsaVisibility.Inherited | WoopsaVisibility.Object)]
+    [WoopsaVisibility(WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited | WoopsaVisibility.ObjectClassMembers)]
     public class ClassAInner1
     {
         public int APropertyInt { get; set; }
@@ -30,7 +30,7 @@ namespace WoopsaTest
         public ClassAInner1 Inner1 { get; private set; }
     }
 
-    [WoopsaVisibility(WoopsaVisibility.DefaultVisible | WoopsaVisibility.Inherited | WoopsaVisibility.MethodSpecialName)]
+    [WoopsaVisibility(WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited | WoopsaVisibility.MethodSpecialName)]
     public class ClassB : ClassA
     {
         public int APropertyInt { get; set; }
@@ -138,16 +138,30 @@ namespace WoopsaTest
             Assert.AreEqual(jsonValue.JsonData["a"][2].ToInt64(), 13);
 
             ClassD[] array = new ClassD[] { new ClassD(4), new ClassD(3), new ClassD(2) };
-            WoopsaObjectAdapter adapterArray = new WoopsaObjectAdapter(null, " array", array, WoopsaObjectAdapterOptions.None,
-                WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultVisible);
-            Assert.IsNotNull(adapterArray.Items.ByNameOrNull("Item[1]"));
-            Assert.IsNotNull(adapterArray.Items.ByNameOrNull("Item[1]") as IWoopsaObject);
-            IWoopsaObject item1 = (IWoopsaObject)adapterArray.Items.ByNameOrNull("Item[1]");
+            WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, WoopsaObjectAdapterOptions.None,
+                WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]"));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]") as IWoopsaObject);
+            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull("Item[1]");
             Assert.IsNotNull(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)));
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 3);
             item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value = new WoopsaValue(5, DateTime.Now);
             Assert.AreEqual(array[1].APropertyInt, 5);
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 5);
+
+            int[] dataArray = new int[] { 3, 4, 5 };
+            WoopsaObjectAdapter adapterArrayValue = new WoopsaObjectAdapter(null, "array", dataArray, WoopsaObjectAdapterOptions.None,
+                WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
+            WoopsaMethod methodGet = adapterArrayValue.Methods.ByNameOrNull("Get");
+            Assert.IsNotNull(methodGet);
+            int dataItem1 = methodGet.Invoke(1);
+            Assert.AreEqual(dataItem1, dataArray[1]);
+            WoopsaMethod methodSet = adapterArrayValue.Methods.ByNameOrNull("Set");
+            Assert.IsNotNull(methodSet);
+            methodSet.Invoke(1, 7);
+            dataItem1 = methodGet.Invoke(1);
+            Assert.AreEqual(dataArray[1], 7);
+            Assert.AreEqual(dataItem1, 7);
         }
     }
 }

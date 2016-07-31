@@ -36,5 +36,13 @@ namespace Woopsa
                     return false;
             }
         }
+
+        public static string CombinePath(string basePath, string relativePath)
+        {
+            return basePath.TrimEnd(WoopsaConst.WoopsaPathSeparator) +
+                WoopsaConst.WoopsaPathSeparator +
+                relativePath.TrimStart(WoopsaConst.WoopsaPathSeparator);
+        }
+
     }
 }

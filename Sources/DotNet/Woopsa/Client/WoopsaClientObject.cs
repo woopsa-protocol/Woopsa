@@ -26,7 +26,7 @@ namespace Woopsa
             TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             return Client.SubscriptionChannel.Subscribe(
-                        WoopsaExtensions.CombinePath(this.GetPath(), relativePath),
+                        WoopsaUtils.CombinePath(this.GetPath(), relativePath),
                         relativePath,
                         (sender, e) =>
                             {

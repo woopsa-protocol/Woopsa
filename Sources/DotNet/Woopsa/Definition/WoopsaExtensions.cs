@@ -210,6 +210,31 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("TimeSpan", value.Type.ToString()));
         }
 
+        public static object ToBaseType(this IWoopsaValue value)
+        {
+            switch (value.Type)
+            {
+                case WoopsaValueType.Null:
+                    return null;
+                case WoopsaValueType.Logical:
+                    return value.ToBool();
+                case WoopsaValueType.Integer:
+                    return value.ToInt64();
+                case WoopsaValueType.Real:
+                    return value.ToDouble();
+                case WoopsaValueType.DateTime:
+                    return value.ToDateTime();
+                case WoopsaValueType.TimeSpan:
+                    return value.ToTimeSpan();
+                case WoopsaValueType.Text:
+                case WoopsaValueType.WoopsaLink:
+                case WoopsaValueType.JsonData:
+                case WoopsaValueType.ResourceUrl:
+                    return value.AsText;
+                default:
+                    return null;
+            }
+        }
         public static void DecodeWoopsaLink(this IWoopsaValue value, out string woopsaServerUrl, out string woopsaItemPath)
         {
             if (value.Type == WoopsaValueType.WoopsaLink)
@@ -284,13 +309,6 @@ namespace Woopsa
                 return WoopsaConst.WoopsaRootPath;
             else
                 return stringBuilder.ToString();
-        }
-
-        public static string CombinePath(string basePath, string relativePath)
-        {
-            return basePath.TrimEnd(WoopsaConst.WoopsaPathSeparator) + 
-                WoopsaConst.WoopsaPathSeparator +
-                relativePath.TrimStart(WoopsaConst.WoopsaPathSeparator);
         }
 
         /// <summary>
@@ -444,6 +462,6 @@ namespace Woopsa
             return (dictionaryLeft.Count == rightCount);
         }
 
-#endregion
+        #endregion
     }
 }

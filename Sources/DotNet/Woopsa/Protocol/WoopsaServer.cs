@@ -21,11 +21,20 @@ namespace Woopsa
         public bool KeepInCache { get; set; }
     }
 
+    /// <summary>
+    /// WoopsaElements can implement this interface to specify cachability
+    /// When an element is not cachable, none of its children are cached 
+    /// </summary>
+    public interface IWoopsaElementCacheRequirement
+    {
+        bool IsCachable { get; }
+    }
+
     public class WoopsaServer : IDisposable
     {
         public const string DefaultServerPrefix = "/woopsa/";
         public const int DefaultPort = 80;
-        public const int DefaultPortSsl = 443;        
+        public const int DefaultPortSsl = 443;
         public const ThreadPriority DefaultThreadPriority = ThreadPriority.Normal;
         public const bool DefaultKeepPathInCache = true;
         public const string WoopsaAuthenticationRealm = "Woopsa authentication";
@@ -130,7 +139,7 @@ namespace Woopsa
         /// </param>
         public WoopsaServer(object root, int port = DefaultPort, string routePrefix = DefaultServerPrefix) :
             this(new WoopsaObjectAdapter(null, root.GetType().Name, root), port, routePrefix)
-        {            
+        {
         }
 
         /// <summary>
@@ -150,7 +159,7 @@ namespace Woopsa
         {
             EventArgsCachePath args = new EventArgsCachePath();
             args.Path = path;
-            args.KeepInCache = DefaultKeepPathInCache; 
+            args.KeepInCache = DefaultKeepPathInCache;
             if (PathCaching != null)
                 PathCaching(this, args);
             return args.KeepInCache;
@@ -187,7 +196,7 @@ namespace Woopsa
                 }
             }
         }
-        
+
         private BaseAuthenticator _authenticator;
 
         #region Private Members
@@ -197,7 +206,7 @@ namespace Woopsa
             _prefixRouteMapper = WebServer.Routes.Add(_routePrefix, HTTPMethod.OPTIONS, (Request, response) => { }, true);
             _prefixRouteMapper.AddProcessor(_accessControlProcessor);
             // meta route
-            _metaRouteMapper = WebServer.Routes.Add(_routePrefix + "meta", HTTPMethod.GET, 
+            _metaRouteMapper = WebServer.Routes.Add(_routePrefix + "meta", HTTPMethod.GET,
                 (request, response) => { HandleRequest(WoopsaVerb.Meta, request, response); }, true);
             _metaRouteMapper.AddProcessor(_accessControlProcessor);
             // read route
@@ -205,7 +214,7 @@ namespace Woopsa
                 (request, response) => { HandleRequest(WoopsaVerb.Read, request, response); }, true);
             _readRouteMapper.AddProcessor(_accessControlProcessor);
             // write route
-            _writeRouteMapper = WebServer.Routes.Add(_routePrefix + "write", HTTPMethod.POST, 
+            _writeRouteMapper = WebServer.Routes.Add(_routePrefix + "write", HTTPMethod.POST,
                 (request, response) => { HandleRequest(WoopsaVerb.Write, request, response); }, true);
             _writeRouteMapper.AddProcessor(_accessControlProcessor);
             // POST is used here instead of GET for two main reasons:
@@ -370,8 +379,12 @@ namespace Woopsa
                         else if (item is IWoopsaContainer)
                             item = (item as IWoopsaContainer).Items.ByName(toFind);
 
-                        if (OnCachingPath(currentPath))
-                            _pathCache.Add(currentPath, item);
+                        bool isCachable = true;
+                        if (item is IWoopsaElementCacheRequirement)
+                            isCachable = ((IWoopsaElementCacheRequirement)item).IsCachable;
+                        if (isCachable)
+                            if (OnCachingPath(currentPath))
+                                _pathCache.Add(currentPath, item);
                     }
                     pathAt++;
                 }

@@ -15,7 +15,7 @@ namespace WoopsaDemoServer
         }
     }
 
-    [WoopsaVisibilityAttribute(WoopsaVisibility.DefaultVisible)]
+    [WoopsaVisibilityAttribute(WoopsaVisibility.DefaultIsVisible)]
     public class WeatherStation
     {
         public double Temperature { get; private set; }

@@ -97,5 +97,29 @@ namespace Woopsa
                         }
                 }
         }
+
+        /// <summary>
+        /// Determines if the .net type matches a WoopsaValueType
+        /// Some .net reference types (like string) are WoopsaValueType
+        /// </summary>
+        /// <param name="type">The .NET type to test</param>
+        /// <returns>true if the type matches a woopsa value type</returns>
+        public static bool IsWoopsaValueType(Type type)
+        {
+            WoopsaValueType woopsaType;
+            return InferWoopsaType(type, out woopsaType);
+        }
+
+        /// <summary>
+        /// Determines if the .net type matches a Woopsa reference type (object)
+        /// Some value types of .net have no corresponding Woopsa type, and are not reference type.
+        /// </summary>
+        /// <param name="type">The .NET type to test</param>
+        /// <returns>true if the type matches a woopsa reference type</returns>
+        public static bool IsWoopsaReferenceType(Type type)
+        {
+            return !IsWoopsaValueType(type) && !type.IsValueType;
+        }
+
     }
 }
