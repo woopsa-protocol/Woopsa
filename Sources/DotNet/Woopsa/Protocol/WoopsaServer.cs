@@ -39,14 +39,6 @@ namespace Woopsa
         public const bool DefaultKeepPathInCache = true;
         public const string WoopsaAuthenticationRealm = "Woopsa authentication";
 
-        public WebServer WebServer { get; private set; }
-
-        public string RoutePrefix { get { return _routePrefix; } }
-
-        public bool AllowCrossOrigin { get; set; }
-
-        public event EventHandler<EventArgsCachePath> PathCaching;
-
         /// <summary>
         /// Creates an instance of the Woopsa server without using the Reflector. You
         /// will have to create the object hierarchy yourself, using WoopsaObjects 
@@ -119,7 +111,7 @@ namespace Woopsa
             this((IWoopsaContainer)root, port, routePrefix)
         {
             new WoopsaMultiRequestHandler(root, this);
-            _subscriptionService = new WoopsaSubscriptionService(root);
+            _subscriptionService = new WoopsaSubscriptionService(this, root);
         }
 
         /// <summary>
@@ -142,6 +134,14 @@ namespace Woopsa
         {
         }
 
+        public WebServer WebServer { get; private set; }
+
+        public string RoutePrefix { get { return _routePrefix; } }
+
+        public bool AllowCrossOrigin { get; set; }
+
+        public event EventHandler<EventArgsCachePath> PathCaching;
+
         /// <summary>
         /// Clear all the knowledge of IWoopsaContainer stored in cache for performance optimization.
         /// Call this method when the underlying structure of cached IWoopsaContainer has changed
@@ -153,16 +153,6 @@ namespace Woopsa
             _pathCache.Clear();
             if (_root is WoopsaContainer)
                 (_root as WoopsaContainer).Refresh();
-        }
-
-        protected virtual bool OnCachingPath(string path)
-        {
-            EventArgsCachePath args = new EventArgsCachePath();
-            args.Path = path;
-            args.KeepInCache = DefaultKeepPathInCache;
-            if (PathCaching != null)
-                PathCaching(this, args);
-            return args.KeepInCache;
         }
 
         /// <summary>
@@ -197,7 +187,79 @@ namespace Woopsa
             }
         }
 
-        private BaseAuthenticator _authenticator;
+        /// <summary>
+        /// This event is triggered before WoopsaServer accesses the WoopsaObject model.
+        /// It is usefull to protect against concurrent WoopsaObject accesses at a global level.
+        /// </summary>
+        public event EventHandler BeforeWoopsaModelAccess;
+
+        /// <summary>
+        /// This event is triggered after WoopsaServer accesses the WoopsaObject model.
+        /// It is guaranteed that for each BeforeWoopsaModelAccess event fired, 
+        /// the AfterWoopsaModelAccess event will be fired.
+        /// </summary>
+        public event EventHandler AfterWoopsaModelAccess;
+
+        /// <summary>
+        /// This method simply calls BeforeWoopsaModelAccess to trigger concurrent access 
+        /// protection over the woopsa model.
+        /// </summary>
+        /// <returns>
+        /// a WoopsaServerModelAccessFreeSection that must be disposed to leave the
+        /// Model access-free section
+        /// </returns>
+        public WoopsaServerModelAccessFreeSection EnterModelAccessFreeSection()
+        {
+            return new WoopsaServerModelAccessFreeSection(this);
+        }
+
+        protected virtual bool OnCachingPath(string path)
+        {
+            EventArgsCachePath args = new EventArgsCachePath();
+            args.Path = path;
+            args.KeepInCache = DefaultKeepPathInCache;
+            if (PathCaching != null)
+                PathCaching(this, args);
+            return args.KeepInCache;
+        }
+
+        internal protected virtual void OnBeforeWoopsaModelAccess()
+        {
+            if (BeforeWoopsaModelAccess != null)
+                BeforeWoopsaModelAccess(this, new EventArgs());
+        }
+
+        internal protected virtual void OnAfterWoopsaModelAccess()
+        {
+            if (AfterWoopsaModelAccess != null)
+                AfterWoopsaModelAccess(this, new EventArgs());
+        }
+
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
+        {
+            if (disposing)
+            {
+                RemoveRoutes();
+                if (_subscriptionService != null)
+                {
+                    _subscriptionService.Dispose();
+                    _subscriptionService = null;
+                }
+                if (_isWebServerEmbedded)
+                {
+                    WebServer.Dispose();
+                    WebServer = null;
+                }
+            }
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        #endregion
 
         #region Private Members
         private void AddRoutes()
@@ -245,20 +307,28 @@ namespace Woopsa
                 if (AllowCrossOrigin)
                     response.SetHeader("Access-Control-Allow-Origin", "*");
                 string result = null;
-                switch (verb)
+                OnBeforeWoopsaModelAccess();
+                try
                 {
-                    case WoopsaVerb.Meta:
-                        result = GetMetadata(request.Subroute);
-                        break;
-                    case WoopsaVerb.Read:
-                        result = ReadValue(request.Subroute);
-                        break;
-                    case WoopsaVerb.Write:
-                        result = WriteValue(request.Subroute, request.Body["value"]);
-                        break;
-                    case WoopsaVerb.Invoke:
-                        result = InvokeMethod(request.Subroute, request.Body);
-                        break;
+                    switch (verb)
+                    {
+                        case WoopsaVerb.Meta:
+                            result = GetMetadata(request.Subroute);
+                            break;
+                        case WoopsaVerb.Read:
+                            result = ReadValue(request.Subroute);
+                            break;
+                        case WoopsaVerb.Write:
+                            result = WriteValue(request.Subroute, request.Body["value"]);
+                            break;
+                        case WoopsaVerb.Invoke:
+                            result = InvokeMethod(request.Subroute, request.Body);
+                            break;
+                    }
+                }
+                finally
+                {
+                    OnAfterWoopsaModelAccess();
                 }
                 response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
                 response.WriteString(result);
@@ -397,32 +467,7 @@ namespace Woopsa
         }
         #endregion
 
-        #region IDisposable
-        protected virtual void Dispose(bool disposing)
-        {
-            if (disposing)
-            {
-                RemoveRoutes();
-                if (_subscriptionService != null)
-                {
-                    _subscriptionService.Dispose();
-                    _subscriptionService = null;
-                }
-                if (_isWebServerEmbedded)
-                {
-                    WebServer.Dispose();
-                    WebServer = null;
-                }
-            }
-        }
-
-        public void Dispose()
-        {
-            Dispose(true);
-            GC.SuppressFinalize(this);
-        }
-        #endregion
-
+        private BaseAuthenticator _authenticator;
         private WoopsaSubscriptionService _subscriptionService;
         private IWoopsaContainer _root;
         private string _routePrefix;
@@ -448,5 +493,21 @@ namespace Woopsa
             response.SetHeader("Cache-Control", "no-cache, no-store");
             return true;
         }
+    }
+
+    public sealed class WoopsaServerModelAccessFreeSection : IDisposable
+    {
+        internal WoopsaServerModelAccessFreeSection(WoopsaServer server)
+        {
+            _server = server;
+            server.OnAfterWoopsaModelAccess();
+        }
+
+        public void Dispose()
+        {
+            _server.OnBeforeWoopsaModelAccess();
+        }
+
+        private WoopsaServer _server;
     }
 }

@@ -47,6 +47,19 @@ namespace Woopsa
         /// </summary>
         public int NotificationQueueSize { get; private set; }
 
+        /// <summary>
+        /// This event is triggered before Channel accesses the WoopsaObject model.
+        /// It is usefull to protect against concurrent WoopsaObject accesses at a global level.
+        /// </summary>
+        public event EventHandler BeforeWoopsaModelAccess;
+
+        /// <summary>
+        /// This event is triggered after Channel accesses the WoopsaObject model.
+        /// It is guaranteed that for each BeforeWoopsaModelAccess event fired, 
+        /// the AfterWoopsaModelAccess event will be fired.
+        /// </summary>
+        public event EventHandler AfterWoopsaModelAccess;
+
         public bool ClientTimedOut
         {
             get { return _watchClientActivity.Elapsed > WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTime; }
@@ -137,6 +150,18 @@ namespace Woopsa
         }
         public const int IdResetLostNotification = 0;
 
+        internal protected virtual void OnBeforeWoopsaModelAccess()
+        {
+            if (BeforeWoopsaModelAccess != null)
+                BeforeWoopsaModelAccess(this, new EventArgs());
+        }
+
+        internal protected virtual void OnAfterWoopsaModelAccess()
+        {
+            if (AfterWoopsaModelAccess != null)
+                AfterWoopsaModelAccess(this, new EventArgs());
+        }
+
         #region IDisposable
 
         protected virtual void Dispose(bool disposing)
@@ -200,28 +225,36 @@ namespace Woopsa
         private bool FindWoopsaClientAlongPath(WoopsaContainer root, string path,
             out WoopsaBaseClientObject client, out string relativePath)
         {
-            string[] pathParts = path.Split(WoopsaConst.WoopsaPathSeparator);
-            WoopsaContainer container = root;
-            bool found = false;
-
-            client = null;
-            relativePath = string.Empty;
-            for (int i = 0; i < pathParts.Length; i++)
+            OnBeforeWoopsaModelAccess();
+            try
             {
-                if (container is WoopsaBaseClientObject)
+                string[] pathParts = path.Split(WoopsaConst.WoopsaPathSeparator);
+                WoopsaContainer container = root;
+                bool found = false;
+
+                client = null;
+                relativePath = string.Empty;
+                for (int i = 0; i < pathParts.Length; i++)
                 {
-                    client = (WoopsaBaseClientObject)container;
-                    for (int j = i; j < pathParts.Length; j++)
-                        relativePath += WoopsaConst.WoopsaPathSeparator + pathParts[j];
-                    found = true;
-                    break;
+                    if (container is WoopsaBaseClientObject)
+                    {
+                        client = (WoopsaBaseClientObject)container;
+                        for (int j = i; j < pathParts.Length; j++)
+                            relativePath += WoopsaConst.WoopsaPathSeparator + pathParts[j];
+                        found = true;
+                        break;
+                    }
+                    else if (container == null)
+                        break;
+                    else if (!string.IsNullOrEmpty(pathParts[i]))
+                        container = container.ByNameOrNull(pathParts[i]) as WoopsaContainer;
                 }
-                else if (container == null)
-                    break;
-                else if (!string.IsNullOrEmpty(pathParts[i]))
-                    container = container.ByNameOrNull(pathParts[i]) as WoopsaContainer;
+                return found;
             }
-            return found;
+            finally
+            {
+                OnAfterWoopsaModelAccess();
+            }
         }
 
         // Static
@@ -245,8 +278,6 @@ namespace Woopsa
         private object _idLock;
 
         private Stopwatch _watchClientActivity;
-
-
     }
 
     internal class NotificationConcurrentQueue
@@ -336,7 +367,7 @@ namespace Woopsa
         private int notificationAge(int notificationIdOrigin, int notificationId)
         {
             int age = notificationId - notificationIdOrigin;
-            if (age < 0) 
+            if (age < 0)
                 age += WoopsaSubscriptionServiceConst.MaximumNotificationId + age; // Note : Id restart from 1
             return age;
         }

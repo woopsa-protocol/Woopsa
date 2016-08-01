@@ -194,7 +194,7 @@ namespace Woopsa
                 foreach (var item in _subscriptions)
                     if (item.UnsubscriptionRequested)
                     {
-                        if (newSubscriptions == null)
+                        if (newUnsubscriptions == null)
                             newUnsubscriptions = new List<WoopsaClientSubscription>();
                         newUnsubscriptions.Add(item);
                     }

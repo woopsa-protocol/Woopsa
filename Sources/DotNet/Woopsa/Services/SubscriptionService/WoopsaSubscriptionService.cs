@@ -6,16 +6,21 @@ namespace Woopsa
     {
         #region Constructors
 
-        public WoopsaSubscriptionService(WoopsaContainer container)
+        public WoopsaSubscriptionService(WoopsaServer server, WoopsaContainer container)
             : base(container, WoopsaSubscriptionServiceConst.WoopsaServiceSubscriptionName)
         {
-            _subscriptionServicePoller = new WoopsaSubscriptionServiceImplementation(container, true);
+            _server = server;
+            _subscriptionServiceImplementation = new WoopsaSubscriptionServiceImplementation(container, true);
+            _subscriptionServiceImplementation.BeforeWoopsaModelAccess += 
+                (sender, e) => { server.OnBeforeWoopsaModelAccess(); };
+            _subscriptionServiceImplementation.AfterWoopsaModelAccess +=
+                (sender, e) => { server.OnAfterWoopsaModelAccess(); };
             MethodCreateSubscriptionChannel = new WoopsaMethod(
                 this,
                 WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannel,
                 WoopsaValueType.Integer,
                 new WoopsaMethodArgumentInfo[] { new WoopsaMethodArgumentInfo(WoopsaSubscriptionServiceConst.WoopsaNotificationQueueSize, WoopsaValueType.Integer) },
-                arguments => _subscriptionServicePoller.CreateSubscriptionChannel(arguments[0].ToInt32())
+                arguments => _subscriptionServiceImplementation.CreateSubscriptionChannel(arguments[0].ToInt32())
             );
 
             MethodRegisterSubscription = new WoopsaMethod(
@@ -30,8 +35,8 @@ namespace Woopsa
                 },
                 arguments =>
                 {
-                    return _subscriptionServicePoller.RegisterSubscription(
-                        arguments[0].ToInt32(), arguments[1].DecodeWoopsaLocalLink(), 
+                    return _subscriptionServiceImplementation.RegisterSubscription(
+                        arguments[0].ToInt32(), arguments[1].DecodeWoopsaLocalLink(),
                         arguments[2].ToTimeSpan(), arguments[3].ToTimeSpan());
                 });
 
@@ -45,7 +50,7 @@ namespace Woopsa
                 },
                 arguments =>
                 {
-                    return _subscriptionServicePoller.UnregisterSubscription(
+                    return _subscriptionServiceImplementation.UnregisterSubscription(
                         arguments[0].ToInt32(), arguments[1].ToInt32());
                 });
 
@@ -59,26 +64,27 @@ namespace Woopsa
                 },
                 arguments =>
                 {
-                    return new WoopsaValue(_subscriptionServicePoller.WaitNotification(
-                        arguments[0].ToInt32(), arguments[1].ToInt32()));
+                    using (var accessFreeSection = _server.EnterModelAccessFreeSection())
+                        return new WoopsaValue(_subscriptionServiceImplementation.WaitNotification(
+                            arguments[0].ToInt32(), arguments[1].ToInt32()));
                 });
         }
 
         public override void Refresh()
         {
             base.Refresh();
-            _subscriptionServicePoller.Refresh();
+            _subscriptionServiceImplementation.Refresh();
         }
-       
+
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);
             if (disposing)
             {
-                if (_subscriptionServicePoller != null)
+                if (_subscriptionServiceImplementation != null)
                 {
-                    _subscriptionServicePoller.Dispose();
-                    _subscriptionServicePoller = null;
+                    _subscriptionServiceImplementation.Dispose();
+                    _subscriptionServiceImplementation = null;
                 }
             }
         }
@@ -92,7 +98,8 @@ namespace Woopsa
 
         #region Private Members
 
-        WoopsaSubscriptionServiceImplementation _subscriptionServicePoller;
+        WoopsaServer _server;
+        WoopsaSubscriptionServiceImplementation _subscriptionServiceImplementation;
 
         #endregion
     }

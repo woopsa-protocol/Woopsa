@@ -4,7 +4,7 @@ using System.Linq;
 
 namespace Woopsa
 {
-    internal class WoopsaSubscriptionServiceImplementation: IWoopsaSubscriptionService, IDisposable
+    internal class WoopsaSubscriptionServiceImplementation : IWoopsaSubscriptionService, IDisposable
     {
         public WoopsaSubscriptionServiceImplementation(WoopsaContainer root, bool isServerSide)
         {
@@ -21,6 +21,31 @@ namespace Woopsa
             foreach (var item in _channels.Values)
                 item.Refresh();
         }
+        /// <summary>
+        /// This event is triggered before ServiceImplementation accesses the WoopsaObject model.
+        /// It is usefull to protect against concurrent WoopsaObject accesses at a global level.
+        /// </summary>
+        public event EventHandler BeforeWoopsaModelAccess;
+
+        /// <summary>
+        /// This event is triggered after ServiceImplementation accesses the WoopsaObject model.
+        /// It is guaranteed that for each BeforeWoopsaModelAccess event fired, 
+        /// the AfterWoopsaModelAccess event will be fired.
+        /// </summary>
+        public event EventHandler AfterWoopsaModelAccess;
+
+        internal protected virtual void OnBeforeWoopsaModelAccess()
+        {
+            if (BeforeWoopsaModelAccess != null)
+                BeforeWoopsaModelAccess(this, new EventArgs());
+        }
+
+        internal protected virtual void OnAfterWoopsaModelAccess()
+        {
+            if (AfterWoopsaModelAccess != null)
+                AfterWoopsaModelAccess(this, new EventArgs());
+        }
+
 
         #region IDisposable
 
@@ -55,6 +80,8 @@ namespace Woopsa
         public int CreateSubscriptionChannel(int notificationQueueSize)
         {
             var channel = new WoopsaSubscriptionChannel(notificationQueueSize);
+            channel.BeforeWoopsaModelAccess += Channel_BeforeWoopsaModelAccess;
+            channel.AfterWoopsaModelAccess += Channel_AfterWoopsaModelAccess;
             lock (_channels)
                 _channels.Add(channel.Id, channel);
             return new WoopsaValue(channel.Id);
@@ -106,6 +133,16 @@ namespace Woopsa
 
         #region Private Members
 
+        private void Channel_BeforeWoopsaModelAccess(object sender, EventArgs e)
+        {
+            OnBeforeWoopsaModelAccess();
+        }
+
+        private void Channel_AfterWoopsaModelAccess(object sender, EventArgs e)
+        {
+            OnAfterWoopsaModelAccess();
+        }
+
         private void _timerCheckChannelTimedOut_Elapsed(object sender, EventArgs e)
         {
             WoopsaSubscriptionChannel[] timedoutChannels;
@@ -120,7 +157,7 @@ namespace Woopsa
                 item.Dispose();
             }
         }
-        
+
         private Dictionary<int, WoopsaSubscriptionChannel> _channels;
         private LightWeightTimer _timerCheckChannelTimedOut;
         private WoopsaContainer _root;

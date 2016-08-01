@@ -128,6 +128,22 @@ namespace Woopsa
             _monitorTimer.IsEnabled = true;
         }
 
+        protected IWoopsaValue SynchronizedWatchedPropertyValue
+        {
+            get
+            {
+                Channel.OnBeforeWoopsaModelAccess();
+                try
+                {
+                    return WatchedPropertyValue;
+                }
+                finally
+                {
+                    Channel.OnAfterWoopsaModelAccess();
+                }
+            }
+        }
+
         protected abstract IWoopsaValue WatchedPropertyValue { get; }
 
         #region IDisposable
@@ -151,7 +167,7 @@ namespace Woopsa
         {
             try
             {
-                IWoopsaValue newValue = WatchedPropertyValue;
+                IWoopsaValue newValue = SynchronizedWatchedPropertyValue;
                 EnqueueNewMonitoredValue(newValue);
             }
             catch (Exception)

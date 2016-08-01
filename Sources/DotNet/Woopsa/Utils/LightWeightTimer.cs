@@ -56,27 +56,34 @@ namespace Woopsa
 
         private static void Execute(object obj)
         {
-            for (;;)
+            try
             {
-                var i = 0;
-                LightWeightTimer timer = null;
                 for (;;)
                 {
-                    lock (_timers)
+                    var i = 0;
+                    LightWeightTimer timer = null;
+                    for (;;)
                     {
-                        if (i < _timers.Count)
-                            timer = _timers[i++];
-                        else
-                            break;
-                    }
-                    if (timer.IsEnabled)
-                        if (timer._watch.Elapsed >= timer.Interval)
+                        lock (_timers)
                         {
-                            timer._watch.Restart();
-                            timer.OnElapsed();
+                            if (i < _timers.Count)
+                                timer = _timers[i++];
+                            else
+                                break;
                         }
+                        if (timer.IsEnabled)
+                            if (timer._watch.Elapsed >= timer.Interval)
+                            {
+                                timer._watch.Restart();
+                                timer.OnElapsed();
+                            }
+                    }
+                    Thread.Sleep(1);
                 }
-                Thread.Sleep(1);
+            }
+            catch (Exception e)
+            {
+                // TODO : Manage exceptions properly
             }
         }
 
