@@ -37,7 +37,7 @@ namespace Woopsa
         public WoopsaClientSubscription Subscribe(string path,
             EventHandler<WoopsaNotificationEventArgs> handler)
         {
-            return Subscribe(path, path, handler, 
+            return Subscribe(path, path, handler,
                 WoopsaSubscriptionServiceConst.DefaultMonitorInterval,
                 WoopsaSubscriptionServiceConst.DefaultPublishInterval);
         }
@@ -58,6 +58,13 @@ namespace Woopsa
             return failedSubscriptions;
         }
 
+        public void Terminate()
+        {
+            _terminated = true;
+            if (_localSubscriptionService != null)
+                _localSubscriptionService.Terminate();
+        }
+
         internal WoopsaClientSubscription Subscribe(string servicePath, string relativePath,
              EventHandler<WoopsaNotificationEventArgs> handler,
              TimeSpan monitorInterval, TimeSpan publishInterval)
@@ -75,7 +82,7 @@ namespace Woopsa
             if (_thread == null)
             {
                 _thread = new Thread(new ThreadStart(executeService));
-                _thread.Name = "WoopsaClientScubscription";
+                _thread.Name = "WoopsaClientSubscription";
                 _thread.Start();
             }
         }

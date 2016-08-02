@@ -240,6 +240,9 @@ namespace Woopsa
         {
             if (disposing)
             {
+                if (_subscriptionService != null)
+                    _subscriptionService.Terminate();
+                WebServer.Shutdown();
                 RemoveRoutes();
                 if (_subscriptionService != null)
                 {
@@ -444,10 +447,8 @@ namespace Woopsa
                     }
                     else
                     {
-                        if (item is IWoopsaObject)
-                            item = (item as IWoopsaObject).ByName(toFind);
-                        else if (item is IWoopsaContainer)
-                            item = (item as IWoopsaContainer).Items.ByName(toFind);
+                        if (item is IWoopsaContainer)
+                            item = (item as IWoopsaContainer).ByName(toFind);
 
                         bool isCachable = true;
                         if (item is IWoopsaElementCacheRequirement)

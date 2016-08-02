@@ -11,7 +11,14 @@ namespace Woopsa
             _root = root;
             _isServerSide = isServerSide;
             _channels = new Dictionary<int, WoopsaSubscriptionChannel>();
-            _timerCheckChannelTimedOut = new LightWeightTimer(WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTimeCheckInterval);
+            TimerScheduler = new LightWeightTimerScheduler();
+            TimerScheduler.Started += (sender, e) =>
+             {
+                 _currentService = this;
+             };
+            TimerScheduler.Start();
+            _timerCheckChannelTimedOut = TimerScheduler.AllocateTimer(
+                WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTimeCheckInterval);
             _timerCheckChannelTimedOut.Elapsed += _timerCheckChannelTimedOut_Elapsed;
             _timerCheckChannelTimedOut.IsEnabled = true;
         }
@@ -34,6 +41,13 @@ namespace Woopsa
         /// </summary>
         public event EventHandler AfterWoopsaModelAccess;
 
+        public static WoopsaSubscriptionServiceImplementation CurrentService { get { return _currentService; } }
+
+        public void Terminate()
+        {
+            TimerScheduler.Terminate();
+        }
+
         internal protected virtual void OnBeforeWoopsaModelAccess()
         {
             if (BeforeWoopsaModelAccess != null)
@@ -45,14 +59,17 @@ namespace Woopsa
             if (AfterWoopsaModelAccess != null)
                 AfterWoopsaModelAccess(this, new EventArgs());
         }
-
-
+        
         #region IDisposable
-
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
             {
+                if (TimerScheduler!= null)
+                {
+                    TimerScheduler.Dispose();
+                    TimerScheduler = null;
+                }
                 if (_timerCheckChannelTimedOut != null)
                 {
                     _timerCheckChannelTimedOut.Dispose();
@@ -79,7 +96,7 @@ namespace Woopsa
 
         public int CreateSubscriptionChannel(int notificationQueueSize)
         {
-            var channel = new WoopsaSubscriptionChannel(notificationQueueSize);
+            var channel = new WoopsaSubscriptionChannel(this, notificationQueueSize);
             channel.BeforeWoopsaModelAccess += Channel_BeforeWoopsaModelAccess;
             channel.AfterWoopsaModelAccess += Channel_AfterWoopsaModelAccess;
             lock (_channels)
@@ -157,12 +174,17 @@ namespace Woopsa
                 item.Dispose();
             }
         }
+        internal LightWeightTimerScheduler TimerScheduler { get; private set; }
+        public bool Terminated { get { return TimerScheduler.Terminated; } }
 
         private Dictionary<int, WoopsaSubscriptionChannel> _channels;
         private LightWeightTimer _timerCheckChannelTimedOut;
         private WoopsaContainer _root;
         private bool _isServerSide;
 
+        [ThreadStatic]
+        private static WoopsaSubscriptionServiceImplementation _currentService;
+        
         #endregion
     }
 }

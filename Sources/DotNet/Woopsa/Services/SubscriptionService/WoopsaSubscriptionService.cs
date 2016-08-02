@@ -11,7 +11,7 @@ namespace Woopsa
         {
             _server = server;
             _subscriptionServiceImplementation = new WoopsaSubscriptionServiceImplementation(container, true);
-            _subscriptionServiceImplementation.BeforeWoopsaModelAccess += 
+            _subscriptionServiceImplementation.BeforeWoopsaModelAccess +=
                 (sender, e) => { server.OnBeforeWoopsaModelAccess(); };
             _subscriptionServiceImplementation.AfterWoopsaModelAccess +=
                 (sender, e) => { server.OnAfterWoopsaModelAccess(); };
@@ -76,6 +76,11 @@ namespace Woopsa
             _subscriptionServiceImplementation.Refresh();
         }
 
+        public void Terminate()
+        {
+            if (_subscriptionServiceImplementation != null)
+                _subscriptionServiceImplementation.Terminate();
+        }
         protected override void Dispose(bool disposing)
         {
             base.Dispose(disposing);

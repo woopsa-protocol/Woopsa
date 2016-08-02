@@ -70,6 +70,7 @@ namespace Woopsa
         public WoopsaContainer(WoopsaContainer container, string name)
             : base(container, name)
         {
+            Lock = new object();
             _items = new WoopsaElementList<WoopsaContainer>();
             if (Owner != null)
                 Owner.Add(this);
@@ -98,11 +99,28 @@ namespace Woopsa
         /// </summary>
         public virtual void Refresh()
         {
-            foreach (var item in _items)
-                item.Refresh();
+            lock (Lock)
+                foreach (var item in _items)
+                    item.Refresh();
             // Refresh must not call clear here, as WoopsaContainer and WoopsaObject can be used to create
             // static hierarchy.
             // Inheriting classes containing dynamic hierarchy should call clear in their Refresh method implementation
+        }
+
+        public WoopsaContainer ByNameOrNull(string name)
+        {
+            return Items.ByNameOrNull(name);
+        }
+
+        public WoopsaContainer ByName(string name)
+        {
+            WoopsaContainer result;
+            lock (Lock)
+                result = ByNameOrNull(name);
+            if (result != null)
+                return result;
+            else
+                throw new WoopsaNotFoundException(string.Format("Woopsa element not found : {0}", name));
         }
 
         #endregion
@@ -112,13 +130,14 @@ namespace Woopsa
 
         protected void DoPopulate()
         {
-            if (!_populated)
-            {
-                PopulateContainer(_items);
-                _populated = true;
-            }
-            else
-                UpdateItems();
+            lock (Lock)
+                if (!_populated)
+                {
+                    PopulateContainer(_items);
+                    _populated = true;
+                }
+                else
+                    UpdateItems();
         }
 
         /// <summary>
@@ -134,20 +153,27 @@ namespace Woopsa
 
         internal void Add(WoopsaContainer item)
         {
-            if (_items.ByNameOrNull(item.Name) != null)
-                throw new WoopsaException("Tried to add an item with duplicate name '" + item.Name + "' to WoopsaContainer '" + Name + "'");
-            _items.Add(item);
+            lock (Lock)
+            {
+                if (_items.ByNameOrNull(item.Name) != null)
+                    throw new WoopsaException("Tried to add an item with duplicate name '" + item.Name + "' to WoopsaContainer '" + Name + "'");
+                _items.Add(item);
+            }
         }
 
         internal void Remove(WoopsaContainer item)
         {
-            _items.Remove(item);
+            lock (Lock)
+                _items.Remove(item);
         }
 
         protected virtual void Clear()
         {
-            DisposeWoopsaElements(_items);
-            _populated = false;
+            lock (Lock)
+            {
+                DisposeWoopsaElements(_items);
+                _populated = false;
+            }
         }
 
         internal void DisposeWoopsaElements(IEnumerable<WoopsaElement> elements)
@@ -170,6 +196,8 @@ namespace Woopsa
         }
 
         #endregion
+
+        internal object Lock { get; private set; }
 
         #region Private Members
 
@@ -351,8 +379,11 @@ namespace Woopsa
         {
             get
             {
-                DoPopulate();
-                return _properties;
+                lock (Lock)
+                {
+                    DoPopulate();
+                    return _properties;
+                }
             }
         }
 
@@ -365,8 +396,11 @@ namespace Woopsa
         {
             get
             {
-                DoPopulate();
-                return _methods;
+                lock (Lock)
+                {
+                    DoPopulate();
+                    return _methods;
+                }
             }
         }
 
@@ -376,6 +410,29 @@ namespace Woopsa
         }
 
         #endregion
+
+        public new WoopsaElement ByNameOrNull(string name)
+        {
+            WoopsaElement result;
+            lock (Lock)
+            {
+                result = base.ByNameOrNull(name);
+                if (result == null)
+                    result = Properties.ByNameOrNull(name);
+                if (result == null)
+                    result = Methods.ByNameOrNull(name);
+            }
+            return result;
+        }
+
+        public new WoopsaElement ByName(string name)
+        {
+            WoopsaElement result = ByNameOrNull(name);
+            if (result != null)
+                return result;
+            else
+                throw new WoopsaNotFoundException(string.Format("Woopsa element not found : {0}", name));
+        }
 
         protected override void PopulateContainer(WoopsaElementList<WoopsaContainer> items)
         {
@@ -407,21 +464,28 @@ namespace Woopsa
 
         internal void Add(WoopsaMethod item)
         {
-            if (_methods.ByNameOrNull(item.Name) != null)
-                throw new WoopsaException("Tried to add a method with duplicate name '" + item.Name + "' to WoopsaObject '" + Name + "'");
-            _methods.Add(item);
+            lock (Lock)
+            {
+                if (_methods.ByNameOrNull(item.Name) != null)
+                    throw new WoopsaException("Tried to add a method with duplicate name '" + item.Name + "' to WoopsaObject '" + Name + "'");
+                _methods.Add(item);
+            }
         }
 
         internal void Remove(WoopsaMethod item)
         {
-            _methods.Remove(item);
+            lock (Lock)
+                _methods.Remove(item);
         }
 
         protected override void Clear()
         {
-            DisposeWoopsaElements(_properties);
-            DisposeWoopsaElements(_methods);
-            base.Clear();
+            lock (Lock)
+            {
+                DisposeWoopsaElements(_properties);
+                DisposeWoopsaElements(_methods);
+                base.Clear();
+            }
         }
 
         #endregion
@@ -453,7 +517,8 @@ namespace Woopsa
         {
             get
             {
-                return _items[name];
+                lock (_items)
+                    return _items[name];
             }
         }
 
@@ -461,58 +526,69 @@ namespace Woopsa
         {
             get
             {
-                return _items.Count;
+                lock (_items)
+                    return _items.Count;
             }
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            return _items.Values.GetEnumerator();
+            lock (_items)
+                return _items.Values.GetEnumerator();
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            return _items.Values.GetEnumerator();
+            lock (_items)
+                return _items.Values.GetEnumerator();
         }
 
         public void Add(T item)
         {
-            _items.Add(item.Name, item);
+            lock (_items)
+                _items.Add(item.Name, item);
         }
 
         public void Remove(T item)
         {
-            _items.Remove(item.Name);
+            lock (_items)
+                _items.Remove(item.Name);
         }
 
         public bool Contains(string key)
         {
-            return _items.ContainsKey(key);
+            lock (_items)
+                return _items.ContainsKey(key);
         }
 
         public bool Contains(T element)
         {
-            return _items.ContainsValue(element);
+            lock (_items)
+                return _items.ContainsValue(element);
         }
 
         public void Clear()
         {
-            T[] items = _items.Values.ToArray();
+            T[] items;
+            lock (_items)
+                items = _items.Values.ToArray();
             foreach (var item in items)
                 item.Dispose();
         }
 
         public T ByName(string name)
         {
-            return _items[name];
+            lock (_items)
+                return _items[name];
         }
 
         public T ByNameOrNull(string name)
         {
-            if (Contains(name))
-                return ByName(name);
-            else
-                return null;
+            lock (_items)
+                if (Contains(name))
+                    return ByName(name);
+                else
+                    return null;
         }
 
         private Dictionary<string, T> _items;

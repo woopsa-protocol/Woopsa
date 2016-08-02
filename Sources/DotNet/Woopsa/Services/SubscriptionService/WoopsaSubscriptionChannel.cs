@@ -11,23 +11,38 @@ namespace Woopsa
 {
     public class WoopsaSubscriptionChannel : IDisposable
     {
+        #region static 
         static WoopsaSubscriptionChannel()
         {
-            _random = new Random();
-            _lastChannelId = _random.Next();
+            Random random = new Random();
+            _lastChannelId = random.Next();
+            _lock = new object();
         }
 
-        public WoopsaSubscriptionChannel(int notificationQueueSize)
+        private static int GetNextChannelId()
+        {
+            lock(_lock)
+            {
+                _lastChannelId++;
+                return _lastChannelId;
+            }
+        }
+
+        private static object _lock;
+        private static int _lastChannelId;
+
+        #endregion
+
+        internal WoopsaSubscriptionChannel(WoopsaSubscriptionServiceImplementation serviceImplementation,
+            int notificationQueueSize)
         {
             _subscriptions = new Dictionary<int, BaseWoopsaSubscriptionServiceSubscription>();
             _waitNotificationEvent = new AutoResetEvent(false);
             _waitStopEvent = new ManualResetEvent(false);
+            ServiceImplementation = serviceImplementation;
+            // TODO : problème de lock à contrôler :
             _idLock = new Object();
-            lock (_idLock)
-            {
-                _lastChannelId++;
-                Id = _lastChannelId;
-            }
+            Id = GetNextChannelId();
             NotificationQueueSize = notificationQueueSize;
             _pendingNotifications = new NotificationConcurrentQueue(notificationQueueSize);
             _watchClientActivity = new Stopwatch();
@@ -257,10 +272,7 @@ namespace Woopsa
             }
         }
 
-        // Static
-
-        private static Random _random;
-        private static int _lastChannelId;
+        internal WoopsaSubscriptionServiceImplementation ServiceImplementation { get; private set; }
 
         // Instance
 

@@ -29,7 +29,7 @@ namespace Woopsa
     public class WebServer : IDisposable
     {
         public const int DefaultPortHttp = 80;
-        public const int DefaultPortHttps = 443;        
+        public const int DefaultPortHttps = 443;
         public const ThreadPriority DefaultThreadPriority = ThreadPriority.Normal;
 
         /// <summary>
@@ -64,7 +64,7 @@ namespace Woopsa
             _openTcpClients = new List<TcpClient>();
             _listener = new TcpListener(IPAddress.Any, port);
             if (threadPoolSize == CustomThreadPool.DefaultThreadPoolSize || threadPoolSize > 1)
-                _threadPool = new CustomThreadPool(threadPoolSize, priority);
+                _threadPool = new CustomThreadPool("WoopsaWebServer", threadPoolSize, priority);
             _listenerThread = new Thread(Listen);
             _listenerThread.Priority = priority;
             _listenerThread.Name = "WebServer_Listener";
@@ -146,12 +146,7 @@ namespace Woopsa
                         item.Close();
                 _aborted = true;
                 if (_threadPool != null)
-                {
                     _threadPool.Terminate();
-                    _threadPool.Join();
-                }
-                _listenerThread.Join();
-               
             }
         }
         #endregion
@@ -163,6 +158,14 @@ namespace Woopsa
             if (disposing)
             {
                 Shutdown();
+                _listenerThread.Join();
+                _listener = null;
+                if (_threadPool != null)
+                {
+                    _threadPool.Join();
+                    _threadPool = null;
+                }
+
             }
         }
 
@@ -231,6 +234,10 @@ namespace Woopsa
                         _aborted = true;
                     }
                 }
+                catch (Exception e)
+                {
+                    // TODO : mechanism to manage exceptions
+                }
             }
             _listener.Stop();
         }
@@ -249,7 +256,7 @@ namespace Woopsa
                         stream = processor.ProcessStream(stream);
                     }
                     // Do not dispose the reader so that the inner stream stays open (no using)
-                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096); 
+                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096);
                     bool leaveOpen = true;
                     HTTPResponse response = null;
                     HTTPRequest request = null;
@@ -450,7 +457,7 @@ namespace Woopsa
             }
             else
             {
-                baseUrl = Uri.UnescapeDataString(url); 
+                baseUrl = Uri.UnescapeDataString(url);
                 queryString = "";
             }
             request.BaseURL = baseUrl;

@@ -7,12 +7,13 @@ namespace Woopsa
 {
     internal class CustomThreadPoolThread : IDisposable
     {
-        public CustomThreadPoolThread(ThreadPriority priority)
+        public CustomThreadPoolThread(string threadName, ThreadPriority priority)
         {
             _startEvent = new AutoResetEvent(false);
             _terminateEvent = new ManualResetEvent(false);
             Priority = priority;
             _isIdle = true;
+            ThreadName = threadName;
         }
 
         public void ExecuteUserWorkItem(WaitCallback callBack, object parameter = null)
@@ -24,7 +25,7 @@ namespace Woopsa
                 {
                     _thread = new Thread(Execute);
                     _thread.Priority = Priority;
-                    _thread.Name = "CustomThreadPoolThread";
+                    _thread.Name = ThreadName;
                     _thread.Start();
                 }
                 _callBack = callBack;
@@ -51,6 +52,7 @@ namespace Woopsa
         public event EventHandler Idle;
 
         public ThreadPriority Priority { get; private set; }
+        public string ThreadName { get; private set; }
 
         private void OnIdle()
         {
@@ -92,7 +94,7 @@ namespace Woopsa
     public class CustomThreadPool : IDisposable
     {
         public const int DefaultThreadPoolSize = -1; // Use the operating system default value
-        public CustomThreadPool(int threadPoolSize = DefaultThreadPoolSize, ThreadPriority priority = ThreadPriority.Normal)
+        public CustomThreadPool(string name, int threadPoolSize = DefaultThreadPoolSize, ThreadPriority priority = ThreadPriority.Normal)
         {
             if (threadPoolSize == DefaultThreadPoolSize)
             {
@@ -107,9 +109,12 @@ namespace Woopsa
             _threads = new List<CustomThreadPoolThread>();
             _semaphore = new Semaphore(_threadPoolSize, _threadPoolSize);
             Priority = priority;
+            Name = name;
         }
 
         public ThreadPriority Priority { get; private set; }
+        public string Name { get; private set; }
+
         public bool StartUserWorkItem(WaitCallback callBack, object parameter, TimeSpan timeout)
         {
             CustomThreadPoolThread thread = GetNextIdleThread(timeout);
@@ -150,7 +155,8 @@ namespace Woopsa
                     if (thread == null)
                     {
                         Debug.Assert(_threads.Count <= _threadPoolSize);
-                        thread = new CustomThreadPoolThread(Priority);
+                        _lastThreadIndex++;                        
+                        thread = new CustomThreadPoolThread(Name+ _lastThreadIndex.ToString(), Priority);
                         thread.Idle += OnIdle;
                         _threads.Add(thread);
                     }
@@ -212,11 +218,12 @@ namespace Woopsa
             }
         }
 
+        private int _lastThreadIndex;
         private List<CustomThreadPoolThread> _threads;
         private Semaphore _semaphore;
         private bool _aborting;
         private int _threadPoolSize;
-
+        
         static readonly TimeSpan InfiniteTimeSpan = new TimeSpan(0, 0, 0, 0, Timeout.Infinite);
 
     }

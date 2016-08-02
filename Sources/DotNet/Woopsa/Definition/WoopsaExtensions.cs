@@ -417,12 +417,31 @@ namespace Woopsa
         public static IWoopsaElement ByNameOrNull(this IWoopsaContainer woopsaContainer, string name)
         {
             IWoopsaElement result;
-            result = (IWoopsaElement)woopsaContainer.Items.ByNameOrNull(name);
-            if (result == null && woopsaContainer is IWoopsaObject)
+            // For performance optimization, use directly the methods of classes WoopsaObject and WoopsaContainer 
+            // Complexity : O(1)
+            if (woopsaContainer is WoopsaObject)
             {
-                IWoopsaObject woopsaObject = (IWoopsaObject)woopsaContainer;
-                result = (IWoopsaElement)woopsaObject.Properties.ByNameOrNull(name) ??
-                         (IWoopsaElement)woopsaObject.Methods.ByNameOrNull(name);
+                WoopsaObject woopsaObject = (WoopsaObject)woopsaContainer;
+                result = woopsaObject.ByNameOrNull(name);
+            }
+            else if (woopsaContainer is WoopsaContainer)
+            {
+                WoopsaContainer container = (WoopsaContainer)woopsaContainer;
+                result = container.ByNameOrNull(name);
+            }
+            else
+            {
+                // The code below can manage all the cases, but is used only for elements not 
+                // of type WoopsaContainer or WoopsaObject 
+                // Complexity : O(n)
+                result = woopsaContainer.Items.ByNameOrNull(name);
+                if (result == null && woopsaContainer is IWoopsaObject)
+                {
+                    IWoopsaObject woopsaObject = (IWoopsaObject)woopsaContainer;
+                    result = woopsaObject.Properties.ByNameOrNull(name);
+                    if (result == null)
+                        woopsaObject.Methods.ByNameOrNull(name);
+                }
             }
             return result;
         }

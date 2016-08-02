@@ -11,8 +11,10 @@ namespace Woopsa
         {
             get
             {
-                return IsContextWebServerThread ||
-                    IsContextWoopsaClientSubscriptionThread;
+                return 
+                    IsContextWebServerThread ||
+                    IsContextWoopsaClientSubscriptionThread ||
+                    IsContextWoopsaSubscriptionServiceImplementation;
             }
         }
         internal static bool IsContextWebServerThread
@@ -24,6 +26,11 @@ namespace Woopsa
             get { return WoopsaClientSubscriptionChannel.CurrentChannel != null; }
         }
 
+        internal static bool IsContextWoopsaSubscriptionServiceImplementation
+        {
+            get { return WoopsaSubscriptionServiceImplementation.CurrentService != null; }
+        }
+
         public static bool IsContextWoopsaTerminatingThread
         {
             get
@@ -32,6 +39,8 @@ namespace Woopsa
                     return WebServer.CurrentWebServer.Aborted;
                 else if (WoopsaClientSubscriptionChannel.CurrentChannel != null)
                     return WoopsaClientSubscriptionChannel.CurrentChannel.Terminated;
+                else if (WoopsaSubscriptionServiceImplementation.CurrentService != null)
+                    return WoopsaSubscriptionServiceImplementation.CurrentService.Terminated;
                 else
                     return false;
             }

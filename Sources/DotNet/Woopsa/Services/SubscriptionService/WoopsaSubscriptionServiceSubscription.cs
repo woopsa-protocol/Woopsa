@@ -19,7 +19,7 @@ namespace Woopsa
             PropertyPath = propertyPath;
             _lock = new object();
             _notifications = new List<IWoopsaNotification>();
-            _publishTimer = new LightWeightTimer(publishInterval);
+            _publishTimer = channel.ServiceImplementation.TimerScheduler.AllocateTimer(publishInterval);
             _publishTimer.Elapsed += _publishTimer_Elapsed;
             _publishTimer.IsEnabled = true;
         }
@@ -123,7 +123,7 @@ namespace Woopsa
             base(channel, root, subscriptionId, propertyPath, monitorInterval, publishInterval)
         {
             // create monitor timer
-            _monitorTimer = new LightWeightTimer(monitorInterval);
+            _monitorTimer = channel.ServiceImplementation.TimerScheduler.AllocateTimer(monitorInterval);
             _monitorTimer.Elapsed += _monitorTimer_Elapsed;
             _monitorTimer.IsEnabled = true;
         }

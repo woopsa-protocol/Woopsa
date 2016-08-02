@@ -207,19 +207,26 @@ namespace Woopsa
 
         protected override void PopulateObject()
         {
-            TypeDescription cache;
+            TypeDescription cache = null;
 
             base.PopulateObject();
-            if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching) &&
-                    _typesCache.ContainsKey(TargetObject.GetType()))
-                cache = _typesCache[TargetObject.GetType()];
+            if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
+                lock (_typesCache)
+                {
+                    _typesCache.TryGetValue(TargetObject.GetType(), out cache);
+                    if (cache == null)
+                    {
+                        cache = new TypeDescription();
+                        ReflectProperties(cache.Properties, cache.Items);
+                        ReflectMethods(cache.Methods);
+                        _typesCache.Add(TargetObject.GetType(), cache);
+                    }
+                }
             else
             {
                 cache = new TypeDescription();
                 ReflectProperties(cache.Properties, cache.Items);
                 ReflectMethods(cache.Methods);
-                if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
-                    _typesCache.Add(TargetObject.GetType(), cache);
             }
             PopulateProperties(cache.Properties);
             PopulateMethods(cache.Methods);
