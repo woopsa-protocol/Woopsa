@@ -11,7 +11,7 @@ namespace Woopsa
         {
             get
             {
-                return 
+                return
                     IsContextWebServerThread ||
                     IsContextWoopsaClientSubscriptionThread ||
                     IsContextWoopsaSubscriptionServiceImplementation;
@@ -52,6 +52,5 @@ namespace Woopsa
                 WoopsaConst.WoopsaPathSeparator +
                 relativePath.TrimStart(WoopsaConst.WoopsaPathSeparator);
         }
-
     }
 }

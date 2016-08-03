@@ -108,7 +108,7 @@ namespace Woopsa
             if (targetObject != null)
             {
                 WoopsaVisibilityAttribute woopsaVisibilityAttribute =
-                    GetCustomAttribute<WoopsaVisibilityAttribute>(targetObject.GetType());
+                    WoopsaReflection.GetCustomAttribute<WoopsaVisibilityAttribute>(targetObject.GetType());
                 if (woopsaVisibilityAttribute != null)
                     Visibility = woopsaVisibilityAttribute.Visibility;
                 else
@@ -154,83 +154,35 @@ namespace Woopsa
 
         #region Private/Protected Methods
 
-        protected virtual void OnMemberWoopsaVisibilityCheck(MemberInfo member, ref bool isVisible)
+        protected virtual void OnMemberWoopsaVisibilityCheck(EventArgsMemberVisibilityCheck e)
         {
             if (MemberWoopsaVisibilityCheck != null)
-            {
-                EventArgsMemberVisibilityCheck e = new EventArgsMemberVisibilityCheck(member);
-                e.IsVisible = isVisible;
                 MemberWoopsaVisibilityCheck(this, e);
-                isVisible = e.IsVisible;
-            }
             else if (Owner is WoopsaObjectAdapter)
-                ((WoopsaObjectAdapter)Owner).OnMemberWoopsaVisibilityCheck(member, ref isVisible);
-        }
-
-        protected bool IsMemberWoopsaVisible(MemberInfo member)
-        {
-            var woopsaVisibleAttribute = GetCustomAttribute<WoopsaVisibleAttribute>(member);
-            bool isVisible;
-            if (woopsaVisibleAttribute != null)
-                isVisible = woopsaVisibleAttribute.Visible;
-            else
-                isVisible = Visibility.HasFlag(WoopsaVisibility.DefaultIsVisible);
-            if (isVisible)
-            {
-                if (TargetObject != null)
-                    if (member.DeclaringType != TargetObject.GetType())
-                        isVisible = Visibility.HasFlag(WoopsaVisibility.Inherited);
-            }
-            if (isVisible)
-            {
-                if (member.DeclaringType == typeof(object))
-                    isVisible = Visibility.HasFlag(WoopsaVisibility.ObjectClassMembers);
-            }
-            if (isVisible)
-            {
-                if (member is MethodBase)
-                    if ((member as MethodBase).IsSpecialName)
-                        isVisible = Visibility.HasFlag(WoopsaVisibility.MethodSpecialName);
-            }
-            if (isVisible)
-            {
-                if (member is PropertyInfo)
-                {
-                    PropertyInfo property = (PropertyInfo)member;
-                    if (typeof(IEnumerable<object>).IsAssignableFrom(property.PropertyType))
-                        isVisible = Visibility.HasFlag(WoopsaVisibility.IEnumerableObject);
-                }
-            }
-            OnMemberWoopsaVisibilityCheck(member, ref isVisible);
-            return isVisible;
+                ((WoopsaObjectAdapter)Owner).OnMemberWoopsaVisibilityCheck(e);
         }
 
         protected override void PopulateObject()
         {
-            TypeDescription cache = null;
+            TypeDescription typeDescription = null;
 
             base.PopulateObject();
             if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
                 lock (_typesCache)
                 {
-                    _typesCache.TryGetValue(TargetObject.GetType(), out cache);
-                    if (cache == null)
-                    {
-                        cache = new TypeDescription();
-                        ReflectProperties(cache.Properties, cache.Items);
-                        ReflectMethods(cache.Methods);
-                        _typesCache.Add(TargetObject.GetType(), cache);
-                    }
+                    _typesCache.TryGetValue(TargetObject.GetType(), out typeDescription);
+                    if (typeDescription == null)
+                        typeDescription = WoopsaReflection.ReflectObject(TargetObject.GetType(),
+                            Visibility,
+                            OnMemberWoopsaVisibilityCheck);
                 }
             else
-            {
-                cache = new TypeDescription();
-                ReflectProperties(cache.Properties, cache.Items);
-                ReflectMethods(cache.Methods);
-            }
-            PopulateProperties(cache.Properties);
-            PopulateMethods(cache.Methods);
-            PopulateItems(cache.Items);
+                typeDescription = WoopsaReflection.ReflectObject(TargetObject.GetType(), 
+                    Visibility, OnMemberWoopsaVisibilityCheck);
+
+            PopulateProperties(typeDescription.Properties);
+            PopulateMethods(typeDescription.Methods);
+            PopulateItems(typeDescription.Items);
             if (TargetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
             {
                 IEnumerable enumerable = (IEnumerable)TargetObject;
@@ -266,115 +218,6 @@ namespace Woopsa
             }
         }
 
-        private void ReflectProperties(IList<PropertyDescription> propertyDescriptions, IList<ItemDescription> itemDescriptions)
-        {
-            PropertyInfo[] properties;
-            properties = TargetObject.GetType().GetProperties(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var propertyInfo in properties)
-                if (IsMemberWoopsaVisible(propertyInfo))
-                {
-                    WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(propertyInfo);
-                    WoopsaValueType woopsaPropertyType;
-                    bool isValidWoopsaProperty = false;
-                    if (attribute != null)
-                    {
-                        woopsaPropertyType = attribute.ValueType;
-                        isValidWoopsaProperty = true;
-                    }
-                    else
-                        isValidWoopsaProperty = WoopsaTypeUtils.InferWoopsaType(propertyInfo.PropertyType, out woopsaPropertyType);
-                    if (isValidWoopsaProperty)
-                    {
-                        //This property is a C# property of a valid basic Woopsa Type, it can be published as a Woopsa property
-                        PropertyDescription newPropertyDescription = new PropertyDescription();
-                        newPropertyDescription.PropertyInfo = propertyInfo;
-                        if (propertyInfo.CanWrite && propertyInfo.GetSetMethod(false) != null)
-                            newPropertyDescription.ReadOnly = false;
-                        else
-                            newPropertyDescription.ReadOnly = true;
-                        newPropertyDescription.Type = woopsaPropertyType;
-                        propertyDescriptions.Add(newPropertyDescription);
-                    }
-                    else if (!propertyInfo.PropertyType.IsValueType)
-                    {
-                        // This property is not of a WoopsaType, if it is a reference type, assume it is an inner item
-                        ItemDescription newItem = new ItemDescription();
-                        newItem.PropertyInfo = propertyInfo;
-                        itemDescriptions.Add(newItem);
-                    }
-                }
-        }
-
-        private void ReflectMethods(IList<MethodDescription> methodDescriptions)
-        {
-            MethodInfo[] methods;
-
-            methods = TargetObject.GetType().GetMethods(BindingFlags.Public | BindingFlags.Instance);
-            foreach (var methodInfo in methods)
-                if (IsMemberWoopsaVisible(methodInfo))
-                {
-                    WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
-                    WoopsaValueType woopsaReturnType;
-                    bool isValidWoopsaMethod = false;
-                    if (attribute != null)
-                    {
-                        woopsaReturnType = attribute.ValueType;
-                        isValidWoopsaMethod = true;
-                    }
-                    else
-                        isValidWoopsaMethod = WoopsaTypeUtils.InferWoopsaType(methodInfo.ReturnType, out woopsaReturnType);
-                    if (isValidWoopsaMethod)
-                    {
-                        bool argumentsTypeCompatible = true;
-                        List<ArgumentDescription> arguments = new List<ArgumentDescription>();
-                        int parameterIndex = 0;
-                        foreach (var parameter in methodInfo.GetParameters())
-                        {
-                            WoopsaValueType argumentType;
-                            if (WoopsaTypeUtils.InferWoopsaType(parameter.ParameterType, out argumentType))
-                            {
-                                ArgumentDescription newArgument = new ArgumentDescription();
-                                string parameterName;
-                                newArgument.Type = parameter.ParameterType;
-                                parameterName = parameter.Name;
-                                if (string.IsNullOrEmpty(parameterName))
-                                {
-                                    if (TargetObject is Array)
-                                        if (methodInfo.Name == "Set")
-                                        {
-                                            if (parameterIndex == 0)
-                                                parameterName = "index";
-                                            else if (parameterIndex == 1)
-                                                parameterName = "value";
-                                        }
-                                        else if (methodInfo.Name == "Get")
-                                            if (parameterIndex == 0)
-                                                parameterName = "index";
-                                    if (parameterName == null)
-                                        parameterName = "p" + parameterIndex.ToString();
-                                }
-                                newArgument.ArgumentInfo = new WoopsaMethodArgumentInfo(parameterName, argumentType);
-                                arguments.Add(newArgument);
-                            }
-                            else
-                            {
-                                argumentsTypeCompatible = false;
-                                break;
-                            }
-                            parameterIndex++;
-                        }
-                        if (argumentsTypeCompatible)
-                        {
-                            MethodDescription newMethod = new MethodDescription();
-                            newMethod.Arguments = arguments;
-                            newMethod.ReturnType = woopsaReturnType;
-                            newMethod.MethodInfo = methodInfo;
-                            methodDescriptions.Add(newMethod);
-                        }
-                    }
-                }
-        }
-
         private DateTime? GetTimeStamp()
         {
             if (Options.HasFlag(WoopsaObjectAdapterOptions.SendTimestamps))
@@ -385,7 +228,7 @@ namespace Woopsa
 
         protected void AddWoopsaProperty(PropertyDescription property)
         {
-            if (property.ReadOnly)
+            if (property.IsReadOnly)
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
                     (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.Type, GetTimeStamp()))
                 );
@@ -428,7 +271,7 @@ namespace Woopsa
                         List<object> typedArguments = new List<object>();
                         for (var i = 0; i < method.Arguments.Count; i++)
                         {
-                            typedArguments.Add(((WoopsaValue)args.ElementAt(i)).ConvertTo(method.Arguments.ElementAt(i).Type));
+                            typedArguments.Add(((WoopsaValue)args[i]).ConvertTo(method.Arguments[i].Type));
                         }
                         if (method.MethodInfo.ReturnType == typeof(void))
                         {
@@ -462,60 +305,7 @@ namespace Woopsa
 
         #endregion
 
-        public class ItemDescription
-        {
-            public PropertyInfo PropertyInfo { get; set; }
-        }
-
-        public class PropertyDescription
-        {
-            public WoopsaValueType Type { get; set; }
-            public PropertyInfo PropertyInfo { get; set; }
-            public bool ReadOnly { get; set; }
-        }
-
-        public class MethodDescription
-        {
-            public IList<ArgumentDescription> Arguments { get; set; }
-            public IEnumerable<WoopsaMethodArgumentInfo> WoopsaArguments
-            {
-                get
-                {
-                    foreach (var argument in Arguments)
-                        yield return argument.ArgumentInfo;
-                }
-            }
-            public WoopsaValueType ReturnType { get; set; }
-            public MethodInfo MethodInfo { get; set; }
-        }
-
-        public class ArgumentDescription
-        {
-            public WoopsaMethodArgumentInfo ArgumentInfo { get; set; }
-            public Type Type { get; set; }
-        }
-
-        public class TypeDescription
-        {
-            public TypeDescription()
-            {
-                Items = new List<ItemDescription>();
-                Properties = new List<PropertyDescription>();
-                Methods = new List<MethodDescription>();
-            }
-
-            public IList<ItemDescription> Items { get; private set; }
-            public IList<PropertyDescription> Properties { get; private set; }
-            public IList<MethodDescription> Methods { get; private set; }
-
-        }
-
         private static readonly object[] EmptyParameters = new object[] { };
-
-        private static T GetCustomAttribute<T>(MemberInfo element) where T : Attribute
-        {
-            return element.GetCustomAttributes(true).OfType<T>().FirstOrDefault();
-        }
 
     }
 }

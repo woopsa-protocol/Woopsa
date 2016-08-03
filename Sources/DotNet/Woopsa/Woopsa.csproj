@@ -86,6 +86,7 @@
     <Compile Include="Services\SubscriptionService\WoopsaSubscriptionServiceImplementation.cs" />
     <Compile Include="Services\SubscriptionService\WoopsaSubscriptionServiceSubscription.cs" />
     <Compile Include="Utils\LightWeightTimer.cs" />
+    <Compile Include="Utils\WoopsaReflection.cs" />
     <Compile Include="Utils\WoopsaTypeUtils.cs" />
     <Compile Include="Utils\WoopsaUtils.cs" />
   </ItemGroup>
