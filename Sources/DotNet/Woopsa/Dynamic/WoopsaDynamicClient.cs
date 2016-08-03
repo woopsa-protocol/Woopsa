@@ -52,10 +52,11 @@ namespace Woopsa
             {
                 if (method.Name.Equals(binder.Name))
                 {
-                    var arguments = new List<IWoopsaValue>();
-                    for (int i = 0; i < method.ArgumentInfos.Count(); i++)
-                        arguments.Add(WoopsaValue.ToWoopsaValue(args[i], method.ArgumentInfos.ElementAt(i).Type));
-                    result = method.Invoke(arguments.ToArray());
+                    var argumentInfos = method.ArgumentInfos.ToArray();
+                    var arguments = new IWoopsaValue[argumentInfos.Length];
+                    for (int i = 0; i < argumentInfos.Length; i++)
+                        arguments[i] = WoopsaValue.ToWoopsaValue(args[i], argumentInfos[i].Type);
+                    result = method.Invoke(arguments);
                     return true;
                 }
             }

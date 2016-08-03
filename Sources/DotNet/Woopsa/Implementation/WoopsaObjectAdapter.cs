@@ -281,19 +281,17 @@ namespace Woopsa
                 {
                     try
                     {
-                        List<object> typedArguments = new List<object>();
+                        var typedArguments = new object[method.Arguments.Count];
                         for (var i = 0; i < method.Arguments.Count; i++)
-                        {
-                            typedArguments.Add(((WoopsaValue)args[i]).ConvertTo(method.Arguments[i].Type));
-                        }
+                            typedArguments[i] = ((WoopsaValue)args[i]).ConvertTo(method.Arguments[i].Type);
                         if (method.MethodInfo.ReturnType == typeof(void))
                         {
-                            method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray());
+                            method.MethodInfo.Invoke(TargetObject, typedArguments);
                             return null;
                         }
                         else
                             return WoopsaValue.ToWoopsaValue(
-                                method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()), method.WoopsaReturnType,
+                                method.MethodInfo.Invoke(TargetObject, typedArguments.ToArray()), method.WoopsaReturnType,
                                 GetTimeStamp());
                     }
                     catch (TargetInvocationException e)
@@ -321,4 +319,5 @@ namespace Woopsa
         private static readonly object[] EmptyParameters = new object[] { };
 
     }
+
 }

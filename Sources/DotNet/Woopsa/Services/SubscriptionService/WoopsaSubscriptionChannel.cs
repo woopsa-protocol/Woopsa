@@ -40,7 +40,6 @@ namespace Woopsa
             _waitNotificationEvent = new AutoResetEvent(false);
             _waitStopEvent = new ManualResetEvent(false);
             ServiceImplementation = serviceImplementation;
-            // TODO : problème de lock à contrôler :
             _idLock = new Object();
             Id = GetNextChannelId();
             NotificationQueueSize = notificationQueueSize;
