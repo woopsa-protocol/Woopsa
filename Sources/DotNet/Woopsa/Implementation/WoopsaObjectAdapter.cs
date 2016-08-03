@@ -57,7 +57,11 @@ namespace Woopsa
         /// <summary>
         /// Publish members inherited from Object, like ToString. Requires flag Inherited to have an effect.
         /// </summary>
-        ObjectClassMembers = 16
+        ObjectClassMembers = 16,
+        /// <summary>
+        /// Publish all
+        /// </summary>
+        All = DefaultIsVisible | MethodSpecialName | Inherited | IEnumerableObject | ObjectClassMembers
     }
 
     [AttributeUsage(AttributeTargets.Class)]
@@ -93,13 +97,26 @@ namespace Woopsa
 
     public class WoopsaObjectAdapter : WoopsaObject
     {
+
+        #region static
+
+        static WoopsaObjectAdapter()
+        {
+            _typesCache = new TypeDescriptions(WoopsaVisibility.All);
+        }
+
+        private static TypeDescriptions _typesCache;
+
+        #endregion
+
+
         public const string IEnumerableIndexerFormat = "{0}[{1}]";
 
         public const string IEnumerableItemBaseName = "Item";
 
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
             WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
-            WoopsaVisibility defaultVisibility = WoopsaVisibility.DefaultIsVisible)
+            WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility)
             : base(container, name)
         {
             TargetObject = targetObject;
@@ -117,7 +134,6 @@ namespace Woopsa
             else
                 Visibility = defaultVisibility;
         }
-
 
         /// <summary>
         /// To customize the woopsa visibility of a member. 
@@ -146,12 +162,6 @@ namespace Woopsa
             Clear();
         }
 
-        #region private members
-
-        private static Dictionary<Type, TypeDescription> _typesCache = new Dictionary<Type, TypeDescription>();
-
-        #endregion
-
         #region Private/Protected Methods
 
         protected virtual void OnMemberWoopsaVisibilityCheck(EventArgsMemberVisibilityCheck e)
@@ -169,15 +179,9 @@ namespace Woopsa
             base.PopulateObject();
             if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
                 lock (_typesCache)
-                {
-                    _typesCache.TryGetValue(TargetObject.GetType(), out typeDescription);
-                    if (typeDescription == null)
-                        typeDescription = WoopsaReflection.ReflectObject(TargetObject.GetType(),
-                            Visibility,
-                            OnMemberWoopsaVisibilityCheck);
-                }
+                    typeDescription = _typesCache.GetTypeDescription(TargetObject.GetType());
             else
-                typeDescription = WoopsaReflection.ReflectObject(TargetObject.GetType(), 
+                typeDescription = WoopsaReflection.ReflectType(TargetObject.GetType(),
                     Visibility, OnMemberWoopsaVisibilityCheck);
 
             PopulateProperties(typeDescription.Properties);
@@ -193,18 +197,21 @@ namespace Woopsa
         protected virtual void PopulateProperties(IEnumerable<PropertyDescription> properties)
         {
             foreach (var property in properties)
-                AddWoopsaProperty(property);
+                if (IsMemberWoopsaVisible(property.PropertyInfo))
+                    AddWoopsaProperty(property);
         }
         protected virtual void PopulateMethods(IEnumerable<MethodDescription> methods)
         {
             foreach (var method in methods)
-                AddWoopsaMethod(method);
+                if (IsMemberWoopsaVisible(method.MethodInfo))
+                    AddWoopsaMethod(method);
         }
 
         protected virtual void PopulateItems(IEnumerable<ItemDescription> items)
         {
             foreach (var item in items)
-                AddWoopsaItem(item);
+                if (IsMemberWoopsaVisible(item.PropertyInfo))
+                    AddWoopsaItem(item);
         }
 
         protected virtual void PopulateEnumerableItems(IEnumerable enumerable)
@@ -218,6 +225,12 @@ namespace Woopsa
             }
         }
 
+        protected bool IsMemberWoopsaVisible(MemberInfo memberInfo)
+        {
+            return WoopsaReflection.IsMemberWoopsaVisible(TargetObject.GetType(),
+                memberInfo, DefaultVisibility, OnMemberWoopsaVisibilityCheck);
+        }
+
         private DateTime? GetTimeStamp()
         {
             if (Options.HasFlag(WoopsaObjectAdapterOptions.SendTimestamps))
@@ -229,12 +242,12 @@ namespace Woopsa
         protected void AddWoopsaProperty(PropertyDescription property)
         {
             if (property.IsReadOnly)
-                new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
-                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.Type, GetTimeStamp()))
+                new WoopsaProperty(this, property.PropertyInfo.Name, property.WoopsaType,
+                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.WoopsaType, GetTimeStamp()))
                 );
             else
-                new WoopsaProperty(this, property.PropertyInfo.Name, property.Type,
-                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.Type, GetTimeStamp())),
+                new WoopsaProperty(this, property.PropertyInfo.Name, property.WoopsaType,
+                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.WoopsaType, GetTimeStamp())),
                     (sender, value) => property.PropertyInfo.SetValue(TargetObject, value.ConvertTo(property.PropertyInfo.PropertyType), null)
                 );
         }
@@ -264,7 +277,7 @@ namespace Woopsa
         {
             try
             {
-                new WoopsaMethod(this, method.MethodInfo.Name, method.ReturnType, method.WoopsaArguments, (args) =>
+                new WoopsaMethod(this, method.MethodInfo.Name, method.WoopsaReturnType, method.WoopsaArguments, (args) =>
                 {
                     try
                     {
@@ -280,7 +293,7 @@ namespace Woopsa
                         }
                         else
                             return WoopsaValue.ToWoopsaValue(
-                                method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()), method.ReturnType,
+                                method.MethodInfo.Invoke(this.TargetObject, typedArguments.ToArray()), method.WoopsaReturnType,
                                 GetTimeStamp());
                     }
                     catch (TargetInvocationException e)

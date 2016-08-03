@@ -71,11 +71,13 @@ namespace WoopsaTest
         [TestMethod]
         public void TestWoopsaObjectAdapter()
         {
+            
             ClassA a = new ClassA();
             WoopsaObjectAdapter adapterA1 = new WoopsaObjectAdapter(null, "a", a);
             Assert.IsNotNull(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)));
             Assert.AreEqual(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)).Value.Type, WoopsaValueType.Logical);
             Assert.IsFalse(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)).Value.ToBool());
+            Assert.IsNull(adapterA1.Methods.ByNameOrNull(nameof(ClassA.ToString)));
             adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)).Value = new WoopsaValue(true);
             Assert.IsTrue(a.APropertyBool);
             Assert.IsTrue(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)).Value.ToBool());
@@ -91,7 +93,14 @@ namespace WoopsaTest
             Assert.AreEqual(a.Inner1.APropertyInt, 5);
             a.Inner1.APropertyInt = 12;
             Assert.AreEqual(inner1.Properties.ByNameOrNull(nameof(ClassAInner1.APropertyInt)).Value.ToInt64(), 12);
-            Assert.IsNotNull(inner1.Methods.ByNameOrNull(nameof(ClassAInner1.ToString)));
+            Assert.IsNull(inner1.Methods.ByNameOrNull(nameof(ClassAInner1.ToString)));
+
+            WoopsaObjectAdapter adapterA1All = new WoopsaObjectAdapter(null, "a", a,
+                WoopsaObjectAdapterOptions.None, WoopsaVisibility.All);
+            Assert.IsNotNull(adapterA1All.Methods.ByNameOrNull(nameof(ClassA.ToString)));
+            IWoopsaObject inner1All = adapterA1All.Items.ByName("Inner1") as IWoopsaObject;
+            Assert.IsNotNull(inner1All.Methods.ByNameOrNull(nameof(ClassAInner1.ToString)));
+
 
 
             WoopsaObjectAdapter adapterA2 = new WoopsaObjectAdapter(null, "a", a, WoopsaObjectAdapterOptions.SendTimestamps);
@@ -99,15 +108,17 @@ namespace WoopsaTest
 
             WoopsaObjectAdapter adapterA3 = new WoopsaObjectAdapter(null, "a", a, WoopsaObjectAdapterOptions.DisableClassesCaching);
             Assert.IsNotNull(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)));
-
+            
             ClassB b = new ClassB();
-            WoopsaObjectAdapter adapterB = new WoopsaObjectAdapter(null, "b", b);
+            WoopsaObjectAdapter adapterB = new WoopsaObjectAdapter(null, "b", b,
+                WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.MethodSpecialName |
+                WoopsaVisibility.Inherited);
             Assert.IsNotNull(adapterB.Methods.ByNameOrNull("get_" + nameof(ClassB.APropertyBool)));
             Assert.IsNotNull(adapterB.Properties.ByNameOrNull(nameof(b.APropertyBool)));
-            
+
             ClassC c = new ClassC();
             WoopsaObjectAdapter adapterC = new WoopsaObjectAdapter(null, "c", c);
-            Assert.IsNull(adapterC.Properties.ByNameOrNull(nameof(c.APropertyBool)));
+            Assert.IsNotNull(adapterC.Properties.ByNameOrNull(nameof(c.APropertyBool)));
             Assert.IsNotNull(adapterC.Properties.ByNameOrNull(nameof(c.APropertyTimeSpan)));
             Assert.IsNull(adapterC.Properties.ByNameOrNull("APropertyDouble2"));
             Assert.IsNotNull(adapterC.Properties.ByNameOrNull(nameof(c.APropertyText)));

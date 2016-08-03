@@ -9,9 +9,10 @@ namespace Woopsa
 {
     public static class WoopsaReflection
     {
-        public const WoopsaVisibility DefaultVisibility = WoopsaVisibility.DefaultIsVisible;
+        public const WoopsaVisibility DefaultVisibility = WoopsaVisibility.DefaultIsVisible |
+             WoopsaVisibility.Inherited;
 
-        public static TypeDescription ReflectObject(
+        public static TypeDescription ReflectType(
             Type targetType,
             WoopsaVisibility visibility,
             Action<EventArgsMemberVisibilityCheck> visibilityCheck)
@@ -24,11 +25,11 @@ namespace Woopsa
             return typeDescription;
         }
 
-        public static TypeDescription ReflectObject(
+        public static TypeDescription ReflectType(
             Type targetType,
             WoopsaVisibility visibility = DefaultVisibility)
         {
-            return ReflectObject(targetType, visibility, (e) => { });
+            return ReflectType(targetType, visibility, (e) => { });
         }
 
         public static void ReflectProperties(
@@ -159,7 +160,7 @@ namespace Woopsa
             ReflectMethods(targetType, methodDescriptions, visibility, (e) => { });
         }
 
-        private static bool IsMemberWoopsaVisible(
+        public static bool IsMemberWoopsaVisible(
             Type targetType,
             MemberInfo member,
             WoopsaVisibility visibility,
@@ -214,7 +215,7 @@ namespace Woopsa
         public abstract string Name { get; }
     }
 
-    public class Descriptions<T> : IEnumerable<T> where T:Description
+    public class Descriptions<T> : IEnumerable<T> where T : Description
     {
         public Descriptions()
         {
@@ -230,6 +231,11 @@ namespace Woopsa
         public T this[string name]
         {
             get { return _itemsByName[name]; }
+        }
+
+        public bool TryGetValue(string name, out T value)
+        {
+            return _itemsByName.TryGetValue(name, out value);
         }
 
         public int Count { get { return _items.Count; } }
@@ -270,13 +276,13 @@ namespace Woopsa
         public PropertyDescription(WoopsaValueType type, PropertyInfo propertyInfo,
             bool isReadOnly)
         {
-            Type = type;
+            WoopsaType = type;
             PropertyInfo = propertyInfo;
             IsReadOnly = isReadOnly;
         }
 
         public override string Name { get { return PropertyInfo.Name; } }
-        public WoopsaValueType Type { get; private set; }
+        public WoopsaValueType WoopsaType { get; private set; }
         public PropertyInfo PropertyInfo { get; private set; }
         public bool IsReadOnly { get; private set; }
     }
@@ -302,14 +308,14 @@ namespace Woopsa
         public MethodDescription(WoopsaValueType returnType, ArgumentDescriptions arguments,
             MethodInfo methodInfo)
         {
-            ReturnType = returnType;
+            WoopsaReturnType = returnType;
             Arguments = arguments;
             MethodInfo = methodInfo;
         }
 
         public override string Name { get { return MethodInfo.Name; } }
         public ArgumentDescriptions Arguments { get; private set; }
-        public WoopsaValueType ReturnType { get; private set; }
+        public WoopsaValueType WoopsaReturnType { get; private set; }
         public MethodInfo MethodInfo { get; private set; }
         public IEnumerable<WoopsaMethodArgumentInfo> WoopsaArguments
         {
@@ -321,9 +327,9 @@ namespace Woopsa
         }
     }
 
-    public class ItemDescriptions : Descriptions<ItemDescription>    {    }
+    public class ItemDescriptions : Descriptions<ItemDescription> { }
 
-    public class PropertyDescriptions : Descriptions<PropertyDescription>    {    }
+    public class PropertyDescriptions : Descriptions<PropertyDescription> { }
 
     public class MethodDescriptions : Descriptions<MethodDescription> { }
 
@@ -339,6 +345,37 @@ namespace Woopsa
         public ItemDescriptions Items { get; private set; }
         public PropertyDescriptions Properties { get; private set; }
         public MethodDescriptions Methods { get; private set; }
+    }
+
+    public class TypeDescriptions
+    {
+        public TypeDescriptions(WoopsaVisibility visibility,
+            Action<EventArgsMemberVisibilityCheck> visibilityCheck)
+        {
+            _visibility = visibility;
+            _visibilityCheck = visibilityCheck;
+            _typeDescriptions = new Dictionary<Type, TypeDescription>();
+        }
+
+        public TypeDescriptions(WoopsaVisibility visibility = WoopsaReflection.DefaultVisibility):
+            this(visibility, (e) => { })
+        {
+        }
+        public TypeDescription GetTypeDescription(Type type)
+        {
+            TypeDescription result;
+            if (!_typeDescriptions.TryGetValue(type, out result))
+            {
+                result = WoopsaReflection.ReflectType(type,
+                    _visibility, _visibilityCheck);
+                _typeDescriptions[type] = result;
+            }
+            return result;
+        }
+
+        private WoopsaVisibility _visibility;
+        private Action<EventArgsMemberVisibilityCheck> _visibilityCheck;
+        private Dictionary<Type, TypeDescription> _typeDescriptions;
     }
 
 }
