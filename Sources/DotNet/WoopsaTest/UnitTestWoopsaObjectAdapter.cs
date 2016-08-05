@@ -15,6 +15,11 @@ namespace WoopsaTest
 
     }
 
+    public class SubClassAInner1:ClassAInner1
+    {
+        public int ExtraProperty { get; set; }
+    }
+
     public class ClassA
     {
         public ClassA()
@@ -27,7 +32,7 @@ namespace WoopsaTest
         public DateTime APropertyDateTime { get; set; }
         public DateTime APropertyDateTime2 { get; set; }
 
-        public ClassAInner1 Inner1 { get; private set; }
+        public ClassAInner1 Inner1 { get; set; }
     }
 
     [WoopsaVisibility(WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited | WoopsaVisibility.MethodSpecialName)]
@@ -92,8 +97,16 @@ namespace WoopsaTest
             inner1.Properties.ByNameOrNull(nameof(ClassAInner1.APropertyInt)).Value = new WoopsaValue(5);
             Assert.AreEqual(a.Inner1.APropertyInt, 5);
             a.Inner1.APropertyInt = 12;
-            Assert.AreEqual(inner1.Properties.ByNameOrNull(nameof(ClassAInner1.APropertyInt)).Value.ToInt64(), 12);
+            Assert.AreEqual(inner1.Properties.ByNameOrNull(nameof(ClassAInner1.APropertyInt)).Value, 12);
             Assert.IsNull(inner1.Methods.ByNameOrNull(nameof(ClassAInner1.ToString)));
+
+            // dynamic object change
+            a.Inner1 = new ClassAInner1() { APropertyInt = 123, APropertyIntHidden = 0 };
+            Assert.AreEqual(inner1.Properties.ByName(nameof(ClassAInner1.APropertyInt)).Value, 123);
+            Assert.IsNull(inner1.Properties.ByNameOrNull(nameof(SubClassAInner1.ExtraProperty)));
+            a.Inner1 = new SubClassAInner1() { APropertyInt = 123, APropertyIntHidden = 0,
+                ExtraProperty=555 };
+            Assert.AreEqual(inner1.Properties.ByName(nameof(SubClassAInner1.ExtraProperty)).Value, 555);
 
             WoopsaObjectAdapter adapterA1All = new WoopsaObjectAdapter(null, "a", a,
                 WoopsaObjectAdapterOptions.None, WoopsaVisibility.All);

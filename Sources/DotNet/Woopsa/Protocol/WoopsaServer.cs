@@ -423,48 +423,44 @@ namespace Woopsa
         }
         #endregion
 
-        private IWoopsaElement FindByPath(string path)
+        private IWoopsaElement FindByPath(string searchPath)
         {
-            if (path.Equals(WoopsaConst.WoopsaPathSeparator.ToString())) //This is the root object
+            if (searchPath.Equals(WoopsaConst.WoopsaPathSeparator.ToString())) //This is the root object
                 return _root;
-
-            path = path.TrimStart(WoopsaConst.WoopsaPathSeparator);
-            IWoopsaElement item = _root;
-
-            if (!_pathCache.ContainsKey(path))
             {
-                string[] pathParts = path.Split(WoopsaConst.WoopsaPathSeparator);
-                int pathAt = 0;
+                IWoopsaElement item;
+                string path = searchPath.TrimStart(WoopsaConst.WoopsaPathSeparator);
 
-                do
+                if (!_pathCache.TryGetValue(path, out item))
                 {
-                    string toFind = pathParts.Skip(pathAt).ElementAt(0);
-                    string currentPath = String.Join(WoopsaConst.WoopsaPathSeparator.ToString(), pathParts.Take(pathAt + 1));
-
-                    if (_pathCache.ContainsKey(currentPath))
+                    string[] pathParts = path.Split(WoopsaConst.WoopsaPathSeparator);
+                    string currentPath = string.Empty;
+                    item = _root;
+                    // TODO : améliorer les performances
+                    for (int i = 0; i < pathParts.Length; i++) 
                     {
-                        item = _pathCache[currentPath];
+                        string toFind = pathParts[i];
+                        if (currentPath != string.Empty)
+                            currentPath = currentPath + WoopsaConst.WoopsaPathSeparator;
+                        currentPath = currentPath + toFind;
+                        IWoopsaElement foundItem;
+                        if (_pathCache.TryGetValue(currentPath, out foundItem))
+                            item = foundItem;
+                        else
+                        {
+                            if (item is IWoopsaContainer)
+                                item = (item as IWoopsaContainer).ByName(toFind);
+                            bool isCachable = true;
+                            if (item is IWoopsaElementCacheRequirement)
+                                isCachable = ((IWoopsaElementCacheRequirement)item).IsCachable;
+                            if (isCachable)
+                                if (OnCachingPath(currentPath))
+                                    _pathCache.Add(currentPath, item);
+                        }
                     }
-                    else
-                    {
-                        if (item is IWoopsaContainer)
-                            item = (item as IWoopsaContainer).ByName(toFind);
-
-                        bool isCachable = true;
-                        if (item is IWoopsaElementCacheRequirement)
-                            isCachable = ((IWoopsaElementCacheRequirement)item).IsCachable;
-                        if (isCachable)
-                            if (OnCachingPath(currentPath))
-                                _pathCache.Add(currentPath, item);
-                    }
-                    pathAt++;
                 }
-                while (pathAt < pathParts.Length);
+                return item;
             }
-            else
-                item = _pathCache[path];
-
-            return item;
         }
         #endregion
 
