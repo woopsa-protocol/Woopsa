@@ -17,7 +17,7 @@ namespace Woopsa
             WoopsaVisibility visibility,
             Action<EventArgsMemberVisibilityCheck> visibilityCheck)
         {
-            TypeDescription typeDescription = new TypeDescription();
+            TypeDescription typeDescription = new TypeDescription(targetType);
             ReflectProperties(targetType, typeDescription.Properties,
                 typeDescription.Items, visibility, visibilityCheck);
             ReflectMethods(targetType, typeDescription.Methods,
@@ -228,6 +228,11 @@ namespace Woopsa
             get { return _items[index]; }
         }
 
+        public bool Contains(string name)
+        {
+            return _itemsByName.ContainsKey(name);
+        }
+
         public T this[string name]
         {
             get { return _itemsByName[name]; }
@@ -335,13 +340,15 @@ namespace Woopsa
 
     public class TypeDescription
     {
-        public TypeDescription()
+        public TypeDescription(Type type)
         {
+            Type = type;
             Items = new ItemDescriptions();
             Properties = new PropertyDescriptions();
             Methods = new MethodDescriptions();
         }
 
+        public Type Type { get; private set; }
         public ItemDescriptions Items { get; private set; }
         public PropertyDescriptions Properties { get; private set; }
         public MethodDescriptions Methods { get; private set; }

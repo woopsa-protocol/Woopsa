@@ -250,7 +250,7 @@ namespace Woopsa
             }
         }
 
-        protected bool IsMemberWoopsaVisible(MemberInfo memberInfo)
+        protected virtual bool IsMemberWoopsaVisible(MemberInfo memberInfo)
         {
             return WoopsaReflection.IsMemberWoopsaVisible(TargetObject.GetType(),
                 memberInfo, DefaultVisibility, OnMemberWoopsaVisibilityCheck);

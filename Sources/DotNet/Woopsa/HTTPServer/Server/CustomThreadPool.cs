@@ -38,6 +38,7 @@ namespace Woopsa
         public void Terminate()
         {
             _terminateEvent.Set();
+            // TODO : Dans dispose ?
             _startEvent.Dispose();
             _terminateEvent.Dispose();
         }
@@ -155,8 +156,8 @@ namespace Woopsa
                     if (thread == null)
                     {
                         Debug.Assert(_threads.Count <= _threadPoolSize);
-                        _lastThreadIndex++;                        
-                        thread = new CustomThreadPoolThread(Name+ _lastThreadIndex.ToString(), Priority);
+                        _lastThreadIndex++;
+                        thread = new CustomThreadPoolThread(Name + _lastThreadIndex.ToString(), Priority);
                         thread.Idle += OnIdle;
                         _threads.Add(thread);
                     }
@@ -209,21 +210,34 @@ namespace Woopsa
             Join(InfiniteTimeSpan);
         }
 
-        public void Dispose()
+        #region IDisposable
+        protected virtual void Dispose(bool disposing)
         {
-            Terminate();
-            foreach (var item in _threads)
+            if (disposing)
             {
-                item.Dispose();
+                Terminate();
+                foreach (var item in _threads)
+                {
+                    item.Dispose();
+                }
+                _semaphore.Dispose();
             }
         }
+
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+
+        #endregion
 
         private int _lastThreadIndex;
         private List<CustomThreadPoolThread> _threads;
         private Semaphore _semaphore;
         private bool _aborting;
         private int _threadPoolSize;
-        
+
         static readonly TimeSpan InfiniteTimeSpan = new TimeSpan(0, 0, 0, 0, Timeout.Infinite);
 
     }

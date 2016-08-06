@@ -88,7 +88,7 @@ namespace Woopsa
                     while (timeClass != null);
                     Thread.Sleep(1);
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // TODO : Manage exceptions properly
                 }
@@ -139,7 +139,7 @@ namespace Woopsa
                         {
                             timer.Execute();
                         }
-                        catch (Exception e)
+                        catch (Exception)
                         {
                             // TODO : Define how to manage properly user code exceptions
                         }

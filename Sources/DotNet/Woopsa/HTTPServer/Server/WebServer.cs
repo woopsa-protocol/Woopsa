@@ -163,6 +163,8 @@ namespace Woopsa
                 if (_threadPool != null)
                 {
                     _threadPool.Join();
+                    //TODO Adapter pour que cela fonctionne :
+//                    _threadPool.Dispose();
                     _threadPool = null;
                 }
 
@@ -234,7 +236,7 @@ namespace Woopsa
                         _aborted = true;
                     }
                 }
-                catch (Exception e)
+                catch (Exception)
                 {
                     // TODO : mechanism to manage exceptions
                 }
