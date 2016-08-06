@@ -199,17 +199,26 @@ namespace Woopsa
         {
             get
             {
-                if (_watchedProperty == null)
+                try
                 {
-                    var item = Root.ByPath(PropertyPath);
-                    if (item is IWoopsaProperty)
-                        _watchedProperty = item as IWoopsaProperty;
-                    else
-                        throw new WoopsaNotFoundException(
-                            string.Format("The path {0} does not reference a property",
-                            PropertyPath));
+                    if (_watchedProperty == null)
+                    {
+                        var item = Root.ByPath(PropertyPath);
+                        if (item is IWoopsaProperty)
+                            _watchedProperty = item as IWoopsaProperty;
+                        else
+                            throw new WoopsaNotFoundException(
+                                string.Format("The path {0} does not reference a property",
+                                PropertyPath));
+                    }
+                    return _watchedProperty.Value;
                 }
-                return _watchedProperty.Value;
+                catch (Exception)
+                {
+                    // The property might have become invalid, search it new the next time
+                    _watchedProperty = null;
+                    throw;
+                }
             }
         }
 

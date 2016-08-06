@@ -129,6 +129,7 @@ namespace Woopsa
             TargetObjectGetter = targetObjectGetter;
             DefaultVisibility = defaultVisibility;
             Options = options;
+            _lock = new object();
         }
 
         /// <summary>
@@ -138,7 +139,39 @@ namespace Woopsa
         /// </summary>
         public event EventHandler<EventArgsMemberVisibilityCheck> MemberWoopsaVisibilityCheck;
 
-        public object TargetObject { get; private set; }
+        public object TargetObject
+        {
+            get
+            {
+                object newTargetObject;
+                try
+                {
+                    newTargetObject = TargetObjectGetter();
+                }
+                catch (Exception)
+                {
+                    newTargetObject = null;
+                    // Items from property getters that throw exceptions are not added to the object hierarchy
+                    // Ignore silently
+                }
+                if (newTargetObject != _targetObject)
+                {
+                    lock (_lock)
+                    {
+                        object currentTargetObjectType = _targetObject != null ? _targetObject.GetType() : null;
+                        object newTargetObjectType = newTargetObject != null ? newTargetObject.GetType() : null;
+                        if (newTargetObjectType != currentTargetObjectType)
+                        {
+                            Clear();
+                            DoPopulate();
+                        }
+                        else
+                            _targetObject = newTargetObject;
+                    }
+                }
+                return _targetObject;
+            }
+        }
         public Func<object> TargetObjectGetter { get; private set; }
         public WoopsaObjectAdapterOptions Options { get; private set; }
 
@@ -172,12 +205,22 @@ namespace Woopsa
         protected override void PopulateObject()
         {
             TypeDescription typeDescription = null;
-
-            RefreshTargetObject();
-            if (TargetObject != null)
+            object targetObject;
+            try
+            {
+                targetObject = TargetObjectGetter();
+            }
+            catch (Exception)
+            {
+                targetObject = null;
+                // Items from property getters that throw exceptions are not added to the object hierarchy
+                // Ignore silently
+            }
+            _targetObject = targetObject;
+            if (targetObject != null)
             {
                 WoopsaVisibilityAttribute woopsaVisibilityAttribute =
-                    WoopsaReflection.GetCustomAttribute<WoopsaVisibilityAttribute>(TargetObject.GetType());
+                    WoopsaReflection.GetCustomAttribute<WoopsaVisibilityAttribute>(targetObject.GetType());
                 if (woopsaVisibilityAttribute != null)
                     Visibility = woopsaVisibilityAttribute.Visibility;
                 else
@@ -186,43 +229,49 @@ namespace Woopsa
             else
                 Visibility = DefaultVisibility;
             base.PopulateObject();
-            if (TargetObject != null)
+            if (targetObject != null)
             {
                 if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
                     lock (_typesCache)
-                        typeDescription = _typesCache.GetTypeDescription(TargetObject.GetType());
+                        typeDescription = _typesCache.GetTypeDescription(targetObject.GetType());
                 else
-                    typeDescription = WoopsaReflection.ReflectType(TargetObject.GetType(),
+                    typeDescription = WoopsaReflection.ReflectType(targetObject.GetType(),
                         Visibility, OnMemberWoopsaVisibilityCheck);
 
-                PopulateProperties(typeDescription.Properties);
-                PopulateMethods(typeDescription.Methods);
-                PopulateItems(typeDescription.Items);
-                if (TargetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
+                PopulateProperties(targetObject, typeDescription.Properties);
+                PopulateMethods(targetObject, typeDescription.Methods);
+                PopulateItems(targetObject, typeDescription.Items);
+                if (targetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 {
-                    IEnumerable enumerable = (IEnumerable)TargetObject;
+                    IEnumerable enumerable = (IEnumerable)targetObject;
                     PopulateEnumerableItems(enumerable);
                 }
             }
         }
 
-        protected virtual void PopulateProperties(IEnumerable<PropertyDescription> properties)
+        protected override void UpdateItems()
+        {
+            base.UpdateItems();
+            // Enforce object update if needed :
+            object targetObject = TargetObject;
+        }
+        protected virtual void PopulateProperties(object targetObject, IEnumerable<PropertyDescription> properties)
         {
             foreach (var property in properties)
-                if (IsMemberWoopsaVisible(property.PropertyInfo))
+                if (IsMemberWoopsaVisible(targetObject, property.PropertyInfo))
                     AddWoopsaProperty(property);
         }
-        protected virtual void PopulateMethods(IEnumerable<MethodDescription> methods)
+        protected virtual void PopulateMethods(object targetObject, IEnumerable<MethodDescription> methods)
         {
             foreach (var method in methods)
-                if (IsMemberWoopsaVisible(method.MethodInfo))
+                if (IsMemberWoopsaVisible(targetObject, method.MethodInfo))
                     AddWoopsaMethod(method);
         }
 
-        protected virtual void PopulateItems(IEnumerable<ItemDescription> items)
+        protected virtual void PopulateItems(object targetObject, IEnumerable<ItemDescription> items)
         {
             foreach (var item in items)
-                if (IsMemberWoopsaVisible(item.PropertyInfo))
+                if (IsMemberWoopsaVisible(targetObject, item.PropertyInfo))
                     AddWoopsaItem(item);
         }
 
@@ -237,37 +286,10 @@ namespace Woopsa
             }
         }
 
-        protected override void UpdateItems()
+        protected virtual bool IsMemberWoopsaVisible(object targetObject, MemberInfo memberInfo)
         {
-            base.UpdateItems();
-            object lastTargetObjectType = TargetObject != null ? TargetObject.GetType() : null;
-            RefreshTargetObject();
-            object newTargetObjectType = TargetObject != null ? TargetObject.GetType() : null;
-            if (newTargetObjectType != lastTargetObjectType)
-            {
-                Clear();
-                DoPopulate();
-            }
-        }
-
-        protected virtual bool IsMemberWoopsaVisible(MemberInfo memberInfo)
-        {
-            return WoopsaReflection.IsMemberWoopsaVisible(TargetObject.GetType(),
+            return WoopsaReflection.IsMemberWoopsaVisible(targetObject.GetType(),
                 memberInfo, DefaultVisibility, OnMemberWoopsaVisibilityCheck);
-        }
-
-        private void RefreshTargetObject()
-        {
-            try
-            {
-                TargetObject = TargetObjectGetter();
-            }
-            catch (Exception)
-            {
-                TargetObject = null;
-                // Items from property getters that throw exceptions are not added to the object hierarchy
-                // Ignore silently
-            }
         }
 
         private DateTime? GetTimeStamp()
@@ -279,7 +301,7 @@ namespace Woopsa
         }
 
         protected void AddWoopsaProperty(PropertyDescription property)
-        {
+        {            
             if (property.IsReadOnly)
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.WoopsaType,
                     (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.WoopsaType, GetTimeStamp()))
@@ -342,10 +364,14 @@ namespace Woopsa
                 // Ignore silently, the method won't be published
             }
 
+ 
         }
 
         #endregion
 
+        private object _targetObject;
+        private object _lock;
+ 
         private static readonly object[] EmptyParameters = new object[] { };
 
     }

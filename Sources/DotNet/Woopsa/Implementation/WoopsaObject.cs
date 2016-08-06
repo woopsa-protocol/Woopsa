@@ -51,6 +51,7 @@ namespace Woopsa
 
         protected virtual void Dispose(bool disposing)
         {
+            _isDisposed = true;
             Owner = null;
         }
 
@@ -61,6 +62,14 @@ namespace Woopsa
         }
 
         #endregion IDisposable
+
+        protected void CheckDisposed()
+        {
+            if (_isDisposed)
+                throw new ObjectDisposedException(this.GetPath());
+        }
+
+        private bool _isDisposed;
     }
 
     public class WoopsaContainer : WoopsaElement, IWoopsaContainer
@@ -99,6 +108,7 @@ namespace Woopsa
         /// </summary>
         public virtual void Refresh()
         {
+            CheckDisposed();
             lock (Lock)
                 foreach (var item in _items)
                     item.Refresh();
@@ -130,6 +140,7 @@ namespace Woopsa
 
         protected void DoPopulate()
         {
+            CheckDisposed();
             lock (Lock)
                 if (!_populated)
                 {
@@ -169,6 +180,7 @@ namespace Woopsa
 
         protected virtual void Clear()
         {
+            CheckDisposed();
             lock (Lock)
             {
                 DisposeWoopsaElements(_items);
@@ -239,7 +251,11 @@ namespace Woopsa
 
         public WoopsaValue Value
         {
-            get { return _get(this); }
+            get
+            {
+                CheckDisposed();
+                return _get(this);
+            }
             set
             {
                 ((IWoopsaProperty)this).Value = value;
@@ -251,6 +267,7 @@ namespace Woopsa
             get { return Value; }
             set
             {
+                CheckDisposed();
                 if (!IsReadOnly)
                     _set(this, value);
                 else
@@ -324,10 +341,12 @@ namespace Woopsa
 
         public WoopsaValue Invoke(params WoopsaValue[] arguments)
         {
+            CheckDisposed();
             return _methodInvoke(arguments);
         }
         public WoopsaValue Invoke(IEnumerable<IWoopsaValue> arguments)
         {
+            CheckDisposed();
             return _methodInvoke(arguments.ToArray());
         }
 
