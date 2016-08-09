@@ -128,23 +128,20 @@ namespace Woopsa
             _monitorTimer.IsEnabled = true;
         }
 
-        protected IWoopsaValue SynchronizedWatchedPropertyValue
+        protected bool GetSynchronizedWatchedPropertyValue(out IWoopsaValue value)
         {
-            get
+            Channel.OnBeforeWoopsaModelAccess();
+            try
             {
-                Channel.OnBeforeWoopsaModelAccess();
-                try
-                {
-                    return WatchedPropertyValue;
-                }
-                finally
-                {
-                    Channel.OnAfterWoopsaModelAccess();
-                }
+                return GetWatchedPropertyValue(out value);
+            }
+            finally
+            {
+                Channel.OnAfterWoopsaModelAccess();
             }
         }
 
-        protected abstract IWoopsaValue WatchedPropertyValue { get; }
+        protected abstract bool GetWatchedPropertyValue(out IWoopsaValue value);
 
         #region IDisposable
 
@@ -167,8 +164,9 @@ namespace Woopsa
         {
             try
             {
-                IWoopsaValue newValue = SynchronizedWatchedPropertyValue;
-                EnqueueNewMonitoredValue(newValue);
+                IWoopsaValue newValue;
+                if (GetSynchronizedWatchedPropertyValue(out newValue))
+                    EnqueueNewMonitoredValue(newValue);
             }
             catch (Exception)
             {
@@ -195,31 +193,32 @@ namespace Woopsa
         {
             _watchedProperty = null;
         }
-        protected override IWoopsaValue WatchedPropertyValue
+        protected override bool GetWatchedPropertyValue(out IWoopsaValue  value)
         {
-            get
+            try
             {
-                try
+                if (_watchedProperty == null)
                 {
-                    if (_watchedProperty == null)
-                    {
-                        var item = Root.ByPath(PropertyPath);
-                        if (item is IWoopsaProperty)
-                            _watchedProperty = item as IWoopsaProperty;
-                        else
-                            throw new WoopsaNotFoundException(
-                                string.Format("The path {0} does not reference a property",
-                                PropertyPath));
-                    }
-                    return _watchedProperty.Value;
+                    var item = Root.ByPathOrNull(PropertyPath);
+                    _watchedProperty = item as IWoopsaProperty;
                 }
-                catch (Exception)
+                if (_watchedProperty != null)
                 {
-                    // The property might have become invalid, search it new the next time
-                    _watchedProperty = null;
-                    throw;
+                    value = _watchedProperty.Value;
+                    return true;
+                }
+                else
+                {
+                    value = null;
+                    return false;
                 }
             }
+            catch (Exception)
+            {
+                // The property might have become invalid, search it new the next time
+                _watchedProperty = null;
+                throw;
+            }            
         }
 
         #region IDisposable
@@ -279,9 +278,18 @@ namespace Woopsa
         {
         }
 
-        protected override IWoopsaValue WatchedPropertyValue
+        protected override bool GetWatchedPropertyValue(out IWoopsaValue value)
         {
-            get { return ((WoopsaBaseClientObject)Root).Client.ClientProtocol.Read(PropertyPath); }
+            try
+            {
+                value = ((WoopsaBaseClientObject)Root).Client.ClientProtocol.Read(PropertyPath);
+                return true;
+            }
+            catch
+            {
+                value = null;
+                return false;
+            }
         }
 
     }

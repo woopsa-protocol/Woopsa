@@ -132,5 +132,21 @@ namespace WoopsaTest
                 WoopsaValueType.WoopsaLink);
         }
 
+
+        [TestMethod]
+        public void TestMethodWoopsaSerializationPerfo()
+        {
+            Stopwatch watch = new Stopwatch();
+            WoopsaValue v = 3.14;
+            watch.Start();
+            for (int i = 0; i < 1000000; i++)
+            {
+                v.Serialize();
+            }
+            watch.Stop();
+            Assert.AreEqual(watch.Elapsed < TimeSpan.FromMilliseconds(1000), true);
+        }
+
+
     }
 }
