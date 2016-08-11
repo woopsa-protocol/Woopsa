@@ -163,8 +163,7 @@ namespace Woopsa
                 if (_threadPool != null)
                 {
                     _threadPool.Join();
-                    //TODO Adapter pour que cela fonctionne :
-//                    _threadPool.Dispose();
+                    _threadPool.Dispose();
                     _threadPool = null;
                 }
 

@@ -38,9 +38,6 @@ namespace Woopsa
         public void Terminate()
         {
             _terminateEvent.Set();
-            // TODO : Dans dispose ?
-            _startEvent.Dispose();
-            _terminateEvent.Dispose();
         }
 
         public bool Join(TimeSpan timeout)
@@ -83,8 +80,9 @@ namespace Woopsa
         public void Dispose()
         {
             Terminate();
-            // Todo: join  ?
-            // todo : dispose ?
+            _thread.Join();
+            _startEvent.Dispose();
+            _terminateEvent.Dispose();
         }
 
         bool _isIdle;
