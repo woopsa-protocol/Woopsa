@@ -43,7 +43,6 @@ namespace Woopsa
             if (!targetType.IsInterface)
                 properties = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
             else
-                // TODO : improve performances
                 properties = (new Type[] { targetType }).Concat(targetType.GetInterfaces()).SelectMany(i => i.GetProperties()).ToArray();
             foreach (var propertyInfo in properties)
                 if (IsMemberWoopsaVisible(targetType, propertyInfo, visibility, visibilityCheck))

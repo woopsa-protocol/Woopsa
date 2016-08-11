@@ -67,6 +67,23 @@ namespace Woopsa
             }
         }
 
+        protected virtual void DoPublish()
+        {
+            List<IWoopsaNotification> notificationsList;
+            lock (_lock)
+            {
+                if (_notifications.Count > 0)
+                {
+                    notificationsList = _notifications;
+                    _notifications = new List<IWoopsaNotification>();
+                }
+                else
+                    notificationsList = null;
+            }
+            if (notificationsList != null)
+                Channel.SubscriptionPublishNotifications(this, notificationsList);
+        }
+
         #region IDisposable
 
         protected virtual void Dispose(bool disposing)
@@ -91,19 +108,7 @@ namespace Woopsa
 
         private void _publishTimer_Elapsed(object sender, EventArgs e)
         {
-            List<IWoopsaNotification> notificationsList;
-            lock (_lock)
-            {
-                if (_notifications.Count > 0)
-                {
-                    notificationsList = _notifications;
-                    _notifications = new List<IWoopsaNotification>();
-                }
-                else
-                    notificationsList = null;
-            }
-            if (notificationsList != null)
-                Channel.SubscriptionPublishNotifications(this, notificationsList);
+            DoPublish();
         }
 
         private IWoopsaValue _oldValue;
@@ -122,10 +127,13 @@ namespace Woopsa
                 TimeSpan monitorInterval, TimeSpan publishInterval) :
             base(channel, root, subscriptionId, propertyPath, monitorInterval, publishInterval)
         {
-            // create monitor timer
-            _monitorTimer = channel.ServiceImplementation.TimerScheduler.AllocateTimer(monitorInterval);
-            _monitorTimer.Elapsed += _monitorTimer_Elapsed;
-            _monitorTimer.IsEnabled = true;
+            if (monitorInterval != WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly)
+            {
+                // create monitor timer
+                _monitorTimer = channel.ServiceImplementation.TimerScheduler.AllocateTimer(monitorInterval);
+                _monitorTimer.Elapsed += _monitorTimer_Elapsed;
+                _monitorTimer.IsEnabled = true;
+            }
         }
 
         protected bool GetSynchronizedWatchedPropertyValue(out IWoopsaValue value)
@@ -142,6 +150,13 @@ namespace Woopsa
         }
 
         protected abstract bool GetWatchedPropertyValue(out IWoopsaValue value);
+
+        protected override void DoPublish()
+        {
+            if (MonitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly)
+                DoMonitor();
+            base.DoPublish();
+        }
 
         #region IDisposable
 
@@ -161,6 +176,11 @@ namespace Woopsa
         #endregion
 
         private void _monitorTimer_Elapsed(object sender, EventArgs e)
+        {
+            DoMonitor();
+        }
+
+        private void DoMonitor()
         {
             try
             {

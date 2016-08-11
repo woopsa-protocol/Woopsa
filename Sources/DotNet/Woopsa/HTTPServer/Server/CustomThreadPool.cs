@@ -83,6 +83,8 @@ namespace Woopsa
         public void Dispose()
         {
             Terminate();
+            // Todo: join  ?
+            // todo : dispose ?
         }
 
         bool _isIdle;

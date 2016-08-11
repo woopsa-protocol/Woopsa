@@ -123,6 +123,7 @@ namespace Woopsa
             {
                 _watch.Restart();
                 int i = 0;
+
                 LightWeightTimer timer = null;
                 do
                 {
