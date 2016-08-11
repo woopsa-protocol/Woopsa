@@ -50,7 +50,18 @@ namespace Woopsa
         {
             return basePath.TrimEnd(WoopsaConst.WoopsaPathSeparator) +
                 WoopsaConst.WoopsaPathSeparator +
-                relativePath.TrimStart(WoopsaConst.WoopsaPathSeparator);
+                RemoveInitialSeparator(relativePath);
+        }
+
+        public static string RemoveInitialSeparator(string path)
+        {
+            if (path.Length >= 1)
+                if (path[0] == WoopsaConst.WoopsaPathSeparator)
+                    return path.Substring(1);
+                else
+                    return path;
+            else
+                return path;
         }
     }
 }

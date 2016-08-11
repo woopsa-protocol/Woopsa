@@ -102,21 +102,6 @@ namespace Woopsa
             get { return Items; }
         }
 
-        /// <summary>
-        /// Calls refresh recursively on all the WoopsaContainers hierarchy.
-        /// Objects containing dynamic structure should refresh their content following this call.
-        /// </summary>
-        public virtual void Refresh()
-        {
-            CheckDisposed();
-            lock (Lock)
-                foreach (var item in _items)
-                    item.Refresh();
-            // Refresh must not call clear here, as WoopsaContainer and WoopsaObject can be used to create
-            // static hierarchy.
-            // Inheriting classes containing dynamic hierarchy should call clear in their Refresh method implementation
-        }
-
         public WoopsaContainer ByNameOrNull(string name)
         {
             return Items.ByNameOrNull(name);

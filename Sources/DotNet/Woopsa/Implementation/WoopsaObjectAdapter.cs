@@ -102,10 +102,10 @@ namespace Woopsa
 
         static WoopsaObjectAdapter()
         {
-            _typesCache = new TypeDescriptions(WoopsaVisibility.All);
+            _typeDescriptions = new TypeDescriptions(WoopsaVisibility.All);
         }
 
-        private static TypeDescriptions _typesCache;
+        private static TypeDescriptions _typeDescriptions;
 
         #endregion
 
@@ -186,12 +186,6 @@ namespace Woopsa
         /// </summary>
         public WoopsaVisibility Visibility { get; private set; }
 
-        public override void Refresh()
-        {
-            base.Refresh();
-            Clear();
-        }
-
         #region Private/Protected Methods
 
         protected virtual void OnMemberWoopsaVisibilityCheck(EventArgsMemberVisibilityCheck e)
@@ -232,8 +226,8 @@ namespace Woopsa
             if (targetObject != null)
             {
                 if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
-                    lock (_typesCache)
-                        typeDescription = _typesCache.GetTypeDescription(targetObject.GetType());
+                    lock (_typeDescriptions)
+                        typeDescription = _typeDescriptions.GetTypeDescription(targetObject.GetType());
                 else
                     typeDescription = WoopsaReflection.ReflectType(targetObject.GetType(),
                         Visibility, OnMemberWoopsaVisibilityCheck);

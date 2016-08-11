@@ -243,12 +243,12 @@ namespace Woopsa
                 if (parts.Length == 1)
                 {
                     woopsaServerUrl = null;
-                    woopsaItemPath = parts[0].TrimStart(WoopsaConst.WoopsaPathSeparator);
+                    woopsaItemPath = WoopsaUtils.RemoveInitialSeparator(parts[0]);
                 }
                 else if (parts.Length == 2)
                 {
                     woopsaServerUrl = parts[0];
-                    woopsaItemPath = parts[1].TrimStart(WoopsaConst.WoopsaPathSeparator);
+                    woopsaItemPath = WoopsaUtils.RemoveInitialSeparator(parts[1]);
                 }
                 else
                     throw new WoopsaException(string.Format("Badly formed WoopsaLink {0} ", value.AsText));
@@ -362,22 +362,26 @@ namespace Woopsa
             }
         }
 
-
         public static IWoopsaElement ByPathOrNull(this IWoopsaContainer element, string path)
         {
-            string workPath = path.TrimStart(WoopsaConst.WoopsaPathSeparator);
-            string[] pathElements = workPath.Split(WoopsaConst.WoopsaPathSeparator);
+            string workPath = WoopsaUtils.RemoveInitialSeparator(path);
+            if (workPath == string.Empty)
+                return element;
+            else
+            {
+                string[] pathElements = workPath.Split(WoopsaConst.WoopsaPathSeparator);
 
-            IWoopsaElement result = element;
-            foreach (var item in pathElements)
-                if (result is IWoopsaContainer)
-                    result = ((IWoopsaContainer)result).ByNameOrNull(item);
-                else
-                {
-                    result = null;
-                    break;
-                }
-            return result;
+                IWoopsaElement result = element;
+                foreach (var item in pathElements)
+                    if (result is IWoopsaContainer)
+                        result = ((IWoopsaContainer)result).ByNameOrNull(item);
+                    else
+                    {
+                        result = null;
+                        break;
+                    }
+                return result;
+            }
         }
 
         /// <summary>

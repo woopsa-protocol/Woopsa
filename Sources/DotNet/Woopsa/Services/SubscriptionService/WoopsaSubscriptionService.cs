@@ -69,13 +69,7 @@ namespace Woopsa
                             arguments[0].ToInt32(), arguments[1].ToInt32()));
                 });
         }
-
-        public override void Refresh()
-        {
-            base.Refresh();
-            _subscriptionServiceImplementation.Refresh();
-        }
-
+                
         public void Terminate()
         {
             if (_subscriptionServiceImplementation != null)

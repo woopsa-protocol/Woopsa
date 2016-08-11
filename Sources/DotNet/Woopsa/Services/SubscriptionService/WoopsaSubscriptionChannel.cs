@@ -152,12 +152,6 @@ namespace Woopsa
                 return false;
         }
 
-        internal void Refresh()
-        {
-            foreach (var item in _subscriptions.Values)
-                item.Refresh();
-        }
-
         public void Stop()
         {
             _waitStopEvent.Set();

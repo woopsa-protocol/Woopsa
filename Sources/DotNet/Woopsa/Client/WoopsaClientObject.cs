@@ -163,7 +163,7 @@ namespace Woopsa
 
         #region Public Methods
 
-        public override void Refresh()
+        public void Refresh()
         {
             Clear();
         }

@@ -23,11 +23,6 @@ namespace Woopsa
             _timerCheckChannelTimedOut.IsEnabled = true;
         }
 
-        public void Refresh()
-        {
-            foreach (var item in _channels.Values)
-                item.Refresh();
-        }
         /// <summary>
         /// This event is triggered before ServiceImplementation accesses the WoopsaObject model.
         /// It is usefull to protect against concurrent WoopsaObject accesses at a global level.

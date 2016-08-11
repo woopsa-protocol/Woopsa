@@ -46,9 +46,6 @@ namespace Woopsa
 
         public string PropertyPath { get; private set; }
 
-        public virtual void Refresh()
-        {
-        }
 
         protected void EnqueueNewMonitoredValue(IWoopsaValue newValue)
         {
@@ -209,10 +206,6 @@ namespace Woopsa
         {
         }
 
-        public override void Refresh()
-        {
-            _watchedProperty = null;
-        }
         protected override bool GetWatchedPropertyValue(out IWoopsaValue  value)
         {
             try

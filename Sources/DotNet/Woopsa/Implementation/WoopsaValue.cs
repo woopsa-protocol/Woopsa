@@ -311,7 +311,7 @@ namespace Woopsa
 
         public static string FormatRelativeWoopsaLink(string woopsaItemPath)
         {
-            return woopsaItemPath.TrimStart(WoopsaConst.WoopsaPathSeparator);
+            return WoopsaUtils.RemoveInitialSeparator(woopsaItemPath);
         }
 
         public static string FormatAbsoluteWoopsaLink(string woopsaServerUrl, string woopsaItemPath)

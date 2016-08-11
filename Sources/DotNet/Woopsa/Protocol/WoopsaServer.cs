@@ -15,28 +15,12 @@ namespace Woopsa
         Invoke
     }
 
-    public class EventArgsCachePath : EventArgs
-    {
-        public string Path { get; set; }
-        public bool KeepInCache { get; set; }
-    }
-
-    /// <summary>
-    /// WoopsaElements can implement this interface to specify cachability
-    /// When an element is not cachable, none of its children are cached 
-    /// </summary>
-    public interface IWoopsaElementCacheRequirement
-    {
-        bool IsCachable { get; }
-    }
-
     public class WoopsaServer : IDisposable
     {
         public const string DefaultServerPrefix = "/woopsa/";
         public const int DefaultPort = 80;
         public const int DefaultPortSsl = 443;
         public const ThreadPriority DefaultThreadPriority = ThreadPriority.Normal;
-        public const bool DefaultKeepPathInCache = true;
         public const string WoopsaAuthenticationRealm = "Woopsa authentication";
 
         /// <summary>
@@ -140,21 +124,6 @@ namespace Woopsa
 
         public bool AllowCrossOrigin { get; set; }
 
-        public event EventHandler<EventArgsCachePath> PathCaching;
-
-        /// <summary>
-        /// Clear all the knowledge of IWoopsaContainer stored in cache for performance optimization.
-        /// Call this method when the underlying structure of cached IWoopsaContainer has changed
-        /// For IWoopsaContainer with a frequently changing structure, it is preferible to avoid caching
-        /// </summary>
-        /// <seealso cref="PathCaching"/>
-        public void ClearCache()
-        {
-            _pathCache.Clear();
-            if (_root is WoopsaContainer)
-                (_root as WoopsaContainer).Refresh();
-        }
-
         /// <summary>
         /// The authenticator in use by Woopsa. Set to null if no authenticator is used. 
         /// </summary>
@@ -211,16 +180,6 @@ namespace Woopsa
         public WoopsaServerModelAccessFreeSection EnterModelAccessFreeSection()
         {
             return new WoopsaServerModelAccessFreeSection(this);
-        }
-
-        protected virtual bool OnCachingPath(string path)
-        {
-            EventArgsCachePath args = new EventArgsCachePath();
-            args.Path = path;
-            args.KeepInCache = DefaultKeepPathInCache;
-            if (PathCaching != null)
-                PathCaching(this, args);
-            return args.KeepInCache;
         }
 
         internal protected virtual void OnBeforeWoopsaModelAccess()
@@ -425,42 +384,7 @@ namespace Woopsa
 
         private IWoopsaElement FindByPath(string searchPath)
         {
-            if (searchPath.Equals(WoopsaConst.WoopsaPathSeparator.ToString())) //This is the root object
-                return _root;
-            {
-                IWoopsaElement item;
-                string path = searchPath.TrimStart(WoopsaConst.WoopsaPathSeparator);
-
-                if (!_pathCache.TryGetValue(path, out item))
-                {
-                    string[] pathParts = path.Split(WoopsaConst.WoopsaPathSeparator);
-                    string currentPath = string.Empty;
-                    item = _root;
-                    // TODO : améliorer les performances
-                    for (int i = 0; i < pathParts.Length; i++) 
-                    {
-                        string toFind = pathParts[i];
-                        if (currentPath != string.Empty)
-                            currentPath = currentPath + WoopsaConst.WoopsaPathSeparator;
-                        currentPath = currentPath + toFind;
-                        IWoopsaElement foundItem;
-                        if (_pathCache.TryGetValue(currentPath, out foundItem))
-                            item = foundItem;
-                        else
-                        {
-                            if (item is IWoopsaContainer)
-                                item = (item as IWoopsaContainer).ByName(toFind);
-                            bool isCachable = true;
-                            if (item is IWoopsaElementCacheRequirement)
-                                isCachable = ((IWoopsaElementCacheRequirement)item).IsCachable;
-                            if (isCachable)
-                                if (OnCachingPath(currentPath))
-                                    _pathCache.Add(currentPath, item);
-                        }
-                    }
-                }
-                return item;
-            }
+            return _root.ByPath(searchPath);
         }
         #endregion
 
@@ -469,7 +393,6 @@ namespace Woopsa
         private IWoopsaContainer _root;
         private string _routePrefix;
         private bool _isWebServerEmbedded = false;
-        private Dictionary<string, IWoopsaElement> _pathCache = new Dictionary<string, IWoopsaElement>();
         private AccessControlProcessor _accessControlProcessor = new AccessControlProcessor();
 
         private RouteMapper _prefixRouteMapper, _readRouteMapper, _writeRouteMapper,
