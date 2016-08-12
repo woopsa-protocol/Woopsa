@@ -16,7 +16,8 @@ namespace Woopsa
             ClientProtocol = new WoopsaClientProtocol(url);
             _container = container;
             WoopsaUnboundClientObject unboundRoot = CreateUnboundRoot("");
-            SubscriptionChannel = new WoopsaClientSubscriptionChannel(unboundRoot, notificationQueueSize);
+            SubscriptionChannel = new WoopsaClientSubscriptionChannel(this,
+                unboundRoot, notificationQueueSize);
             _remoteMethodMultiRequest = unboundRoot.GetMethod(
                 WoopsaMultiRequestConst.WoopsaMultiRequestMethodName,
                 WoopsaValueType.JsonData,

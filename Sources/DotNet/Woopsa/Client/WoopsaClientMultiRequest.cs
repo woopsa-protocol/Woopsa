@@ -56,7 +56,7 @@ namespace Woopsa
             {
                 Dictionary<string, string> dictionary = new Dictionary<string, string>();
                 for (int i = 0; i < argumentInfos.Length; i++)
-                    dictionary[argumentInfos[i].Name] = arguments[i].AsText;
+                    dictionary[argumentInfos[i].Name] = arguments[i].JsonValueText();
                 return Invoke(methodPath, dictionary);
             }
             else

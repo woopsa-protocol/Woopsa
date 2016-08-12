@@ -290,15 +290,29 @@ namespace Woopsa
                 stringBuilder.Append(ValueEscapeCharacter);
         }
 
+        private static bool MustQuote(WoopsaValueType type)
+        {
+            return 
+                type != WoopsaValueType.JsonData &&
+                type != WoopsaValueType.Real &&
+                type != WoopsaValueType.Integer &&
+                type != WoopsaValueType.Logical &&
+                type != WoopsaValueType.TimeSpan;
+        }
+
+        public static string JsonValueText(this IWoopsaValue value)
+        {
+            if (MustQuote(value.Type))
+                return ValueEscapeCharacter + JsonEscape(value.AsText) + ValueEscapeCharacter;
+            else
+                return value.AsText;
+        }
+
         public static void Serialize(StringBuilder stringBuilder, IWoopsaValue value)
         {
             stringBuilder.Append(ElementOpen);
             // Value
-            if (value.Type != WoopsaValueType.JsonData &&
-                    value.Type != WoopsaValueType.Real &&
-                    value.Type != WoopsaValueType.Integer &&
-                    value.Type != WoopsaValueType.Logical &&
-                    value.Type != WoopsaValueType.TimeSpan)
+            if (MustQuote(value.Type))
                 SerializeKeyValue(stringBuilder, KeyValue, value.AsText, true, true);
             else
                 SerializeKeyValue(stringBuilder, KeyValue, value.AsText, false, false);

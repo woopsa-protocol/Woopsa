@@ -25,7 +25,7 @@ namespace WoopsaTest
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2))) // TODO : 2 s
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);

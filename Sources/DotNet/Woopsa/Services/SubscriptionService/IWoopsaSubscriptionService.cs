@@ -34,7 +34,26 @@ namespace Woopsa
         public const string WoopsaPublishInterval = "PublishInterval";
         public const string WoopsaSubscriptionId = "SubscriptionId";
         public const string WoopsaLastNotificationId = "LastNotificationId";
+
+        public static readonly WoopsaMethodArgumentInfo[] RegisterSubscriptionArguments =
+            new WoopsaMethodArgumentInfo[] 
+            {
+                new WoopsaMethodArgumentInfo("SubscriptionChannel", WoopsaValueType.Integer),
+                new WoopsaMethodArgumentInfo("PropertyLink", WoopsaValueType.WoopsaLink),
+                new WoopsaMethodArgumentInfo("MonitorInterval", WoopsaValueType.TimeSpan),
+                new WoopsaMethodArgumentInfo("PublishInterval", WoopsaValueType.TimeSpan)
+            };
+
+        public static readonly WoopsaMethodArgumentInfo[] UnregisterSubscriptionArguments =
+            new WoopsaMethodArgumentInfo[]
+            {
+                new WoopsaMethodArgumentInfo("SubscriptionChannel", WoopsaValueType.Integer),
+                new WoopsaMethodArgumentInfo("SubscriptionId", WoopsaValueType.Integer)
+            };
+
+        public static readonly TimeSpan ClientSubscriptionUpdateInterval = TimeSpan.FromMilliseconds(10);
     }
+
     public interface IWoopsaSubscriptionService
     {
         /// <summary>
