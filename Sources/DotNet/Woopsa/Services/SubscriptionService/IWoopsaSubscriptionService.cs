@@ -52,6 +52,8 @@ namespace Woopsa
             };
 
         public static readonly TimeSpan ClientSubscriptionUpdateInterval = TimeSpan.FromMilliseconds(10);
+
+        public static readonly TimeSpan TimeOutUnsubscription = TimeSpan.FromMilliseconds(100);
     }
 
     public interface IWoopsaSubscriptionService

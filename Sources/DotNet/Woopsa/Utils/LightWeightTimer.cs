@@ -41,8 +41,11 @@ namespace Woopsa
             lock (_timeClasses)
             {
                 timeClass.DeallocateTimer(timer);
-                if (timeClass.Count ==0)
+                if (timeClass.Count == 0)
+                {
                     _timeClasses.Remove(timeClass);
+                    _timeClassesByTimeSpan.Remove(timeClass.Interval);
+                }
             }
         }
 

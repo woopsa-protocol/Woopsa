@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Net;
 using System.Threading;
 
@@ -60,8 +61,26 @@ namespace Woopsa
             return failedSubscriptions;
         }
 
+        private void RequestAllUnregistration()
+        {
+            lock (_subscriptions)
+            {
+                foreach (var item in _subscriptions)
+                    item.Unsubscribe();
+            }
+            Stopwatch watch = new Stopwatch();
+            watch.Start();            
+            while (_registeredSubscriptions.Count > 0)
+            {
+                Thread.Sleep(TimeSpan.FromMilliseconds(1));
+                if (watch.Elapsed > WoopsaSubscriptionServiceConst.TimeOutUnsubscription)
+                    break;
+            }
+        }
+
         public void Terminate()
         {
+            RequestAllUnregistration();
             _terminated = true;
             if (_localSubscriptionService != null)
                 _localSubscriptionService.Terminate();
@@ -190,8 +209,6 @@ namespace Woopsa
         {
             lock (_lock)
             {
-                // TODO : unregister all open subscriptions to release remote resources
-
                 if (_localSubscriptionService != null)
                 {
                     _localSubscriptionService.Dispose();
@@ -199,16 +216,10 @@ namespace Woopsa
                 }
                 _subscriptionOpenChannel = null;
                 _lastNotificationId = 0;
-                // mark all subscriptions as unsubscribed
-                lock (_subscriptions)
-                {
-                    foreach (var item in _subscriptions)
-                        item.SubscriptionId = null;
-                    _registeredSubscriptions.Clear();
-                }
                 SubscriptionsChanged = true;
             }
         }
+
 
         private void ManageSubscriptions()
         {
@@ -420,7 +431,7 @@ namespace Woopsa
             WoopsaUtils.CombinePath(WoopsaSubscriptionServiceConst.WoopsaServiceSubscriptionName,
                 WoopsaSubscriptionServiceConst.WoopsaUnregisterSubscription);
 
-        private void UnregisterSubscriptions(List<WoopsaClientSubscription> unsubscriptions)
+        private void UnregisterSubscriptions(IEnumerable<WoopsaClientSubscription> unsubscriptions)
         {
             if (_localSubscriptionService == null)
             {
