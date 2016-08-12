@@ -46,14 +46,8 @@ namespace Woopsa
                     else if (request.Verb.Equals(WoopsaFormat.VerbWrite))
                         result = _server.WriteValue(request.Path, request.Value);
                     else if (request.Verb.Equals(WoopsaFormat.VerbInvoke))
-                    {
-                        NameValueCollection argumentsAsCollection = request.Arguments.Aggregate(new NameValueCollection(), (collection, argument) =>
-                        {
-                            collection.Add(argument.Key, argument.Value);
-                            return collection;
-                        });
-                        result = _server.InvokeMethod(request.Path, argumentsAsCollection);
-                    }
+                        result = _server.InvokeMethod(request.Path, 
+                            request.Arguments.ToNameValueCollection());
                 }
                 catch (Exception e)
                 {

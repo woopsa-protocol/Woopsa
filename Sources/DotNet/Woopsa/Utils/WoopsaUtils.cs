@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
 
@@ -62,6 +63,15 @@ namespace Woopsa
                     return path;
             else
                 return path;
+        }
+
+        public static NameValueCollection ToNameValueCollection(
+            this Dictionary<string, string> dictionary)
+        {
+            NameValueCollection result = new  NameValueCollection();
+            foreach (var item in dictionary)
+                result.Add(item.Key, item.Value);
+            return result;
         }
     }
 }

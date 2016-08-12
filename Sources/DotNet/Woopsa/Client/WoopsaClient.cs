@@ -20,7 +20,7 @@ namespace Woopsa
             _remoteMethodMultiRequest = unboundRoot.GetMethod(
                 WoopsaMultiRequestConst.WoopsaMultiRequestMethodName,
                 WoopsaValueType.JsonData,
-                new WoopsaMethodArgumentInfo[] 
+                new WoopsaMethodArgumentInfo[]
                 {
                     new WoopsaMethodArgumentInfo(WoopsaMultiRequestConst.WoopsaMultiRequestArgumentName, WoopsaValueType.JsonData)
                 });
@@ -62,11 +62,21 @@ namespace Woopsa
         }
 
         public void ExecuteMultiRequest(WoopsaClientMultiRequest multiRequest)
-        {            
+        {
             multiRequest.Reset();
-            WoopsaValue results = _remoteMethodMultiRequest.Invoke(
-                WoopsaValue.WoopsaJsonData(multiRequest.Requests.Serialize()));
-            multiRequest.DispatchResults(results.JsonData);
+            if (!_disableRemoteMultiRequest)
+                try
+                {
+                    WoopsaValue results = _remoteMethodMultiRequest.Invoke(
+                        WoopsaValue.WoopsaJsonData(multiRequest.Requests.Serialize()));
+                    multiRequest.DispatchResults(results.JsonData);
+                }
+                catch (WoopsaNotFoundException)
+                {
+                    _disableRemoteMultiRequest = true;
+                }
+            if (_disableRemoteMultiRequest)
+                ExecuteMultiRequestLocally(multiRequest);
         }
 
         #endregion
@@ -103,8 +113,62 @@ namespace Woopsa
 
         #region Private Members
 
+        private void ExecuteMultiRequestLocally(WoopsaClientMultiRequest multiRequest)
+        {
+            // Execute multi request locally
+            foreach (var item in multiRequest.ClientRequests)
+            {
+                try
+                {
+                    switch (item.Request.Verb)
+                    {
+                        case WoopsaFormat.VerbMeta:
+                            item.Result = new WoopsaClientRequestResult()
+                            {
+                                ResultType = WoopsaClientRequestResultType.Meta,
+                                Meta = ClientProtocol.Meta(item.Request.Path)
+                            };
+                            break;
+                        case WoopsaFormat.VerbInvoke:
+                            item.Result = new WoopsaClientRequestResult()
+                            {
+                                ResultType = WoopsaClientRequestResultType.Value,
+                                Value = ClientProtocol.Invoke(item.Request.Path,                                
+                                    item.Request.Arguments.ToNameValueCollection()) 
+                            };
+                            break;
+                        case WoopsaFormat.VerbRead:
+                            item.Result = new WoopsaClientRequestResult()
+                            {
+                                ResultType = WoopsaClientRequestResultType.Value,
+                                Value = ClientProtocol.Read(item.Request.Path)
+                            };
+                            break;
+                        case WoopsaFormat.VerbWrite:
+                            ClientProtocol.Write(item.Request.Path, item.Request.Value);
+                            item.Result = new WoopsaClientRequestResult()
+                            {
+                                ResultType = WoopsaClientRequestResultType.Value,
+                                Value = WoopsaValue.Null
+                            };
+                            break;
+                    }
+                }
+                catch (Exception e)
+                {
+                    item.Result = new WoopsaClientRequestResult()
+                    {
+                        ResultType = WoopsaClientRequestResultType.Error,
+                        Error = e
+                    };
+                    item.IsDone = true;
+                }
+            }
+        }
+
         private readonly WoopsaContainer _container;
         private WoopsaMethod _remoteMethodMultiRequest;
+        private bool _disableRemoteMultiRequest;
 
         #endregion
     }
