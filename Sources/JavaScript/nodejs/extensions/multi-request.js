@@ -25,7 +25,7 @@ var MultiRequestHandler = function MultiRequestHandler(woopsaObject){
         var countAsync = 0;
         var doneAsync = 0;
         for ( var i in requests ){
-            if ( requests[i].Action !== 'meta' ){
+            if ( requests[i].Verb !== 'meta' ){
                 countAsync++;
             }
         }
@@ -34,16 +34,16 @@ var MultiRequestHandler = function MultiRequestHandler(woopsaObject){
             var element = woopsaUtils.getByPath(woopsaObject, request.Path);
             var newResult = {Id: request.id};
             results.push(newResult);
-            if ( request.Action === 'meta' ){
+            if ( request.Verb === 'meta' ){
                 newResult.Result = adapter.generateMetaObject(element);
-            }else if ( request.Action === 'read' ){
+            }else if ( request.Verb === 'read' ){
                 adapter.readProperty(element, resultCallback.bind(this, results.length-1));
-            }else if ( request.Action === 'write' ){
+            }else if ( request.Verb === 'write' ){
                 adapter.writeProperty(element, request.Value, resultCallback.bind(this, results.length-1));
-            }else if ( request.Action === 'invoke' ){
+            }else if ( request.Verb === 'invoke' ){
                 adapter.invokeMethod(element, request.Arguments, resultCallback.bind(this, results.length-1))
             }else{
-                throw new exceptions.WoopsaInvalidOperationException("Invalid MultiRequest action " + request.Action);
+                throw new exceptions.WoopsaInvalidOperationException("Invalid MultiRequest verb " + request.Verb);
             }
         }        
         if ( countAsync === 0 ){

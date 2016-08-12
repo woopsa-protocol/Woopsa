@@ -15,7 +15,15 @@ namespace Woopsa
         {
             ClientProtocol = new WoopsaClientProtocol(url);
             _container = container;
-            SubscriptionChannel = new WoopsaClientSubscriptionChannel(CreateUnboundRoot(""), notificationQueueSize);
+            WoopsaUnboundClientObject unboundRoot = CreateUnboundRoot("");
+            SubscriptionChannel = new WoopsaClientSubscriptionChannel(unboundRoot, notificationQueueSize);
+            _remoteMethodMultiRequest = unboundRoot.GetMethod(
+                WoopsaMultiRequestConst.WoopsaMultiRequestMethodName,
+                WoopsaValueType.JsonData,
+                new WoopsaMethodArgumentInfo[] 
+                {
+                    new WoopsaMethodArgumentInfo(WoopsaMultiRequestConst.WoopsaMultiRequestArgumentName, WoopsaValueType.JsonData)
+                });
         }
 
         #endregion
@@ -53,6 +61,14 @@ namespace Woopsa
             return new WoopsaUnboundClientObject(this, _container, name, null);
         }
 
+        public void ExecuteMultiRequest(WoopsaClientMultiRequest multiRequest)
+        {            
+            multiRequest.Reset();
+            WoopsaValue results = _remoteMethodMultiRequest.Invoke(
+                WoopsaValue.WoopsaJsonData(multiRequest.Requests.Serialize()));
+            multiRequest.DispatchResults(results.JsonData);
+        }
+
         #endregion
 
 
@@ -88,6 +104,7 @@ namespace Woopsa
         #region Private Members
 
         private readonly WoopsaContainer _container;
+        private WoopsaMethod _remoteMethodMultiRequest;
 
         #endregion
     }

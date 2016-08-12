@@ -230,15 +230,15 @@ namespace Woopsa
             _prefixRouteMapper = WebServer.Routes.Add(_routePrefix, HTTPMethod.OPTIONS, (Request, response) => { }, true);
             _prefixRouteMapper.AddProcessor(_accessControlProcessor);
             // meta route
-            _metaRouteMapper = WebServer.Routes.Add(_routePrefix + "meta", HTTPMethod.GET,
+            _metaRouteMapper = WebServer.Routes.Add(_routePrefix + WoopsaFormat.VerbMeta, HTTPMethod.GET,
                 (request, response) => { HandleRequest(WoopsaVerb.Meta, request, response); }, true);
             _metaRouteMapper.AddProcessor(_accessControlProcessor);
             // read route
-            _readRouteMapper = WebServer.Routes.Add(_routePrefix + "read", HTTPMethod.GET,
+            _readRouteMapper = WebServer.Routes.Add(_routePrefix + WoopsaFormat.VerbRead, HTTPMethod.GET,
                 (request, response) => { HandleRequest(WoopsaVerb.Read, request, response); }, true);
             _readRouteMapper.AddProcessor(_accessControlProcessor);
             // write route
-            _writeRouteMapper = WebServer.Routes.Add(_routePrefix + "write", HTTPMethod.POST,
+            _writeRouteMapper = WebServer.Routes.Add(_routePrefix + WoopsaFormat.VerbWrite, HTTPMethod.POST,
                 (request, response) => { HandleRequest(WoopsaVerb.Write, request, response); }, true);
             _writeRouteMapper.AddProcessor(_accessControlProcessor);
             // POST is used here instead of GET for two main reasons:
@@ -248,7 +248,7 @@ namespace Woopsa
             //  - GET requestsList should not change the state of the server, as they can be triggered
             //    by crawlers and such. Invoking a function will, in most cases, change the state of
             //    the server.
-            _invokeRouteMapper = WebServer.Routes.Add(_routePrefix + "invoke", HTTPMethod.POST,
+            _invokeRouteMapper = WebServer.Routes.Add(_routePrefix + WoopsaFormat.VerbInvoke, HTTPMethod.POST,
                 (request, response) => { HandleRequest(WoopsaVerb.Invoke, request, response); }, true);
             _invokeRouteMapper.AddProcessor(_accessControlProcessor);
         }
@@ -293,23 +293,24 @@ namespace Woopsa
                     OnAfterWoopsaModelAccess();
                 }
                 response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
-                response.WriteString(result);
+                if (result != null)
+                    response.WriteString(result);
             }
             catch (WoopsaNotFoundException e)
             {
-                response.WriteError(HTTPStatusCode.NotFound, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.NotFound, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
             catch (WoopsaInvalidOperationException e)
             {
-                response.WriteError(HTTPStatusCode.BadRequest, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.BadRequest, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
             catch (WoopsaException e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.WoopsaError(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
         }
 
@@ -363,7 +364,7 @@ namespace Woopsa
             if (item is IWoopsaMethod)
             {
                 IWoopsaMethod method = item as IWoopsaMethod;
-                List<WoopsaValue> wArguments = new List<WoopsaValue>();
+                List<WoopsaValue> woopsaArguments = new List<WoopsaValue>();
 
                 if (arguments.Count != method.ArgumentInfos.Count())
                     throw new WoopsaInvalidOperationException(String.Format("Wrong argument count for method {0}", item.Name));
@@ -372,10 +373,10 @@ namespace Woopsa
                     string argumentValue = arguments[argInfo.Name];
                     if (argumentValue == null)
                         throw new WoopsaInvalidOperationException(String.Format("Missing argument {0} for method {1}", argInfo.Name, item.Name));
-                    wArguments.Add(WoopsaValue.CreateUnchecked(argumentValue, argInfo.Type));
+                    woopsaArguments.Add(WoopsaValue.CreateChecked(argumentValue, argInfo.Type));
                 }
-                IWoopsaValue result = method.Invoke(wArguments.ToArray());
-                return (result != null) ? result.Serialize() : string.Empty;
+                IWoopsaValue result = method.Invoke(woopsaArguments.ToArray());
+                return result != null ? result.Serialize() : WoopsaConst.WoopsaNull;
             }
             else
                 throw new WoopsaInvalidOperationException(String.Format("Cannot invoke a {0}", item.GetType()));

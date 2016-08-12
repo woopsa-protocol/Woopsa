@@ -11,7 +11,7 @@ namespace WoopsaTest
 		private double _minLevel, _maxLevel;
 
 		[TestMethod]
-		public void TestMethodWoopsaObjects()
+		public void TestWoopsaObjects()
 		{
 			WoopsaRoot root = new WoopsaRoot();
 			WoopsaObject tunnel1 = new WoopsaObject(root, "Tunnel1");

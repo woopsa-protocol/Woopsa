@@ -13,6 +13,9 @@ namespace Woopsa
         public static readonly TimeSpan MonitorIntervalLastPublishedValueOnly = TimeSpan.FromMilliseconds(0);
         public static readonly TimeSpan DefaultMonitorInterval = MonitorIntervalLastPublishedValueOnly;
 
+        // In combination with MonitorIntervalLastPublishedValueOnly
+        public static readonly TimeSpan PublishIntervalOnce = TimeSpan.FromMilliseconds(0);
+
         public static readonly TimeSpan DefaultPublishInterval = TimeSpan.FromMilliseconds(100);
 
         public const int MinimumNotificationId = 1;

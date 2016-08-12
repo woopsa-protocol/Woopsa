@@ -245,13 +245,13 @@ namespace Woopsa
                 {
                     if (item.SubscriptionId.HasValue)
                         UnregisterSubscription(_subscriptionOpenChannel.Value, item.SubscriptionId.Value);
-                    item.SubscriptionId = null;
                     lock (_subscriptions)
                     {
                         if (item.SubscriptionId.HasValue)
                             _registeredSubscriptions.Remove(item.SubscriptionId.Value);
                         _subscriptions.Remove(item);
                     }
+                    item.SubscriptionId = null;
                 }
         }
 
@@ -341,14 +341,15 @@ namespace Woopsa
         {
             _remoteMethodCreateSubscriptionChannel = _woopsaSubscribeService.GetMethod(
                 WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannel,
+                WoopsaValueType.Integer,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaNotificationQueueSize,
                         WoopsaValueType.Integer)
-                },
-                WoopsaValueType.Integer);
+                });
             _remoteMethodRegisterSubscription = _woopsaSubscribeService.GetMethod(
                 WoopsaSubscriptionServiceConst.WoopsaRegisterSubscription,
+                WoopsaValueType.Integer,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaSubscriptionChannel,
@@ -362,10 +363,10 @@ namespace Woopsa
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaPublishInterval,
                         WoopsaValueType.TimeSpan)
-                },
-                WoopsaValueType.Integer);
+                });
             _remoteMethodUnregisterSubscription = _woopsaSubscribeService.GetMethod(
                 WoopsaSubscriptionServiceConst.WoopsaUnregisterSubscription,
+                WoopsaValueType.Integer,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaSubscriptionChannel,
@@ -373,10 +374,10 @@ namespace Woopsa
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaSubscriptionId,
                         WoopsaValueType.Integer)
-                },
-                WoopsaValueType.Integer);
+                });
             _remoteMethodWaitNotification = _woopsaSubscribeService.GetMethod(
                 WoopsaSubscriptionServiceConst.WoopsaWaitNotification,
+                WoopsaValueType.JsonData,
                 new WoopsaMethodArgumentInfo[] {
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaSubscriptionChannel,
@@ -384,8 +385,7 @@ namespace Woopsa
                     new WoopsaMethodArgumentInfo(
                         WoopsaSubscriptionServiceConst.WoopsaLastNotificationId,
                         WoopsaValueType.Integer)
-                },
-                WoopsaValueType.JsonData);
+                });
         }
 
         private int CreateSubscriptionChannel(int notificationQueueSize)

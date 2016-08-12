@@ -9,7 +9,7 @@ namespace WoopsaTest
 	public class UnitTestWoopsaValue
 	{
 		[TestMethod]
-		public void TestMethodWoopsaValueLogicalTrue()
+		public void TestWoopsaValueLogicalTrue()
 		{
 			WoopsaValue v1 = true;
 			WoopsaValue v2 = true;
@@ -22,7 +22,7 @@ namespace WoopsaTest
 		}
 
 		[TestMethod]
-		public void TestMethodWoopsaValueLogicalFalse()
+		public void TestWoopsaValueLogicalFalse()
 		{
 			WoopsaValue v1 = false;
 			WoopsaValue v2 = false;
@@ -35,7 +35,7 @@ namespace WoopsaTest
 		}
 
 		[TestMethod]
-		public void TestMethodWoopsaValueInteger()
+		public void TestWoopsaValueInteger()
 		{
 			WoopsaValue v1 = 123;
 			WoopsaValue v2 = 123;
@@ -48,7 +48,7 @@ namespace WoopsaTest
 		}
 
 		[TestMethod]
-		public void TestMethodWoopsaValueDateTimeTimeSpan()
+		public void TestWoopsaValueDateTimeTimeSpan()
 		{
 			WoopsaValue v1 = new DateTime(1972, 11, 1, 10, 11, 12, 13, DateTimeKind.Utc);
 			DateTime t1 = v1;
@@ -65,7 +65,7 @@ namespace WoopsaTest
 		}
 
 		[TestMethod]
-		public void TestMethodWoopsaValueExtended()
+		public void TestWoopsaValueExtended()
 		{
 			string woopsaServer, woopsaItemPath;
 			WoopsaValue v = WoopsaValue.WoopsaAbsoluteLink("http://woopsa.demo.org/", "/tunnel1/luftung");
@@ -91,7 +91,7 @@ namespace WoopsaTest
 		}
 
 		[TestMethod]
-		public void TestMethodWoopsaValuePerfo()
+		public void TestWoopsaValuePerfo()
 		{
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
@@ -104,7 +104,7 @@ namespace WoopsaTest
 		}
 
         [TestMethod]
-        public void TestMethodWoopsaValueCreateChecked()
+        public void TestWoopsaValueCreateChecked()
         {
             WoopsaValue dateTime = WoopsaValue.CreateChecked("2015-03-23T14:15:01Z", WoopsaValueType.DateTime);
             Assert.AreEqual(dateTime.ToDateTime(), new DateTime(2015, 3, 23, 14, 15, 1, DateTimeKind.Utc));
@@ -134,7 +134,7 @@ namespace WoopsaTest
 
 
         [TestMethod]
-        public void TestMethodWoopsaSerializationPerfo()
+        public void TestWoopsaSerializationPerfo()
         {
             Stopwatch watch = new Stopwatch();
             WoopsaValue v = 3.14;

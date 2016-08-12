@@ -327,7 +327,7 @@
                 internalRequests[req.Id] = req;
                 allArguments.push({
                     Id: req.Id,
-                    Action: req.Action,
+                    Verb: req.Verb,
                     Path: req.Path,
                     Value: req.Value,
                     Arguments: req.Arguments

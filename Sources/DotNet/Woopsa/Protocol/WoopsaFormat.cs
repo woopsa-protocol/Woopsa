@@ -4,11 +4,17 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
     public static class WoopsaFormat
     {
+        // The 4 woopsa verbs used in the protocol
+        public const string VerbRead = "read";
+        public const string VerbWrite = "write";
+        public const string VerbInvoke = "invoke";
+        public const string VerbMeta = "meta";
 
         #region Helpers
 
@@ -105,19 +111,40 @@ namespace Woopsa
         #endregion
 
 
-        public static string WoopsaError(Exception e)
+        public static string Serialize(this Exception e)
         {
             return String.Format(ErrorFormat, JsonEscape(e.Message), e.GetType().Name);
         }
 
-        /// <summary>
-        /// Escapes a string so it safe for being put into quotes "" into Json Data
-        /// </summary>
-        /// <param name="value">The string to escape</param>
-        /// <returns>A string with the following special characters handled, in this order: \ " \n \b \f \r \t</returns>
-        public static string JsonEscape(string value)
+        private class WoopsaErrorResult
         {
-            StringBuilder stringBuilder = new StringBuilder();
+            public string Type { get; set; }
+            public string Message { get; set; }
+        }
+
+        public static Exception DeserializeError(string jsonErrorText)
+        {
+            var serializer = new JavaScriptSerializer();
+            var error = serializer.Deserialize<WoopsaErrorResult>(jsonErrorText);
+
+            // Generate one of the possible Woopsa exceptions based
+            // on the JSON-serialized error
+            if (error.Type == typeof(WoopsaNotFoundException).Name)
+                return new WoopsaNotFoundException(error.Message);
+            else if (error.Type == typeof(WoopsaNotificationsLostException).Name)
+                return new WoopsaNotificationsLostException(error.Message);
+            else if (error.Type == typeof(WoopsaInvalidOperationException).Name)
+                return new WoopsaInvalidOperationException(error.Message);
+            else if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
+                return new WoopsaInvalidSubscriptionChannelException(error.Message);
+            else if (error.Type == typeof(WoopsaException).Name)
+                return new WoopsaException(error.Message);
+            else
+                return new Exception(error.Message);
+        }
+
+        public static void JsonEscape(StringBuilder stringBuilder, string value)
+        {
             foreach (var item in value)
                 switch (item)
                 {
@@ -130,8 +157,78 @@ namespace Woopsa
                     case '\t': stringBuilder.Append("\\t"); break;
                     default: stringBuilder.Append(item); break;
                 }
+        }
+
+        /// <summary>
+        /// Escapes a string so it safe for being put into quotes "" into Json Data
+        /// </summary>
+        /// <param name="value">The string to escape</param>
+        /// <returns>A string with the following special characters handled, in this order: \ " \n \b \f \r \t</returns>
+        public static string JsonEscape(string value)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            JsonEscape(stringBuilder, value);
             return stringBuilder.ToString();
         }
+
+        public static void Serialize(StringBuilder stringBuilder, Dictionary<string, string> keyValuePairs)
+        {
+            bool next = false;
+            stringBuilder.Append(ElementOpen);
+            foreach (var item in keyValuePairs)
+            {
+                if (next)
+                    stringBuilder.Append(MultipleElementsSeparator);
+                SerializeKeyValue(stringBuilder, item.Key, item.Value, false, false);
+                next = true;
+            }
+            stringBuilder.Append(ElementClose);
+        }
+
+        public static void Serialize(StringBuilder stringBuilder, Request request)
+        {
+            stringBuilder.Append(ElementOpen);
+            SerializeKeyValue(stringBuilder, KeyId, request.Id.ToString(), false, false);
+            stringBuilder.Append(ElementSeparator);
+            SerializeKeyValue(stringBuilder, KeyVerb, request.Verb, true, false);
+            stringBuilder.Append(ElementSeparator);
+            SerializeKeyValue(stringBuilder, KeyPath, request.Path, true, false);
+            switch (request.Verb)
+            {
+                case VerbWrite:
+                    stringBuilder.Append(ElementSeparator);
+                    SerializeKeyValue(stringBuilder, KeyValue, request.Value, false, false);
+                    break;
+                case VerbInvoke:
+                    stringBuilder.Append(ElementSeparator);
+                    SerializeKeyValuePrefix(stringBuilder, KeyArguments);
+                    Serialize(stringBuilder, request.Arguments);
+                    break;
+            }
+            stringBuilder.Append(ElementClose);
+        }
+
+        public static void Serialize(StringBuilder stringBuilder, IEnumerable<Request> requests)
+        {
+            bool next = false;
+            stringBuilder.Append(MultipleElementsOpen);
+            foreach (var item in requests)
+            {
+                if (next)
+                    stringBuilder.Append(MultipleElementsSeparator);
+                Serialize(stringBuilder, item);
+                next = true;
+            }
+            stringBuilder.Append(MultipleElementsClose);
+        }
+
+        public static string Serialize(this IEnumerable<Request> requests)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            Serialize(stringBuilder, requests);
+            return stringBuilder.ToString();
+        }
+
         public static string Serialize(this IEnumerable<MultipleRequestResponse> responses)
         {
             StringBuilder builder = new StringBuilder();
@@ -172,23 +269,57 @@ namespace Woopsa
             return String.Format(NotificationFormat, notification.Value.Serialize(), notification.SubscriptionId, notification.Id);
         }
 
-        public static string Serialize(this IWoopsaValue value)
+        public static void SerializeKeyValuePrefix(StringBuilder stringBuilder, string key)
         {
-            StringBuilder valueAsText = new StringBuilder();
+            stringBuilder.
+                Append(ValueEscapeCharacter).Append(key).Append(ValueEscapeCharacter).
+                Append(KeyValueSeparator);
+        }
+
+        public static void SerializeKeyValue(StringBuilder stringBuilder, string key, string value,
+            bool escapeValue, bool jsonEscapeValue)
+        {
+            SerializeKeyValuePrefix(stringBuilder, key);
+            if (escapeValue)
+                stringBuilder.Append(ValueEscapeCharacter);
+            if (jsonEscapeValue)
+                JsonEscape(stringBuilder, value);
+            else
+                stringBuilder.Append(value);
+            if (escapeValue)
+                stringBuilder.Append(ValueEscapeCharacter);
+        }
+
+        public static void Serialize(StringBuilder stringBuilder, IWoopsaValue value)
+        {
+            stringBuilder.Append(ElementOpen);
+            // Value
             if (value.Type != WoopsaValueType.JsonData &&
                     value.Type != WoopsaValueType.Real &&
                     value.Type != WoopsaValueType.Integer &&
                     value.Type != WoopsaValueType.Logical &&
                     value.Type != WoopsaValueType.TimeSpan)
-                valueAsText.Append(ValueEscapeCharacter).Append(JsonEscape(value.AsText)).Append(ValueEscapeCharacter);
+                SerializeKeyValue(stringBuilder, KeyValue, value.AsText, true, true);
             else
-                valueAsText.Append(value.AsText);
-
+                SerializeKeyValue(stringBuilder, KeyValue, value.AsText, false, false);
+            stringBuilder.Append(ElementSeparator);
+            // Type
+            SerializeKeyValue(stringBuilder, KeyType, value.Type.ToString(), true, false);
+            // TimeStamp
             if (value.TimeStamp.HasValue)
-                return String.Format(ValueFormatWithDate, valueAsText.ToString(), value.Type.ToString(),
-                    WoopsaFormat.ToStringWoopsa(value.TimeStamp.Value));
-            else
-                return String.Format(ValueFormatNoDate, valueAsText.ToString(), value.Type.ToString());
+            {
+                stringBuilder.Append(ElementSeparator);
+                SerializeKeyValue(stringBuilder, KeyTimeStamp,
+                        WoopsaFormat.ToStringWoopsa(value.TimeStamp.Value), true, false);
+            }
+            stringBuilder.Append(ElementClose);
+        }
+
+        public static string Serialize(this IWoopsaValue value)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            Serialize(stringBuilder, value);
+            return stringBuilder.ToString();
         }
 
         public static string SerializeMetadata(this IWoopsaContainer container, bool justName = false)
@@ -242,6 +373,7 @@ namespace Woopsa
             return String.Format(MultipleElementsFormat, builder.ToString());
         }
 
+        // TODO : optimize performances
         private static string SerializeMetadata(this IWoopsaProperty property)
         {
             return String.Format(MetadataProperty, JsonEscape(property.Name), property.Type, property.IsReadOnly.ToString().ToLower());
@@ -273,6 +405,44 @@ namespace Woopsa
             return String.Format(MetadataArgumentInfo, JsonEscape(argumentInfo.Name), argumentInfo.Type);
         }
 
+        public static WoopsaMetaResult DeserializeMeta(string jsonText)
+        {
+            var serializer = new JavaScriptSerializer();
+            var result = serializer.Deserialize<WoopsaMetaResult>(jsonText);
+            return result;
+        }
+
+        public static WoopsaValue DeserializeWoopsaValue(string jsonText)
+        {
+            var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
+            var result = serializer.Deserialize<WoopsaReadResult>(jsonText);
+            if (result != null)
+            {
+                var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
+                WoopsaValue resultWoopsaValue;
+                DateTime? timeStamp;
+                if (result.TimeStamp != null)
+                    timeStamp = DateTime.Parse(result.TimeStamp, CultureInfo.InvariantCulture);
+                else
+                    timeStamp = null;
+                if (valueType == WoopsaValueType.JsonData)
+                    resultWoopsaValue = new WoopsaValue(WoopsaJsonData.CreateFromDeserializedData(result.Value), timeStamp);
+                else
+                    resultWoopsaValue = WoopsaValue.CreateChecked(WoopsaFormat.ToStringWoopsa(result.Value),
+                        valueType, timeStamp);
+                return resultWoopsaValue;
+            }
+            else
+                return WoopsaValue.Null;
+        }
+
+        private class WoopsaReadResult
+        {
+            public object Value { get; set; }
+            public string Type { get; set; }
+            public string TimeStamp { get; set; }
+        }
+
         public const string KeyValue = "Value";
         public const string KeyType = "Type";
         public const string KeyTimeStamp = "TimeStamp";
@@ -286,8 +456,22 @@ namespace Woopsa
         public const string KeyError = "Error";
         public const string KeyMessage = "Message";
         public const string KeySubscriptionId = "SubscriptionId";
-        public const string KeyId = "Id";
         public const string KeyResult = "Result";
+        public const string KeyId = "Id";
+        public const string KeyVerb = "Verb";
+        public const string KeyPath = "Path";
+        public const string KeyArguments = "Arguments";
+
+        const char ElementOpen = '{';
+        const char ElementSeparator = ',';
+        const char ElementClose = '}';
+        const char KeyValueSeparator = ':';
+
+        const char MultipleElementsOpen = '[';
+        const char MultipleElementsSeparator = ',';
+        const char MultipleElementsClose = ']';
+
+        const char ValueEscapeCharacter = '"';
 
         const string NotificationFormat = "{{\"" + KeyValue + "\":{0},\"" + KeySubscriptionId + "\":{1}, \"" + KeyId + "\": {2}}}";
 
@@ -305,9 +489,38 @@ namespace Woopsa
         const string MultipleRequestResponseFormat = "{{\"" + KeyId + "\":{0}, \"" + KeyResult + "\":{1}}}";
 
         const string MultipleElementsFormat = "[{0}]";
-        const char MultipleElementsSeparator = ',';
+
         const string ObjectFormat = "{{{0}}}";
         const string StringFormat = "\"{0}\"";
-        const char ValueEscapeCharacter = '"';
     }
+
+    public class WoopsaMetaResult
+    {
+        public string Name { get; set; }
+        public string[] Items { get; set; }
+        public WoopsaPropertyMeta[] Properties { get; set; }
+        public WoopsaMethodMeta[] Methods { get; set; }
+    }
+
+    public class WoopsaPropertyMeta
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
+        public bool ReadOnly { get; set; }
+    }
+
+    public class WoopsaMethodMeta
+    {
+        public string Name { get; set; }
+        public string ReturnType { get; set; }
+        public WoopsaMethodArgumentInfoMeta[] ArgumentInfos { get; set; }
+    }
+
+    public class WoopsaMethodArgumentInfoMeta
+    {
+        public string Name { get; set; }
+        public string Type { get; set; }
+    }
+
 }
+

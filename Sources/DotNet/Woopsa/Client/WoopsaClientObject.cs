@@ -281,8 +281,8 @@ namespace Woopsa
                     string.Format("The path '{0}' is not valid to referemce a property", path));
         }
 
-        public WoopsaMethod GetMethod(string name, WoopsaMethodArgumentInfo[] argumentInfos,
-            WoopsaValueType returnType)
+        public WoopsaMethod GetMethod(string name, WoopsaValueType returnType, 
+            WoopsaMethodArgumentInfo[] argumentInfos)
         {
             WoopsaMethod result = Methods.ByNameOrNull(name);
             if (result != null)

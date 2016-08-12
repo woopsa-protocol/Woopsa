@@ -45,6 +45,7 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="Client\WoopsaClientMultiRequest.cs" />
     <Compile Include="Client\WoopsaClientNotification.cs" />
     <Compile Include="Client\WoopsaClientProtocol.cs" />
     <Compile Include="Client\WoopsaClient.cs" />

@@ -19,9 +19,17 @@ namespace Woopsa
             PropertyPath = propertyPath;
             _lock = new object();
             _notifications = new List<IWoopsaNotification>();
-            _publishTimer = channel.ServiceImplementation.TimerScheduler.AllocateTimer(publishInterval);
-            _publishTimer.Elapsed += _publishTimer_Elapsed;
-            _publishTimer.IsEnabled = true;
+            if (monitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly &&
+                publishInterval == WoopsaSubscriptionServiceConst.PublishIntervalOnce)
+                DoPublish();
+            else if (publishInterval > TimeSpan.FromMilliseconds(0))
+            {
+                _publishTimer = channel.ServiceImplementation.TimerScheduler.AllocateTimer(publishInterval);
+                _publishTimer.Elapsed += _publishTimer_Elapsed;
+                _publishTimer.IsEnabled = true;
+            }
+            else
+                throw new WoopsaException("A publish interval of 0 with a non-zero monitor interval is not allowed");
         }
 
         public WoopsaSubscriptionChannel Channel { get; private set; }
@@ -206,7 +214,7 @@ namespace Woopsa
         {
         }
 
-        protected override bool GetWatchedPropertyValue(out IWoopsaValue  value)
+        protected override bool GetWatchedPropertyValue(out IWoopsaValue value)
         {
             try
             {
@@ -231,7 +239,7 @@ namespace Woopsa
                 // The property might have become invalid, search it new the next time
                 _watchedProperty = null;
                 throw;
-            }            
+            }
         }
 
         #region IDisposable
@@ -254,9 +262,25 @@ namespace Woopsa
                 WoopsaBaseClientObject subClient, string relativePropertyPath) :
             base(channel, root, subscriptionId, propertyPath, monitorInterval, publishInterval)
         {
-            _clientSubscription = subClient.Subscribe(relativePropertyPath,
-                (sender, e) => { EnqueueNewMonitoredValue(e.Notification.Value); },
-                monitorInterval, publishInterval);
+            bool isSingleNotification =
+                monitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly &&
+                publishInterval == WoopsaSubscriptionServiceConst.PublishIntervalOnce;
+            EventHandler<WoopsaNotificationEventArgs> handler;
+            if (isSingleNotification)
+                handler = 
+                    (sender, e) => 
+                    {
+                        EnqueueNewMonitoredValue(e.Notification.Value);
+                        DoPublish(); // there is not publish timer, force publishing the unique notification
+                    };
+            else
+                handler = 
+                    (sender, e) =>
+                    {
+                        EnqueueNewMonitoredValue(e.Notification.Value);
+                    };
+            _clientSubscription = subClient.Subscribe(relativePropertyPath, handler,
+                    monitorInterval, publishInterval);
         }
 
         #region IDisposable

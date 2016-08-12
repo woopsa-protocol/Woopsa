@@ -34,21 +34,21 @@ namespace Woopsa
 
         public WoopsaValue Read(string path)
         {
-            string response = Request("read" + path);
-            return WoopsaValueFromResponse(response);
+            string response = Request(WoopsaFormat.VerbRead + path);
+            return WoopsaFormat.DeserializeWoopsaValue(response);
         }
 
         public WoopsaValue Write(string path, string value)
         {
             var arguments = new NameValueCollection { { WoopsaFormat.KeyValue, value } };
-            string response = Request("write" + path, arguments);
-            return WoopsaValueFromResponse(response);
+            string response = Request(WoopsaFormat.VerbWrite + path, arguments);
+            return WoopsaFormat.DeserializeWoopsaValue(response);
         }
 
         public WoopsaValue Invoke(string path, NameValueCollection arguments, TimeSpan timeout)
         {
-            string response = Request("invoke" + path, arguments, timeout);
-            return WoopsaValueFromResponse(response);
+            string response = Request(WoopsaFormat.VerbInvoke + path, arguments, timeout);
+            return WoopsaFormat.DeserializeWoopsaValue(response);
         }
 
         public WoopsaValue Invoke(string path, NameValueCollection arguments)
@@ -58,9 +58,8 @@ namespace Woopsa
 
         public WoopsaMetaResult Meta(string path)
         {
-            string response = Request("meta" + path);
-            var serializer = new JavaScriptSerializer();
-            var result = serializer.Deserialize<WoopsaMetaResult>(response);
+            string response = Request(WoopsaFormat.VerbMeta + path);
+            var result = WoopsaFormat.DeserializeMeta(response);
             return result;
         }
 
@@ -74,29 +73,6 @@ namespace Woopsa
 
         #region Private Helpers
 
-        private WoopsaValue WoopsaValueFromResponse(string response)
-        {
-            var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
-            var result = serializer.Deserialize<WoopsaReadResult>(response);
-            if (result != null)
-            {
-                var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
-                WoopsaValue resultWoopsaValue;
-                DateTime? timeStamp;
-                if (result.TimeStamp != null)
-                    timeStamp = DateTime.Parse(result.TimeStamp, CultureInfo.InvariantCulture);
-                else
-                    timeStamp = null;
-                if (valueType == WoopsaValueType.JsonData)
-                    resultWoopsaValue = new WoopsaValue(WoopsaJsonData.CreateFromDeserializedData(result.Value), timeStamp);
-                else
-                    resultWoopsaValue = WoopsaValue.CreateChecked(WoopsaFormat.ToStringWoopsa(result.Value),
-                        valueType, timeStamp);
-                return resultWoopsaValue;
-            }
-            else
-                return WoopsaValue.Null;
-        }
 
         private string Request(string path, NameValueCollection postData = null)
         {
@@ -170,22 +146,8 @@ namespace Woopsa
                     {
                         if (response.ContentType == MIMETypes.Application.JSON)
                         {
-                            var serializer = new JavaScriptSerializer();
-                            var error = serializer.Deserialize<WoopsaErrorResult>(resultString);
-
-                            // Generate one of the possible Woopsa exceptions based
-                            // on the JSON-serialized error
-                            if (error.Type == typeof(WoopsaNotFoundException).Name)
-                                throw new WoopsaNotFoundException(error.Message);
-                            if (error.Type == typeof(WoopsaNotificationsLostException).Name)
-                                throw new WoopsaNotificationsLostException(error.Message);
-                            if (error.Type == typeof(WoopsaInvalidOperationException).Name)
-                                throw new WoopsaInvalidOperationException(error.Message);
-                            if (error.Type == typeof(WoopsaInvalidSubscriptionChannelException).Name)
-                                throw new WoopsaInvalidSubscriptionChannelException(error.Message);
-                            if (error.Type == typeof(WoopsaException).Name)
-                                throw new WoopsaException(error.Message);
-                            throw new Exception(error.Message);
+                            var exception = WoopsaFormat.DeserializeError(resultString);
+                            throw exception;
                         }
 
                         throw new WoopsaException(response.StatusDescription);
@@ -243,47 +205,7 @@ namespace Woopsa
 
         #region Private Nested Classes
 
-        private class WoopsaReadResult
-        {
-            public object Value { get; set; }
-            public string Type { get; set; }
-            public string TimeStamp { get; set; }
-        }
-        private class WoopsaErrorResult
-        {
-            public string Type { get; set; }
-            public string Message { get; set; }
-        }
-
         #endregion
-    }
-
-    public class WoopsaMetaResult
-    {
-        public string Name { get; set; }
-        public string[] Items { get; set; }
-        public WoopsaPropertyMeta[] Properties { get; set; }
-        public WoopsaMethodMeta[] Methods { get; set; }
-    }
-
-    public class WoopsaPropertyMeta
-    {
-        public string Name { get; set; }
-        public string Type { get; set; }
-        public bool ReadOnly { get; set; }
-    }
-
-    public class WoopsaMethodMeta
-    {
-        public string Name { get; set; }
-        public string ReturnType { get; set; }
-        public WoopsaMethodArgumentInfoMeta[] ArgumentInfos { get; set; }
-    }
-
-    public class WoopsaMethodArgumentInfoMeta
-    {
-        public string Name { get; set; }
-        public string Type { get; set; }
     }
 
 }

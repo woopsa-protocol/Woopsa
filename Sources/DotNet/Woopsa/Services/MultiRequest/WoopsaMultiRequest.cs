@@ -21,10 +21,10 @@ namespace Woopsa
         {
             _server = server;
 
-            new WoopsaMethod(root, 
+            new WoopsaMethod(root,
                 WoopsaMultiRequestConst.WoopsaMultiRequestMethodName,
                 WoopsaValueType.JsonData,
-                new List<WoopsaMethodArgumentInfo>{new WoopsaMethodArgumentInfo(WoopsaMultiRequestConst.WoopsaMultiRequestArgumentName, WoopsaValueType.JsonData)},
+                new List<WoopsaMethodArgumentInfo> { new WoopsaMethodArgumentInfo(WoopsaMultiRequestConst.WoopsaMultiRequestArgumentName, WoopsaValueType.JsonData) },
                 (s) => (HandleCall(s.ElementAt(0)))
             );
         }
@@ -34,40 +34,37 @@ namespace Woopsa
             var serializer = new JavaScriptSerializer();
             Request[] requestsList = serializer.Deserialize<Request[]>(requestsArgument.AsText);
             List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
-            foreach(Request request in requestsList)
+            foreach (Request request in requestsList)
             {
                 string result = null;
-                if (request.Action.Equals("read"))
-                    result = _server.ReadValue(request.Path);
-                else if (request.Action.Equals("meta"))
-                    result = _server.GetMetadata(request.Path);
-                else if (request.Action.Equals("write"))
-                    result = _server.WriteValue(request.Path, request.Value);
-                else if (request.Action.Equals("invoke"))
+                try
                 {
-                    NameValueCollection argumentsAsCollection = request.Arguments.Aggregate(new NameValueCollection(), (collection, argument) =>
+                    if (request.Verb.Equals(WoopsaFormat.VerbRead))
+                        result = _server.ReadValue(request.Path);
+                    else if (request.Verb.Equals(WoopsaFormat.VerbMeta))
+                        result = _server.GetMetadata(request.Path);
+                    else if (request.Verb.Equals(WoopsaFormat.VerbWrite))
+                        result = _server.WriteValue(request.Path, request.Value);
+                    else if (request.Verb.Equals(WoopsaFormat.VerbInvoke))
                     {
-                        collection.Add(argument.Key, argument.Value);
-                        return collection;
-                    });
-                    result = _server.InvokeMethod(request.Path, argumentsAsCollection);
+                        NameValueCollection argumentsAsCollection = request.Arguments.Aggregate(new NameValueCollection(), (collection, argument) =>
+                        {
+                            collection.Add(argument.Key, argument.Value);
+                            return collection;
+                        });
+                        result = _server.InvokeMethod(request.Path, argumentsAsCollection);
+                    }
                 }
+                catch (Exception e)
+                {
+                    result = WoopsaFormat.Serialize(e);
+                }               
                 MultipleRequestResponse response = new MultipleRequestResponse();
                 response.Id = request.Id;
                 response.Result = result;
                 responses.Add(response);
             }
             return WoopsaValue.CreateUnchecked(responses.Serialize(), WoopsaValueType.JsonData);
-        }
-
-        private static Stream GenerateStreamFromString(string s)
-        {
-            MemoryStream stream = new MemoryStream();
-            StreamWriter writer = new StreamWriter(stream);
-            writer.Write(s);
-            writer.Flush();
-            stream.Position = 0;
-            return stream;
         }
 
         private WoopsaServer _server;
@@ -79,16 +76,17 @@ namespace Woopsa
         public string Result { get; set; }
     }
 
-    class Request
+    public class Request
     {
         public int Id { get; set; }
 
-        public string Action { get; set; }
+        public string Verb { get; set; }
 
         public string Path { get; set; }
 
         public string Value { get; set; }
 
         public Dictionary<string, string> Arguments { get; set; }
+
     }
 }

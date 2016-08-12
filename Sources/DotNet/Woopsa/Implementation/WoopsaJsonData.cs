@@ -54,6 +54,14 @@ namespace Woopsa
             }
         }
 
+        public bool ContainsKey(string key)
+        {
+            if (IsDictionary)
+                return (_data as Dictionary<string, object>).ContainsKey(key);
+            else
+                return false;
+        }
+
         public WoopsaJsonData this[int index]
         {
             get
