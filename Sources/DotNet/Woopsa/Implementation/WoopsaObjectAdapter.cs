@@ -117,20 +117,52 @@ namespace Woopsa
         public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
                 WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility) :
-            this(container, name, () => targetObject, options, defaultVisibility)
+            this(container, name, targetObject, null, options, defaultVisibility)
         {
-
         }
+
+        public WoopsaObjectAdapter(WoopsaContainer container, string name, object targetObject,
+            Type declaredExposedType,
+            WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
+               WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility) :
+            this(container, name, () => targetObject, declaredExposedType, options, defaultVisibility)
+        {
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="container"></param>
+        /// <param name="name"></param>
+        /// <param name="targetObjectGetter"></param>
+        /// <param name="declaredExposedType">
+        /// Type to expose for the targetObject. 
+        /// Specify null to use targetObject.GetType().
+        /// The specified type can be different than the targetObject.GetType() 
+        /// when an interface is published instead of the public methods of the type.
+        /// </param>
+        /// <param name="options"></param>
+        /// <param name="defaultVisibility"></param>
         protected WoopsaObjectAdapter(WoopsaContainer container, string name, Func<object> targetObjectGetter,
+            Type declaredExposedType,
             WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
             WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility)
             : base(container, name)
         {
             TargetObjectGetter = targetObjectGetter;
+            DeclaredExposedType = declaredExposedType;
             DefaultVisibility = defaultVisibility;
             Options = options;
             _lock = new object();
         }
+
+        protected WoopsaObjectAdapter(WoopsaContainer container, string name, Func<object> targetObjectGetter,
+                WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
+                WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility) :
+            this(container, name, targetObjectGetter, null, options, defaultVisibility)
+        {
+        }
+
 
         /// <summary>
         /// To customize the woopsa visibility of a member. 
@@ -158,8 +190,8 @@ namespace Woopsa
                 {
                     lock (_lock)
                     {
-                        object currentTargetObjectType = _targetObject != null ? _targetObject.GetType() : null;
-                        object newTargetObjectType = newTargetObject != null ? newTargetObject.GetType() : null;
+                        object currentTargetObjectType = _targetObject != null ? ExposedType(_targetObject) : null;
+                        object newTargetObjectType = newTargetObject != null ? ExposedType(newTargetObject) : null;
                         if (newTargetObjectType != currentTargetObjectType)
                         {
                             Clear();
@@ -225,12 +257,8 @@ namespace Woopsa
             base.PopulateObject();
             if (targetObject != null)
             {
-                if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
-                    lock (_typeDescriptions)
-                        typeDescription = _typeDescriptions.GetTypeDescription(targetObject.GetType());
-                else
-                    typeDescription = WoopsaReflection.ReflectType(targetObject.GetType(),
-                        Visibility, OnMemberWoopsaVisibilityCheck);
+                Type exposedType = ExposedType(targetObject);
+                typeDescription = GetTypeDescription(exposedType);
 
                 PopulateProperties(targetObject, typeDescription.Properties);
                 PopulateMethods(targetObject, typeDescription.Methods);
@@ -241,6 +269,25 @@ namespace Woopsa
                     PopulateEnumerableItems(enumerable);
                 }
             }
+        }
+        protected TypeDescription GetTypeDescription(Type exposedType)
+        {
+            TypeDescription typeDescription;
+            if (!Options.HasFlag(WoopsaObjectAdapterOptions.DisableClassesCaching))
+                lock (_typeDescriptions)
+                    typeDescription = _typeDescriptions.GetTypeDescription(exposedType);
+            else
+                typeDescription = WoopsaReflection.ReflectType(exposedType,
+                    Visibility, OnMemberWoopsaVisibilityCheck);
+            return typeDescription;
+        }
+
+        protected virtual Type ExposedType(object targetObject)
+        {
+            if (DeclaredExposedType != null)
+                return DeclaredExposedType;
+            else
+                return targetObject.GetType();
         }
 
         protected override void UpdateItems()
@@ -295,7 +342,7 @@ namespace Woopsa
         }
 
         protected void AddWoopsaProperty(PropertyDescription property)
-        {            
+        {
             if (property.IsReadOnly)
                 new WoopsaProperty(this, property.PropertyInfo.Name, property.WoopsaType,
                     (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.WoopsaType, GetTimeStamp()))
@@ -309,14 +356,21 @@ namespace Woopsa
 
         protected void AddWoopsaItem(ItemDescription item)
         {
-                    CreateItemWoopsaAdapter(item, () =>
-                        item.PropertyInfo.GetValue(TargetObject, EmptyParameters));
+            CreateItemWoopsaAdapter(item, () =>
+                item.PropertyInfo.GetValue(TargetObject, EmptyParameters));
         }
 
         protected virtual WoopsaObjectAdapter CreateItemWoopsaAdapter(
             ItemDescription itemDescription, Func<object> itemGetter)
         {
-            return new WoopsaObjectAdapter(this, itemDescription.Name, itemGetter, Options, DefaultVisibility);
+            if (DeclaredExposedType != null)
+                // Use the declared type for items as well
+                return new WoopsaObjectAdapter(this, itemDescription.Name, itemGetter,
+                    itemDescription.PropertyInfo.PropertyType, Options, DefaultVisibility);
+            else
+                // Use effective type for items as well, so don't specify an exposedType
+                return new WoopsaObjectAdapter(this, itemDescription.Name, itemGetter,
+                    Options, DefaultVisibility);
         }
 
         protected void AddWoopsaMethod(MethodDescription method)
@@ -358,14 +412,15 @@ namespace Woopsa
                 // Ignore silently, the method won't be published
             }
 
- 
+
         }
+        protected Type DeclaredExposedType { get; private set; }
 
         #endregion
 
         private object _targetObject;
         private object _lock;
- 
+
         private static readonly object[] EmptyParameters = new object[] { };
 
     }
