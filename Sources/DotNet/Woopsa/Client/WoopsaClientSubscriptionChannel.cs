@@ -216,6 +216,8 @@ namespace Woopsa
                 }
                 _subscriptionOpenChannel = null;
                 _lastNotificationId = 0;
+                foreach (var item in _subscriptions)
+                    item.SubscriptionId = null;
                 SubscriptionsChanged = true;
             }
         }

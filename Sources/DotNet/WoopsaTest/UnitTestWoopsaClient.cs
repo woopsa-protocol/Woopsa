@@ -66,6 +66,48 @@ namespace WoopsaTest
         }
 
         [TestMethod]
+        public void TestWoopsaClientSubscriptionChannelServerRestartAfter()
+        {
+            bool isValueChanged = false;
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+            {
+                WoopsaUnboundClientObject root = client.CreateUnboundRoot("");
+                WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
+                    (sender, e) => { isValueChanged = true; },
+                    TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+                using (WoopsaServer server = new WoopsaServer(objectServer))
+                {
+                    objectServer.Votes = 2;
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
+                        Thread.Sleep(10);
+                    if (isValueChanged)
+                        Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No notification received");
+                    Assert.AreEqual(true, isValueChanged);
+                }
+                isValueChanged = false;
+                using (WoopsaServer server = new WoopsaServer(objectServer))
+                {
+                    objectServer.Votes = 3;
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
+                        Thread.Sleep(10);
+                    if (isValueChanged)
+                        Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No notification received");
+                    Assert.AreEqual(true, isValueChanged);
+                }
+                subscription.Unsubscribe();
+            }
+        }
+
+        [TestMethod]
         public void TestWoopsaClientKeepSubscriptionOpen()
         {
             bool isValueChanged = false;
