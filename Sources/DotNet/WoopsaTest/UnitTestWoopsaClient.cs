@@ -3,6 +3,7 @@ using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Diagnostics;
+using System.Collections.Generic;
 
 namespace WoopsaTest
 {
@@ -25,7 +26,7 @@ namespace WoopsaTest
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2))) // TODO : 2 s
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -33,6 +34,54 @@ namespace WoopsaTest
                         Console.WriteLine("No notification received");
                     subscription.Unsubscribe();
                     Assert.AreEqual(true, isValueChanged);
+                }
+            }
+        }
+
+        public class ManySubscriptionTestObject
+        {
+            public int Trigger { get; set; }
+
+            public bool HasNotified { get; set; }
+        }
+
+        [TestMethod]
+        public void TestWoopsaClientSubscriptionChannelManySubscriptions()
+        {
+            const int ObjectsCount = 5000;
+            int totalNotifications = 0;
+            List<ManySubscriptionTestObject> list = new List<WoopsaTest.UnitTestWoopsaClient.ManySubscriptionTestObject>();
+            for (int i = 0; i < ObjectsCount; i++)
+                list.Add(new ManySubscriptionTestObject() { Trigger = i });
+            using (WoopsaServer server = new WoopsaServer(new WoopsaObjectAdapter(null, "list", list,
+                WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.IEnumerableObject)))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa",null, ObjectsCount))
+                {
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        int index = i;
+                        WoopsaClientSubscription subscription = root.Subscribe(
+                            WoopsaUtils.CombinePath(
+                                string.Format(WoopsaObjectAdapter.IEnumerableIndexerFormat, WoopsaObjectAdapter.IEnumerableItemBaseName, i),
+                                nameof(ManySubscriptionTestObject.Trigger)),
+                            (sender, e) =>
+                            {
+                                list[index].HasNotified = true;
+                                totalNotifications++;
+                            },
+                            TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(200));
+                    }
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((totalNotifications < ObjectsCount) && (watch.Elapsed < TimeSpan.FromSeconds(5))) 
+                        Thread.Sleep(10);
+                    if (totalNotifications == ObjectsCount)
+                        Console.WriteLine("All notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("{0} notification received, {1} expected", totalNotifications, ObjectsCount);
+                    Assert.AreEqual(ObjectsCount, totalNotifications);
                 }
             }
         }

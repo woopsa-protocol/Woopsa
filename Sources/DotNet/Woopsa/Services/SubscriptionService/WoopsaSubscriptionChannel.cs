@@ -209,7 +209,7 @@ namespace Woopsa
                         WaitHandle.WaitAny(new WaitHandle[] { _waitStopEvent, _waitNotificationEvent }, timeout);
                     }
                     // prepare result with all available notifications without dequeueing
-                    result.AddRange(_pendingNotifications.PeekNotifications());
+                    result.AddRange(_pendingNotifications.PeekNotifications(WoopsaSubscriptionServiceConst.MaxGroupedNotificationCount));
                 }
                 else
                     throw new WoopsaNotificationsLostException("Notifications have been lost because the queue was full. Acknowledge the error by calling WaitNotification with LastNotificationId = 0");
@@ -224,7 +224,7 @@ namespace Woopsa
                     WaitHandle.WaitAny(new WaitHandle[] { _waitStopEvent, _waitNotificationEvent }, timeout);
                 }
                 // prepare result with all available notifications without dequeueing
-                result.AddRange(_pendingNotifications.PeekNotifications());
+                result.AddRange(_pendingNotifications.PeekNotifications(WoopsaSubscriptionServiceConst.MaxGroupedNotificationCount));
             }
             _watchClientActivity.Restart();
             return result;
@@ -329,11 +329,12 @@ namespace Woopsa
                 _notifications.AddLast(pair);
             }
         }
-        public IWoopsaNotification[] PeekNotifications()
+        public IWoopsaNotification[] PeekNotifications(int maxCount)
         {
             lock (_notifications)
             {
-                IWoopsaNotification[] result = new IWoopsaNotification[_notifications.Count];
+                int count = Math.Min(_notifications.Count, maxCount);
+                IWoopsaNotification[] result = new IWoopsaNotification[count];
                 LinkedListNode<PairSubscriptionNotification> node = _notifications.First;
                 int i = 0;
                 while (node != null)
@@ -341,6 +342,8 @@ namespace Woopsa
                     result[i] = node.Value.Value;
                     i++;
                     node = node.Next;
+                    if (i >= count)
+                        break;
                 }
                 return result;
             }

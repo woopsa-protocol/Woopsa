@@ -73,5 +73,10 @@ namespace Woopsa
                 result.Add(item.Key, item.Value);
             return result;
         }
+
+        public static TimeSpan Multiply(this TimeSpan timeSpan, int n)
+        {
+            return TimeSpan.FromTicks(timeSpan.Ticks * n);
+        }
     }
 }
