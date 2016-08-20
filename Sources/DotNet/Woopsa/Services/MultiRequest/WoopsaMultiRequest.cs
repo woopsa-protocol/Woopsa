@@ -53,7 +53,7 @@ namespace Woopsa
                 catch (Exception e)
                 {
                     result = WoopsaFormat.Serialize(e);
-                }               
+                }
                 MultipleRequestResponse response = new MultipleRequestResponse();
                 response.Id = request.Id;
                 response.Result = result;

@@ -306,7 +306,7 @@ namespace Woopsa
         {
             foreach (var method in methods)
                 if (IsMemberWoopsaVisible(targetObject, method.MethodInfo))
-                    AddWoopsaMethod(method);
+                        AddWoopsaMethod(method);
         }
 
         protected virtual void PopulateItems(object targetObject, IEnumerable<ItemDescription> items)
@@ -343,15 +343,22 @@ namespace Woopsa
 
         protected void AddWoopsaProperty(PropertyDescription property)
         {
+            WoopsaValueType publishedWoopsaPropertyType = PublishedWoopsaPropertyType(property);
             if (property.IsReadOnly)
-                new WoopsaProperty(this, property.PropertyInfo.Name, property.WoopsaType,
-                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.WoopsaType, GetTimeStamp()))
+                new WoopsaProperty(this, property.PropertyInfo.Name, publishedWoopsaPropertyType,
+                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters),
+                                                           publishedWoopsaPropertyType, GetTimeStamp()))
                 );
             else
-                new WoopsaProperty(this, property.PropertyInfo.Name, property.WoopsaType,
-                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), property.WoopsaType, GetTimeStamp())),
+                new WoopsaProperty(this, property.PropertyInfo.Name, publishedWoopsaPropertyType,
+                    (sender) => (WoopsaValue.ToWoopsaValue(property.PropertyInfo.GetValue(TargetObject, EmptyParameters), publishedWoopsaPropertyType, GetTimeStamp())),
                     (sender, value) => property.PropertyInfo.SetValue(TargetObject, value.ConvertTo(property.PropertyInfo.PropertyType), null)
                 );
+        }
+
+        protected virtual WoopsaValueType PublishedWoopsaPropertyType(PropertyDescription property)
+        {
+            return property.WoopsaType;
         }
 
         protected void AddWoopsaItem(ItemDescription item)

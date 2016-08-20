@@ -18,13 +18,14 @@ namespace Woopsa
             _pendingRequests = new List<WebRequest>();
             if (!url.EndsWith(WoopsaConst.WoopsaPathSeparator.ToString()))
                 url = url + WoopsaConst.WoopsaPathSeparator;
-            _url = url;
+            Url = url;
         }
 
         #endregion
 
         #region Public Properties
 
+        public string Url { get; private set; }
         public string Username { get; set; }
         public string Password { get; set; }
 
@@ -83,7 +84,7 @@ namespace Woopsa
         {
             if (!_terminating)
             {
-                var request = (HttpWebRequest)WebRequest.Create(_url + path);
+                var request = (HttpWebRequest)WebRequest.Create(Url + path);
                 lock (_pendingRequests)
                     _pendingRequests.Add(request);
                 try
@@ -195,8 +196,6 @@ namespace Woopsa
         #region Private Members
 
         private readonly TimeSpan _defaultRequestTimeout = TimeSpan.FromSeconds(10);
-
-        private readonly string _url;
 
         private List<WebRequest> _pendingRequests;
         private bool _terminating;

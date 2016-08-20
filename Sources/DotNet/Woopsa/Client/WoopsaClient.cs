@@ -13,6 +13,8 @@ namespace Woopsa
         public WoopsaClient(string url, WoopsaContainer container,
             int notificationQueueSize = DefaultNotificationQueueSize)
         {
+            Uri uri = new Uri(url);
+            AuthorityUrl = uri.GetLeftPart(UriPartial.Authority);
             ClientProtocol = new WoopsaClientProtocol(url);
             _container = container;
             WoopsaUnboundClientObject unboundRoot = CreateUnboundRoot("");
@@ -32,6 +34,9 @@ namespace Woopsa
         #region Public Properties
 
         public WoopsaClientProtocol ClientProtocol { get; private set; }
+
+        public string Url { get; private set; }
+        public string AuthorityUrl { get; private set; }
 
         public string Username
         {
