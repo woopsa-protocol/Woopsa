@@ -38,6 +38,34 @@ namespace WoopsaTest
             }
         }
 
+        [TestMethod]
+        public void TestWoopsaClientSubscriptionToProperty()
+        {
+            bool isValueChanged = false;
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    WoopsaClientProperty propertyVotes = root.Properties.ByName("Votes") as WoopsaClientProperty;
+                    WoopsaClientSubscription subscription = propertyVotes.Subscribe((sender, e) => { isValueChanged = true; },
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+                    objectServer.Votes = 2;
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                        Thread.Sleep(10);
+                    if (isValueChanged)
+                        Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No notification received");
+                    subscription.Unsubscribe();
+                    Assert.AreEqual(true, isValueChanged);
+                }
+            }
+        }
+
         public class ManySubscriptionTestObject
         {
             public int Trigger { get; set; }
@@ -53,7 +81,7 @@ namespace WoopsaTest
             List<ManySubscriptionTestObject> list = new List<WoopsaTest.UnitTestWoopsaClient.ManySubscriptionTestObject>();
             for (int i = 0; i < ObjectsCount; i++)
                 list.Add(new ManySubscriptionTestObject() { Trigger = i });
-            using (WoopsaServer server = new WoopsaServer(new WoopsaObjectAdapter(null, "list", list,
+            using (WoopsaServer server = new WoopsaServer(new WoopsaObjectAdapter(null, "list", list, null, null,
                 WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.IEnumerableObject)))
             {
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa",null, ObjectsCount))

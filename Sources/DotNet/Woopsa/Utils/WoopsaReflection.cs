@@ -15,21 +15,23 @@ namespace Woopsa
         public static TypeDescription ReflectType(
             Type targetType,
             WoopsaVisibility visibility,
+            WoopsaConverters customValueTypeConverters,
             Action<EventArgsMemberVisibilityCheck> visibilityCheck)
         {
             TypeDescription typeDescription = new TypeDescription(targetType);
             ReflectProperties(targetType, typeDescription.Properties,
-                typeDescription.Items, visibility, visibilityCheck);
+                typeDescription.Items, visibility, customValueTypeConverters, visibilityCheck);
             ReflectMethods(targetType, typeDescription.Methods,
-                visibility, visibilityCheck);
+                visibility, customValueTypeConverters, visibilityCheck);
             return typeDescription;
         }
 
         public static TypeDescription ReflectType(
             Type targetType,
-            WoopsaVisibility visibility = DefaultVisibility)
+            WoopsaVisibility visibility = DefaultVisibility,
+            WoopsaConverters customValueTypeConverters = null)
         {
-            return ReflectType(targetType, visibility, (e) => { });
+            return ReflectType(targetType, visibility, customValueTypeConverters, (e) => { });
         }
 
         public static void ReflectProperties(
@@ -37,6 +39,7 @@ namespace Woopsa
             PropertyDescriptions propertyDescriptions,
             ItemDescriptions itemDescriptions,
             WoopsaVisibility visibility,
+            WoopsaConverters customValueTypeConverters,
             Action<EventArgsMemberVisibilityCheck> visibilityCheck)
         {
             PropertyInfo[] properties;
@@ -49,20 +52,21 @@ namespace Woopsa
                 {
                     WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(propertyInfo);
                     WoopsaValueType woopsaPropertyType;
+                    WoopsaConverter converter;
                     bool isValidWoopsaProperty = false;
+                    isValidWoopsaProperty = customValueTypeConverters.InferWoopsaType(propertyInfo.PropertyType, out woopsaPropertyType, out converter);
                     if (attribute != null)
                     {
                         woopsaPropertyType = attribute.ValueType;
                         isValidWoopsaProperty = true;
                     }
-                    else
-                        isValidWoopsaProperty = WoopsaTypeUtils.InferWoopsaType(propertyInfo.PropertyType, out woopsaPropertyType);
                     if (isValidWoopsaProperty)
                     {
                         //This property is a C# property of a valid basic Woopsa Type, it can be published as a Woopsa property
                         PropertyDescription newPropertyDescription = new PropertyDescription(
                             woopsaPropertyType, propertyInfo,
-                            !propertyInfo.CanWrite || propertyInfo.GetSetMethod(false) == null);
+                            !propertyInfo.CanWrite || propertyInfo.GetSetMethod(false) == null,
+                            converter);
                         propertyDescriptions.Add(newPropertyDescription);
                     }
                     else if (!propertyInfo.PropertyType.IsValueType)
@@ -78,16 +82,18 @@ namespace Woopsa
             Type targetType,
             PropertyDescriptions propertyDescriptions,
             ItemDescriptions itemDescriptions,
-            WoopsaVisibility visibility = DefaultVisibility)
+            WoopsaVisibility visibility = DefaultVisibility,
+            WoopsaConverters customValueTypeConverters = null)
         {
             ReflectProperties(targetType, propertyDescriptions, itemDescriptions,
-                visibility, (e) => { });
+                visibility, customValueTypeConverters, (e) => { });
         }
 
         public static void ReflectMethods(
             Type targetType,
             MethodDescriptions methodDescriptions,
             WoopsaVisibility visibility,
+            WoopsaConverters customValueTypeConverters,
             Action<EventArgsMemberVisibilityCheck> visibilityCheck)
         {
             MethodInfo[] methods;
@@ -96,16 +102,16 @@ namespace Woopsa
             foreach (var methodInfo in methods)
                 if (IsMemberWoopsaVisible(targetType, methodInfo, visibility, visibilityCheck))
                 {
+                    WoopsaConverter converter;
                     WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
                     WoopsaValueType woopsaReturnType;
                     bool isValidWoopsaMethod = false;
+                    isValidWoopsaMethod = customValueTypeConverters.InferWoopsaType(methodInfo.ReturnType, out woopsaReturnType, out converter);
                     if (attribute != null)
                     {
                         woopsaReturnType = attribute.ValueType;
                         isValidWoopsaMethod = true;
                     }
-                    else
-                        isValidWoopsaMethod = WoopsaTypeUtils.InferWoopsaType(methodInfo.ReturnType, out woopsaReturnType);
                     if (isValidWoopsaMethod)
                     {
                         bool argumentsTypeCompatible = true;
@@ -113,8 +119,9 @@ namespace Woopsa
                         int parameterIndex = 0;
                         foreach (var parameter in methodInfo.GetParameters())
                         {
+                            WoopsaConverter argumentConverter;
                             WoopsaValueType argumentType;
-                            if (WoopsaTypeUtils.InferWoopsaType(parameter.ParameterType, out argumentType))
+                            if (customValueTypeConverters.InferWoopsaType(parameter.ParameterType, out argumentType, out argumentConverter))
                             {
                                 string parameterName;
                                 parameterName = parameter.Name;
@@ -136,7 +143,7 @@ namespace Woopsa
                                 }
                                 ArgumentDescription newArgument = new ArgumentDescription(
                                     new WoopsaMethodArgumentInfo(parameterName, argumentType),
-                                    parameter.ParameterType);
+                                    parameter.ParameterType, argumentConverter);
                                 arguments.Add(newArgument);
                             }
                             else
@@ -149,7 +156,7 @@ namespace Woopsa
                         if (argumentsTypeCompatible)
                         {
                             MethodDescription newMethod = new MethodDescription(
-                                woopsaReturnType, arguments, methodInfo);
+                                woopsaReturnType, arguments, methodInfo, converter);
                             methodDescriptions.Add(newMethod);
                         }
                     }
@@ -158,9 +165,10 @@ namespace Woopsa
 
         public static void ReflectMethods(Type targetType,
             MethodDescriptions methodDescriptions,
-            WoopsaVisibility visibility = DefaultVisibility)
+            WoopsaVisibility visibility = DefaultVisibility,
+            WoopsaConverters customValueTypeConverters = null)
         {
-            ReflectMethods(targetType, methodDescriptions, visibility, (e) => { });
+            ReflectMethods(targetType, methodDescriptions, visibility, customValueTypeConverters, (e) => { });
         }
 
         public static bool IsMemberWoopsaVisible(
@@ -282,31 +290,35 @@ namespace Woopsa
     public class PropertyDescription : Description
     {
         public PropertyDescription(WoopsaValueType type, PropertyInfo propertyInfo,
-            bool isReadOnly)
+            bool isReadOnly, WoopsaConverter converter)
         {
             WoopsaType = type;
             PropertyInfo = propertyInfo;
             IsReadOnly = isReadOnly;
+            Converter = converter;
         }
 
         public override string Name { get { return PropertyInfo.Name; } }
         public WoopsaValueType WoopsaType { get; private set; }
         public PropertyInfo PropertyInfo { get; private set; }
         public bool IsReadOnly { get; private set; }
+        public WoopsaConverter Converter { get; private set; }
     }
 
     public class ArgumentDescription : Description
     {
         public ArgumentDescription(WoopsaMethodArgumentInfo argumentInfo,
-            Type type)
+            Type type, WoopsaConverter converter)
         {
             ArgumentInfo = argumentInfo;
             Type = type;
+            Converter = converter;
         }
 
         public override string Name { get { return ArgumentInfo.Name; } }
         public WoopsaMethodArgumentInfo ArgumentInfo { get; private set; }
         public Type Type { get; private set; }
+        public WoopsaConverter Converter { get; private set; }
     }
 
     public class ArgumentDescriptions : Descriptions<ArgumentDescription> { }
@@ -314,16 +326,18 @@ namespace Woopsa
     public class MethodDescription : Description
     {
         public MethodDescription(WoopsaValueType returnType, ArgumentDescriptions arguments,
-            MethodInfo methodInfo)
+            MethodInfo methodInfo, WoopsaConverter converter)
         {
             WoopsaReturnType = returnType;
             Arguments = arguments;
             MethodInfo = methodInfo;
+            Converter = converter;
         }
 
         public override string Name { get { return MethodInfo.Name; } }
         public ArgumentDescriptions Arguments { get; private set; }
         public WoopsaValueType WoopsaReturnType { get; private set; }
+        public WoopsaConverter Converter { get; private set; }
         public MethodInfo MethodInfo { get; private set; }
         public IEnumerable<WoopsaMethodArgumentInfo> WoopsaArguments
         {
@@ -360,15 +374,21 @@ namespace Woopsa
     public class TypeDescriptions
     {
         public TypeDescriptions(WoopsaVisibility visibility,
+            WoopsaConverters customValueTypeConverters,
             Action<EventArgsMemberVisibilityCheck> visibilityCheck)
         {
             _visibility = visibility;
             _visibilityCheck = visibilityCheck;
             _typeDescriptions = new Dictionary<Type, TypeDescription>();
+            CustomTypeConverters = new  WoopsaConverters(customValueTypeConverters);
         }
 
-        public TypeDescriptions(WoopsaVisibility visibility = WoopsaReflection.DefaultVisibility):
-            this(visibility, (e) => { })
+        public TypeDescriptions(WoopsaVisibility visibility, WoopsaConverters customValueTypeConverters) :
+            this(visibility, customValueTypeConverters, (e) => { })
+        { }
+
+        public TypeDescriptions(WoopsaVisibility visibility = WoopsaReflection.DefaultVisibility) :
+            this(visibility, null)
         {
         }
         public TypeDescription GetTypeDescription(Type type)
@@ -377,15 +397,98 @@ namespace Woopsa
             if (!_typeDescriptions.TryGetValue(type, out result))
             {
                 result = WoopsaReflection.ReflectType(type,
-                    _visibility, _visibilityCheck);
+                    _visibility, CustomTypeConverters, _visibilityCheck);
                 _typeDescriptions[type] = result;
             }
             return result;
         }
 
+        public WoopsaConverters CustomTypeConverters { get; private set; }
+
         private WoopsaVisibility _visibility;
         private Action<EventArgsMemberVisibilityCheck> _visibilityCheck;
         private Dictionary<Type, TypeDescription> _typeDescriptions;
+    }
+
+    public abstract class WoopsaConverter
+    {
+        public abstract object FromWoopsaValue(IWoopsaValue value, Type targetType);
+
+        public abstract WoopsaValue ToWoopsaValue(object value, WoopsaValueType woopsaValueType,
+            DateTime? timeStamp);
+    }
+
+    public class WoopsaConverterDefault : WoopsaConverter
+    {
+        static WoopsaConverterDefault()
+        {
+            Default = new Woopsa.WoopsaConverterDefault();
+        }
+
+        public static WoopsaConverterDefault Default { get; private set; }
+
+        public override object FromWoopsaValue(IWoopsaValue value, Type targetType)
+        {
+            return value.ConvertTo(targetType);
+        }
+
+        public override WoopsaValue ToWoopsaValue(object value, WoopsaValueType woopsaValueType,
+            DateTime? timeStamp)
+        {
+            return WoopsaValue.ToWoopsaValue(value, woopsaValueType, timeStamp);
+        }
+    }
+
+    public class WoopsaConverters
+    {
+        public WoopsaConverters(WoopsaConverters converters = null)
+        {
+            if (converters != null)
+                _converterDescriptions = new Dictionary<Type, WoopsaConverterDescription>(
+                    converters._converterDescriptions);
+            else
+                _converterDescriptions = new Dictionary<Type, WoopsaConverterDescription>();
+        }
+
+        public bool IsWoopsaValueType(Type type)
+        {
+            WoopsaValueType woopsaValueType;
+            WoopsaConverter converter;
+            return InferWoopsaType(type, out woopsaValueType, out converter);
+        }
+
+        public bool InferWoopsaType(Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
+        {
+            WoopsaConverterDescription converterDescription;
+            if (_converterDescriptions.TryGetValue(type, out converterDescription))
+            {
+                woopsaValueType = converterDescription.WoopsaValueType;
+                converter = converterDescription.Converter;
+                return true;
+            }
+            else
+            {
+                converter = WoopsaConverterDefault.Default;
+                return WoopsaTypeUtils.InferWoopsaType(type, out woopsaValueType);
+            }
+        }
+
+        public void RegisterConverter(Type type, WoopsaConverter converter, WoopsaValueType woopsaValueType)
+        {
+            _converterDescriptions[type] = new WoopsaConverterDescription()
+            {
+                Converter = converter,
+                WoopsaValueType = woopsaValueType
+            };
+        }
+
+        private Dictionary<Type, WoopsaConverterDescription> _converterDescriptions;
+
+        private class WoopsaConverterDescription
+        {
+            public WoopsaConverter Converter { get; set; }
+            public WoopsaValueType WoopsaValueType { get; set; }
+        }
     }
 
 }
