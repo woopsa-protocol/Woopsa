@@ -182,6 +182,13 @@ namespace Woopsa
             return new WoopsaServerModelAccessFreeSection(this);
         }
 
+        public void ShutDown()
+        {
+            if (_subscriptionService != null)
+                _subscriptionService.Terminate();
+            WebServer.Shutdown();
+        }
+
         internal protected virtual void OnBeforeWoopsaModelAccess()
         {
             if (BeforeWoopsaModelAccess != null)
@@ -199,9 +206,7 @@ namespace Woopsa
         {
             if (disposing)
             {
-                if (_subscriptionService != null)
-                    _subscriptionService.Terminate();
-                WebServer.Shutdown();
+                ShutDown();
                 RemoveRoutes();
                 if (_subscriptionService != null)
                 {
