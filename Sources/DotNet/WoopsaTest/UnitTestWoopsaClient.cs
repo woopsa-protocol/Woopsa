@@ -38,6 +38,8 @@ namespace WoopsaTest
             }
         }
 
+
+
         [TestMethod]
         public void TestWoopsaClientSubscriptionToProperty()
         {

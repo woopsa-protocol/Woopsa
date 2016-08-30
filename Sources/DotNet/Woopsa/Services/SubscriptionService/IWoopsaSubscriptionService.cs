@@ -53,7 +53,7 @@ namespace Woopsa
                 new WoopsaMethodArgumentInfo("SubscriptionId", WoopsaValueType.Integer)
             };
 
-        public static readonly TimeSpan ClientSubscriptionUpdateInterval = TimeSpan.FromMilliseconds(10);
+        public static readonly TimeSpan ClientSubscriptionUpdateInterval = TimeSpan.FromMilliseconds(1); 
 
         public static readonly TimeSpan TimeOutUnsubscriptionPerSubscription = TimeSpan.FromMilliseconds(1);
     }

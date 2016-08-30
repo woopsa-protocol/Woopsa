@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
 
@@ -85,6 +86,12 @@ namespace Woopsa
             if (!_terminating)
             {
                 var request = (HttpWebRequest)WebRequest.Create(Url + path);
+
+                // TODO : enlever
+                request.ServicePoint.UseNagleAlgorithm = false;
+                request.ServicePoint.Expect100Continue = false;
+
+
                 lock (_pendingRequests)
                     _pendingRequests.Add(request);
                 try
@@ -107,14 +114,24 @@ namespace Woopsa
 
                     if (postData != null)
                     {
-                        using (var writer = new StreamWriter(request.GetRequestStream()))
+                        StringBuilder stringBuilder = new StringBuilder();
+                        for (var i = 0; i < postData.Count; i++)
                         {
-                            for (var i = 0; i < postData.Count; i++)
-                            {
-                                string key = postData.AllKeys[i];
-                                writer.Write(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
-                            }
-                        }
+                            string key = postData.AllKeys[i];
+                            stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                        }                        
+                        using (var writer = new StreamWriter(request.GetRequestStream()))
+                            writer.Write(stringBuilder.ToString());
+                            /*
+                                                using (var writer = new StreamWriter(request.GetRequestStream()))
+                                                {
+                                                    for (var i = 0; i < postData.Count; i++)
+                                                    {
+                                                        string key = postData.AllKeys[i];
+                                                        writer.Write(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                                                    }
+                                                }
+                        */
                     }
 
                     HttpWebResponse response;
