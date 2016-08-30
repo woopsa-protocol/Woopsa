@@ -44,10 +44,11 @@ namespace Woopsa
                 // First element = initial /
                 string[] pathParts = subRoute.Split(new char[] { WoopsaConst.UrlSeparator }, 3);
                 if (pathParts.Length == 3 && pathParts[1] != "")
-                {
                     assembly = AssemblyByName(pathParts[1]);
+                else
+                    assembly = null;
+                if (assembly != null)
                     RespondResource(response, assembly, WoopsaConst.UrlSeparator + pathParts[2]);
-                }
                 else
                     response.WriteError(HTTPStatusCode.NotFound,
                         string.Format("Assembly not Found at '{0}'", subRoute));
