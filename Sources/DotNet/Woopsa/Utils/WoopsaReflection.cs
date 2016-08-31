@@ -412,6 +412,8 @@ namespace Woopsa
 
     public abstract class WoopsaConverter
     {
+        public abstract object GetDefaultValue(Type type);
+
         public abstract object FromWoopsaValue(IWoopsaValue value, Type targetType);
 
         public abstract WoopsaValue ToWoopsaValue(object value, WoopsaValueType woopsaValueType,
@@ -427,6 +429,14 @@ namespace Woopsa
 
         public static WoopsaConverterDefault Default { get; private set; }
 
+        public override object GetDefaultValue(Type type)
+        {
+            if (type.IsValueType)
+                // create a default value of the type
+                return Activator.CreateInstance(type);
+            else
+                return null;
+        }
         public override object FromWoopsaValue(IWoopsaValue value, Type targetType)
         {
             return value.ConvertTo(targetType);

@@ -15,7 +15,7 @@ namespace WoopsaTest
 
     }
 
-    public class SubClassAInner1:ClassAInner1
+    public class SubClassAInner1 : ClassAInner1
     {
         public int ExtraProperty { get; set; }
     }
@@ -76,7 +76,7 @@ namespace WoopsaTest
         [TestMethod]
         public void TestWoopsaObjectAdapter()
         {
-            
+
             ClassA a = new ClassA();
             WoopsaObjectAdapter adapterA1 = new WoopsaObjectAdapter(null, "a", a);
             Assert.IsNotNull(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)));
@@ -104,8 +104,12 @@ namespace WoopsaTest
             a.Inner1 = new ClassAInner1() { APropertyInt = 123, APropertyIntHidden = 0 };
             Assert.AreEqual(inner1.Properties.ByName(nameof(ClassAInner1.APropertyInt)).Value, 123);
             Assert.IsNull(inner1.Properties.ByNameOrNull(nameof(SubClassAInner1.ExtraProperty)));
-            a.Inner1 = new SubClassAInner1() { APropertyInt = 123, APropertyIntHidden = 0,
-                ExtraProperty=555 };
+            a.Inner1 = new SubClassAInner1()
+            {
+                APropertyInt = 123,
+                APropertyIntHidden = 0,
+                ExtraProperty = 555
+            };
             Assert.AreEqual(inner1.Properties.ByName(nameof(SubClassAInner1.ExtraProperty)).Value, 555);
 
             WoopsaObjectAdapter adapterA1All = new WoopsaObjectAdapter(null, "a", a, null, null,
@@ -121,7 +125,7 @@ namespace WoopsaTest
 
             WoopsaObjectAdapter adapterA3 = new WoopsaObjectAdapter(null, "a", a, null, null, WoopsaObjectAdapterOptions.None);
             Assert.IsNotNull(adapterA1.Properties.ByNameOrNull(nameof(a.APropertyBool)));
-            
+
             ClassB b = new ClassB();
             WoopsaObjectAdapter adapterB = new WoopsaObjectAdapter(null, "b", b, null, null,
                 WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.MethodSpecialName |
@@ -189,7 +193,7 @@ namespace WoopsaTest
             Assert.AreEqual(dataArray[1], 7);
             Assert.AreEqual(dataItem1, 7);
         }
-
+                 
         [TestMethod]
         public void TestWoopsaObjectAdapterExposedType()
         {
@@ -286,7 +290,7 @@ namespace WoopsaTest
             Assert.AreEqual(jsonValue.JsonData["a"][2].ToInt64(), 13);
 
             ClassD[] array = new ClassD[] { new ClassD(4), new ClassD(3), new ClassD(2) };
-            WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array,null,null,
+            WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
                 WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
             Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]"));
@@ -299,7 +303,7 @@ namespace WoopsaTest
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 5);
 
             int[] dataArray = new int[] { 3, 4, 5 };
-            WoopsaObjectAdapter adapterArrayValue = new WoopsaObjectAdapter(null, "array", dataArray, null,null,
+            WoopsaObjectAdapter adapterArrayValue = new WoopsaObjectAdapter(null, "array", dataArray, null, null,
                 WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
             WoopsaMethod methodGet = adapterArrayValue.Methods.ByNameOrNull("Get");
