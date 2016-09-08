@@ -27,7 +27,8 @@ namespace Woopsa
             _notificationQueueSize = notificationQueueSize;
             _subscriptions = new List<WoopsaClientSubscription>();
             _registeredSubscriptions = new Dictionary<int, WoopsaClientSubscription>();
-            _lock = new object();
+            _channelLock = new object();
+            _subscriptionLock = new object();
         }
 
         public WoopsaClientSubscription Subscribe(string path,
@@ -68,12 +69,13 @@ namespace Woopsa
                 foreach (var item in _subscriptions)
                     item.Unsubscribe();
             }
+            TimeSpan timeout = WoopsaSubscriptionServiceConst.TimeOutUnsubscriptionPerSubscription.Multiply(_registeredSubscriptions.Count);
             Stopwatch watch = new Stopwatch();
-            watch.Start();            
+            watch.Start();
             while (_registeredSubscriptions.Count > 0)
             {
                 Thread.Sleep(TimeSpan.FromMilliseconds(1));
-                if (watch.Elapsed > WoopsaSubscriptionServiceConst.TimeOutUnsubscription)
+                if (watch.Elapsed > timeout)
                     break;
             }
         }
@@ -166,11 +168,11 @@ namespace Woopsa
             while (!_terminated)
                 try
                 {
-                    lock (_lock)
+                    lock (_channelLock)
                         if (_subscriptionOpenChannel != null)
                             if (SubscriptionsChanged)
                                 ManageSubscriptions();
-                    // do not manage to quickly the subscriptions update to improve 
+                    // do not manage too quickly the subscriptions update to improve 
                     // grouping of subscriptions into a single multirequest
                     Thread.Sleep(WoopsaSubscriptionServiceConst.ClientSubscriptionUpdateInterval);
                 }
@@ -181,7 +183,7 @@ namespace Woopsa
 
         private void OpenChannel()
         {
-            lock (_lock)
+            lock (_channelLock)
             {
                 try
                 {
@@ -207,7 +209,7 @@ namespace Woopsa
 
         private void CloseChannel()
         {
-            lock (_lock)
+            lock (_channelLock)
             {
                 if (_localSubscriptionService != null)
                 {
@@ -216,6 +218,8 @@ namespace Woopsa
                 }
                 _subscriptionOpenChannel = null;
                 _lastNotificationId = 0;
+                foreach (var item in _subscriptions)
+                    item.SubscriptionId = null;
                 SubscriptionsChanged = true;
             }
         }
@@ -295,12 +299,17 @@ namespace Woopsa
 
         private void ExecuteNotifications(WoopsaClientNotifications notifications)
         {
-            foreach (WoopsaClientNotification notification in notifications.Notifications)
+            // Synchronize with the notification registration process to be sure we will not
+            // process notifications for subscriptions that are not yet completely registered
+            lock (_subscriptionLock)
             {
-                if (_registeredSubscriptions.ContainsKey(notification.SubscriptionId))
-                    _registeredSubscriptions[notification.SubscriptionId].Execute(notification);
-                if (notification.Id > _lastNotificationId)
-                    _lastNotificationId = notification.Id;
+                foreach (WoopsaClientNotification notification in notifications.Notifications)
+                {
+                    if (_registeredSubscriptions.ContainsKey(notification.SubscriptionId))
+                        _registeredSubscriptions[notification.SubscriptionId].Execute(notification);
+                    if (notification.Id > _lastNotificationId)
+                        _lastNotificationId = notification.Id;
+                }
             }
         }
 
@@ -379,7 +388,7 @@ namespace Woopsa
         {
             if (_localSubscriptionService == null)
             {
-                // Remote subscription using multirequest
+                // Prepare remote subscription using multirequest
                 Dictionary<WoopsaClientSubscription, WoopsaClientRequest> requests =
                     new Dictionary<WoopsaClientSubscription, WoopsaClientRequest>();
                 WoopsaClientMultiRequest multiRequest = new WoopsaClientMultiRequest();
@@ -390,16 +399,22 @@ namespace Woopsa
                         item.MonitorInterval, item.PublishInterval);
                 try
                 {
-                    _client.ExecuteMultiRequest(multiRequest);
-                    // Assign the subscriptionIds
-                    foreach (var item in subscriptions)
+                    // Prevent receiving new notifications until the new subscriptions are all registered
+                    // Otherwise, we will not be able to dispatch properly notifications coming
+                    // from those new subscriptions
+                    lock (_subscriptionLock)
                     {
-                        WoopsaClientRequest request = requests[item];
-                        if (request.Result.ResultType == WoopsaClientRequestResultType.Value)
-                            item.SubscriptionId = request.Result.Value;
-                        item.FailedSubscription = item.SubscriptionId == null;
-                        if (!item.FailedSubscription)
-                            _registeredSubscriptions[item.SubscriptionId.Value] = item;
+                        _client.ExecuteMultiRequest(multiRequest);
+                        // Assign the subscriptionIds
+                        foreach (var item in subscriptions)
+                        {
+                            WoopsaClientRequest request = requests[item];
+                            if (request.Result.ResultType == WoopsaClientRequestResultType.Value)
+                                item.SubscriptionId = request.Result.Value;
+                            item.FailedSubscription = item.SubscriptionId == null;
+                            if (!item.FailedSubscription)
+                                _registeredSubscriptions[item.SubscriptionId.Value] = item;
+                        }
                     }
                 }
                 catch
@@ -501,7 +516,8 @@ namespace Woopsa
         private Thread _threadNotifications, _threadSubscriptions;
         private bool _terminated;
 
-        private object _lock;
+        private object _channelLock;
+        private object _subscriptionLock;
         private int? _subscriptionOpenChannel;
         private WoopsaSubscriptionServiceImplementation _localSubscriptionService;
         private int _lastNotificationId;

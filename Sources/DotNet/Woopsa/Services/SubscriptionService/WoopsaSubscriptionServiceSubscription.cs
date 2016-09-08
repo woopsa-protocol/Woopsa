@@ -139,6 +139,9 @@ namespace Woopsa
                 _monitorTimer.Elapsed += _monitorTimer_Elapsed;
                 _monitorTimer.IsEnabled = true;
             }
+            // Force immediate publishing of the current value
+            DoMonitor();
+            DoPublish();
         }
 
         protected bool GetSynchronizedWatchedPropertyValue(out IWoopsaValue value)

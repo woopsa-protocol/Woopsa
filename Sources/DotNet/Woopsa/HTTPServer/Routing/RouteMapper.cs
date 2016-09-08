@@ -12,7 +12,7 @@ namespace Woopsa
         #region ctor
         internal RouteMapper(string route, HTTPMethod methods, IHTTPRouteHandler handler)
         {
-            _route = route;
+            _route = WoopsaConst.UrlSeparator + route.Trim(WoopsaConst.UrlSeparator);
             _methods = methods;
             _handler = handler;
             _processors = new List<PostRouteProcessor>();

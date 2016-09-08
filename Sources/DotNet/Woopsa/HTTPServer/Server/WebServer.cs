@@ -191,7 +191,7 @@ namespace Woopsa
                     // The HandleClient method should NEVER close the stream
                     // as this is done from the upper scope.
                     TcpClient client = _listener.AcceptTcpClient();
-
+                                        
                     if (MultiThreaded)
                     {
                         try
@@ -273,21 +273,19 @@ namespace Woopsa
                                 *      GET / HTTP/1.1
                                 *      POST /submit HTTP/1.1
                                 */
-                            string requestString = null;
+                            string requestString;
                             try
                             {
                                 requestString = reader.ReadLine();
                             }
                             catch (Exception)
                             {
+                                requestString = null;
                                 leaveOpen = false;
                                 break;
                             }
                             if (requestString == null)
-                            {
-                                //TODO : Why does this happen?
                                 break;
-                            }
 
                             string[] parts = requestString.Split(' ');
                             if (parts.Length != 3)
@@ -348,6 +346,7 @@ namespace Woopsa
                                 response.SetHeader(HTTPHeader.Connection, "close");
                             }
                             //Pass this on to the route solver
+                            OnLog(request, null);
                             Routes.HandleRequest(request, response, stream);
                             OnLog(request, response);
                         }

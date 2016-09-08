@@ -41,7 +41,7 @@ namespace Woopsa
             else if (targetType.IsEnum)
                 return Enum.Parse(targetType, value.AsText);
             else
-                throw new WoopsaException(String.Format("The type value \"{0}\" is not supported in parameters of dynamic function call.", targetType.Name));
+                throw new WoopsaException(String.Format("Cannot convert IWoopsaValue to type '{0}'.", targetType.Name));
         }
 
         /// <summary>

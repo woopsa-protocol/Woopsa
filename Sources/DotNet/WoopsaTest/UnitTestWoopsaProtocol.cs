@@ -3,12 +3,18 @@ using System.Diagnostics;
 using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
+using System.Collections.Specialized;
 
 namespace WoopsaTest
 {
     public class TestObjectServer
     {
         public int Votes { get; set; }
+
+        public void IncrementVotes(int count)
+        {
+            Votes += count;
+        }
     }
 
 
@@ -46,7 +52,17 @@ namespace WoopsaTest
                     root.Properties.ByName("Votes").Value = new WoopsaValue(11);
                     Assert.AreEqual(objectServer.Votes, 11);
                     var result = root.Properties.ByName("Votes").Value;
-                    Assert.AreEqual(result.ToInt64(), 11);
+                    Assert.AreEqual(11, result.ToInt64());
+                    result = root.Methods.ByName(nameof(TestObjectServer.IncrementVotes)).
+                        Invoke(5);
+                    Assert.AreEqual(16, root.Properties.ByName("Votes").Value.ToInt64());
+                    Assert.AreEqual(WoopsaValueType.Null, result.Type);
+                    NameValueCollection args = new NameValueCollection();
+                    args.Add("count", "8");
+                    result = client.ClientProtocol.Invoke("/" + nameof(TestObjectServer.IncrementVotes),
+                        args);
+                    Assert.AreEqual(24, root.Properties.ByName("Votes").Value.ToInt64());
+                    Assert.AreEqual(WoopsaValueType.Null, result.Type);
                 }
             }
         }

@@ -10,22 +10,11 @@ namespace Woopsa
 {
     public static class HTTPServerUtils
     {
-        public static bool EmbeddedResourceExists(string path, Assembly assembly)
-        {
-            try
-            {
-                return (assembly.GetManifestResourceStream(path) != null);
-            }
-            catch(Exception)
-            {
-                return false;
-            }
-        }
 
         public static string GetEmbeddedResource(string path)
         {
-            using (
-                var reader = new StreamReader(Assembly.GetExecutingAssembly().GetManifestResourceStream(path)))
+            using (var reader = new StreamReader(
+                Assembly.GetExecutingAssembly().GetManifestResourceStream(path)))
             {
                 return reader.ReadToEnd();
             }
