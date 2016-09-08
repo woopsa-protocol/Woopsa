@@ -1,0 +1,88 @@
+﻿<Window x:Class="WoopsaAds.DiagnosticWindow"
+        xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="clr-namespace:WoopsaAds"
+        mc:Ignorable="d"
+        Title="Diagnostic window" 
+        ShowInTaskbar="True"
+        ShowActivated="False"
+        ResizeMode="CanResize"
+        Icon="/Icons/woopsa_64x64.ico"
+        
+        >
+    <Grid Name="Diagnostic_Grid">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="35"/>
+        </Grid.RowDefinitions>
+        <TabControl Margin="5" Name="Diagnostic_TabControl" Grid.Row="0" >
+            <TabItem Name="Status" Header="_Status">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        
+                    </Grid.RowDefinitions>
+                    
+                    <ListBox Grid.Row="0" Name="Status_ListBox" ItemsSource="{Binding Path=plcStatusList, NotifyOnSourceUpdated=True, NotifyOnTargetUpdated=True}" ScrollViewer.VerticalScrollBarVisibility="Visible">
+                        <ListBox.ItemTemplate>
+
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,0">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="100" />
+                                        <ColumnDefinition Width="50"/>
+                                        <ColumnDefinition Width="Auto"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Name="namePlc_textBlock" Grid.Column="0" Margin="2,10" Text="{Binding plcName}" ToolTip="{Binding plcName}"/>
+                                    <Image Grid.Column="1" Height="30" Width="30" Source="{Binding statusLedPath}"/>
+                                    <TextBlock Grid.Column="2" Margin="2,10" Text="{Binding statusName}" />
+                                </Grid>
+
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </TabItem>
+            <TabItem Name="Log" Header="_Log">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="Auto"/>
+                    </Grid.RowDefinitions>
+                    <ScrollViewer Name="ScrollViewer_TextBlockDebug" HorizontalScrollBarVisibility="Visible" Background="LightGray">
+                        <TextBlock Grid.Row="0" Margin="5" Name="TextBlock_Debug" Text="{Binding Path=debug}" FontFamily="Lucida Console"  ></TextBlock>
+                    </ScrollViewer>
+                    <Button HorizontalAlignment="Left" Grid.Row="1" Margin="0,8,0,0" Height="25" Width="75" Click="ButtonClear_Click">_Clear</Button>
+                </Grid>
+            </TabItem>
+            <TabItem Name="Exceptions" Header="_Exceptions">
+                <Grid Margin="4">
+                    <Grid.RowDefinitions>
+                        <RowDefinition Height="*"/>
+                        <RowDefinition Height="40"/>
+                    </Grid.RowDefinitions>
+                    <ListBox MouseDoubleClick="Exceptions_ListBox_MouseDoubleClick" Grid.Row="0" Name="Exceptions_ListBox" ItemsSource="{Binding Path=ExceptionsList, NotifyOnSourceUpdated=True, NotifyOnTargetUpdated=True}" ScrollViewer.VerticalScrollBarVisibility="Visible">
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <Grid Margin="0,0,0,5">
+                                    <Grid.ColumnDefinitions>
+                                        <ColumnDefinition Width="140"/>
+                                        <ColumnDefinition Width="*"/>
+                                    </Grid.ColumnDefinitions>
+                                    <TextBlock Grid.Column="0" Margin="3,10" Text="{Binding arrivalTime, Mode=OneWay}" />
+                                    <TextBlock Grid.Column="1" Margin="3,10" Text="{Binding exception.Message, Mode=OneWay}" /> 
+                                </Grid>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                    <Button HorizontalAlignment="Left" Grid.Row="1" Margin="0,8,0,0" Height="25" Width="75" Click="ButtonClear_Click">_Clear</Button>
+                </Grid>
+            </TabItem>
+        </TabControl>
+        <StackPanel Grid.Row="1"  Orientation="Horizontal" HorizontalAlignment="Right">
+            <Button Margin="5,0,5,5" Height="25" Width="75" IsCancel="True" Click="ButtonClose_Click">Close</Button>
+        </StackPanel>
+    </Grid>
+</Window>

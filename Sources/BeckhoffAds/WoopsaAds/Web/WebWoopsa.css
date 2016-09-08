@@ -1,0 +1,40 @@
+
+
+.testStab1 {
+    color: black;
+    background-color: white;
+}
+
+h1 {
+    text-align: center;
+    color: navy;
+    font-size: 200%;
+}
+
+h2 {
+    font-size: 150%;
+    color: red;
+    padding-left: 15px;
+}
+
+.labelStyle {
+    float:left;
+    width:50px;
+}
+
+.TextInput {
+    color: black;
+    width: 80%;
+}
+
+.MarginLeftItalic {
+    font-style: italic;
+    margin-left: 55px;
+}
+
+.MarginLeft {
+    margin-left: 55px;
+}
+.MiniMarginLeft{
+    margin-left: 10px;
+}

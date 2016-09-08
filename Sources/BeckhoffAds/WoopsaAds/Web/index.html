@@ -1,0 +1,60 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+    <title>Demo Woopsa Ads Server</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Lionel von Niederhäusern">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="WebWoopsa.css">
+    <link rel="icon" href="woopsa.png" type="image/png" />
+</head>
+
+<body>
+    <h1>Woopsa Ads Communication</h1>
+    
+    <!-------------------------------  READ VALUE ----------------------------------------->
+    <h2>Read value</h2>
+    <label class="labelStyle" for="readValuePath">Path : </label>
+    <input class="TextInput" type="text" name="readValuePath" value="Enter the path of the Woopsa value to read" id="readValuePath" onClick="this.setSelectionRange(0, this.value.length)">
+    <br />
+    <label class="MarginLeftItalic">example : plc/Temperature</label>
+    <br /><br />
+    
+    <button class="MarginLeft" onclick="ReadValueClick()">Read</button>
+    <label class="MiniMarginLeft">Value : </label>
+    <data class="ReadedValue" id="ReadedValue"></data>
+    <br />
+    <!------------------------------  WRITE VALUE ----------------------------------->
+    <h2>Write value </h2>
+    <label class="labelStyle" for="writeValuePath">Path : </label>
+    <input class="TextInput" type="text" name="writeValuePath" value="Enter the path of the Woopsa value to write" id="writeValuePath" onClick="this.setSelectionRange(0, this.value.length)">
+    <br />
+    <label class="MarginLeftItalic">example : plc/Temperature</label>
+    <br /><br />
+    <label class="labelStyle" for="writeValue">Value : </label>
+    <input class="TextInput" type="text" name="writeValue" value="Enter the value to write" id="writeValue" onClick="this.setSelectionRange(0, this.value.length)">
+    <br />
+    <label class="MarginLeftItalic">example : 3.14</label>
+    <br /><br />
+    <button class="MarginLeft" onclick="WriteValueClick()">Write</button>
+    <br />
+
+    <!----------------------------  SUBSCRIBE VALUE ---------------------------------->
+    <h2>Subscribe variable</h2>
+    <label class="labelStyle" for="subscribeVariablePath">Path : </label>
+    <input class="TextInput" type="text" name="subscribeVariablePath" value="Enter the path of the Woopsa value to monitor" id="subscribeVariablePath" onClick="this.setSelectionRange(0, this.value.length)">
+    <br />
+    <label class="MarginLeftItalic">example : plc/Temperature</label>
+    <br /><br />
+
+    <button class="MarginLeft" onclick="SubscribeVariableClick()">Subscribe</button>
+    <label class="MiniMarginLeft">Value : </label>
+    <data class="ReadedValue" id="SubscribeValue"></data>
+    <br />
+
+    <script type="text/javascript" src="woopsa-client.min.js"></script>
+    <script type="text/javascript" src="jquery-1.12.1.min.js"></script>
+    <script type="text/javascript" src="WebWoopsa.js"></script>
+
+</body>
+</html>
