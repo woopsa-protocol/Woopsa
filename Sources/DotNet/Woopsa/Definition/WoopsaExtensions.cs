@@ -215,9 +215,15 @@ namespace Woopsa
             switch (value.Type)
             {
                 case WoopsaValueType.Null:
-                    return null;
+                    if (targetType == typeof(void) || !targetType.IsValueType)
+                        return null;
+                    else
+                        break;
                 case WoopsaValueType.Logical:
-                    return value.ToBool();
+                    if (targetType == typeof(bool))
+                        return value.ToBool();
+                    else
+                        break;
                 case WoopsaValueType.Integer:
                     if (targetType == typeof(byte))
                         return value.ToByte();
@@ -240,30 +246,38 @@ namespace Woopsa
                     else if (targetType == typeof(double))
                         return value.ToDouble();
                     else
-                        throw new InvalidCastException(
-                            string.Format("Unable to cast WoopsaValue '{0}' to type '{1}'",
-                                value.Serialize(), targetType.FullName));
+                        break;
                 case WoopsaValueType.Real:
                     if (targetType == typeof(float))
                         return value.ToFloat();
                     else if (targetType == typeof(double))
                         return value.ToDouble();
                     else
-                        throw new InvalidCastException(
-                            string.Format("Unable to cast WoopsaValue '{0}' to type '{1}'",
-                                value.Serialize(), targetType.FullName));
+                        break;
                 case WoopsaValueType.DateTime:
-                    return value.ToDateTime();
+                    if (targetType == typeof(DateTime))
+                        return value.ToDateTime();
+                    else
+                        break;
                 case WoopsaValueType.TimeSpan:
-                    return value.ToTimeSpan();
+                    if (targetType == typeof(TimeSpan))
+                        return value.ToTimeSpan();
+                    else
+                        break;
                 case WoopsaValueType.Text:
                 case WoopsaValueType.WoopsaLink:
                 case WoopsaValueType.JsonData:
                 case WoopsaValueType.ResourceUrl:
-                    return value.AsText;
+                    if (targetType == typeof(string))
+                        return value.AsText;
+                    else
+                        break;
                 default:
-                    return null;
+                    break;
             }
+            throw new InvalidCastException(
+                string.Format("Unable to cast WoopsaValue '{0}' to type '{1}'",
+                value.Serialize(), targetType.FullName));
         }
 
         public static object ToBaseType(this IWoopsaValue value)

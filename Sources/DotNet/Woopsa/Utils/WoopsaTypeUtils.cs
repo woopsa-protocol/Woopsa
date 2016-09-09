@@ -8,42 +8,6 @@ namespace Woopsa
 {
     public static class WoopsaTypeUtils
     {
-        public static object ConvertTo(this IWoopsaValue value, Type targetType)
-        {
-            if (targetType == typeof(bool))
-                return value.ToBool();
-            else if (targetType == typeof(float))
-                return value.ToFloat();
-            else if (targetType == typeof(double))
-                return value.ToDouble();
-            else if (targetType == typeof(byte))
-                return value.ToByte();
-            else if (targetType == typeof(sbyte))
-                return value.ToSByte();
-            else if (targetType == typeof(string))
-                return value.AsText;
-            else if (targetType == typeof(Int16))
-                return value.ToInt16();
-            else if (targetType == typeof(Int32))
-                return value.ToInt32();
-            else if (targetType == typeof(Int64))
-                return value.ToInt64();
-            else if (targetType == typeof(UInt16))
-                return value.ToUInt16();
-            else if (targetType == typeof(UInt32))
-                return value.ToUInt32();
-            else if (targetType == typeof(UInt64))
-                return value.ToUInt64();
-            else if (targetType == typeof(TimeSpan))
-                return value.ToTimeSpan();
-            else if (targetType == typeof(DateTime))
-                return value.ToDateTime();
-            else if (targetType.IsEnum)
-                return Enum.Parse(targetType, value.AsText);
-            else
-                throw new WoopsaException(String.Format("Cannot convert IWoopsaValue to type '{0}'.", targetType.Name));
-        }
-
         /// <summary>
         /// Determines the WoopsaValueType based on a .NET type.
         /// </summary>

@@ -439,7 +439,7 @@ namespace Woopsa
         }
         public override object FromWoopsaValue(IWoopsaValue value, Type targetType)
         {
-            return value.ConvertTo(targetType);
+            return value.ToBaseType(targetType);
         }
 
         public override WoopsaValue ToWoopsaValue(object value, WoopsaValueType woopsaValueType,

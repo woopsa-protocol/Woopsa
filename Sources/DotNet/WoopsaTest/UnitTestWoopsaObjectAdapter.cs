@@ -143,8 +143,6 @@ namespace WoopsaTest
             Assert.AreEqual(propertyText.Type, WoopsaValueType.Integer);
             c.APropertyText = "123";
             Assert.AreEqual(propertyText.Value.ToInt64(), 123);
-            propertyText.Value = new WoopsaValue(456);
-            Assert.AreEqual(c.APropertyText, "456");
             // Json data
             Assert.IsNotNull(adapterC.Properties.ByNameOrNull(nameof(c.APropertyJson)));
             IWoopsaProperty propertyJson = adapterC.Properties.ByNameOrNull(nameof(c.APropertyJson));
@@ -267,8 +265,6 @@ namespace WoopsaTest
             Assert.AreEqual(propertyText.Type, WoopsaValueType.Integer);
             c.APropertyText = "123";
             Assert.AreEqual(propertyText.Value.ToInt64(), 123);
-            propertyText.Value = new WoopsaValue(456);
-            Assert.AreEqual(c.APropertyText, "456");
             // Json data
             Assert.IsNotNull(adapterC.Properties.ByNameOrNull(nameof(c.APropertyJson)));
             IWoopsaProperty propertyJson = adapterC.Properties.ByNameOrNull(nameof(c.APropertyJson));
