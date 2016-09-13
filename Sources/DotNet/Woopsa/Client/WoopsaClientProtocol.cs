@@ -91,12 +91,10 @@ namespace Woopsa
                 request.ServicePoint.UseNagleAlgorithm = false;
                 request.ServicePoint.Expect100Continue = false;
 
-
                 lock (_pendingRequests)
                     _pendingRequests.Add(request);
                 try
                 {
-
                     if (Username != null)
                         request.Credentials = new NetworkCredential(Username, Password);
 
@@ -122,16 +120,6 @@ namespace Woopsa
                         }                        
                         using (var writer = new StreamWriter(request.GetRequestStream()))
                             writer.Write(stringBuilder.ToString());
-                            /*
-                                                using (var writer = new StreamWriter(request.GetRequestStream()))
-                                                {
-                                                    for (var i = 0; i < postData.Count; i++)
-                                                    {
-                                                        string key = postData.AllKeys[i];
-                                                        writer.Write(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
-                                                    }
-                                                }
-                        */
                     }
 
                     HttpWebResponse response;

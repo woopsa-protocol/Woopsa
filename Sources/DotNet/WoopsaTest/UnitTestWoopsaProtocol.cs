@@ -145,5 +145,38 @@ namespace WoopsaTest
                 }
             }
         }
+
+        [TestMethod]
+        public void TestWoopsaServerAuthentication()
+        {
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                server.Authenticator = new SimpleAuthenticator("TestRealm",
+                    (sender, e) => { e.IsAuthenticated = e.Username=="woopsa"; });
+
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    client.Username = "woopsa";
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    WoopsaProperty propertyVotes = root.Properties.ByName("Votes");
+                    propertyVotes.Value = 5;
+                    Assert.AreEqual(objectServer.Votes, 5);
+                    Assert.AreEqual((int)propertyVotes.Value, 5);
+                    client.Username = "invalid";
+                    bool authenticationCheckOk;
+                    try
+                    {
+                        propertyVotes.Value = 5;
+                        authenticationCheckOk = false;
+                    }
+                    catch
+                    {
+                        authenticationCheckOk = true;
+                    }
+                    Assert.IsTrue(authenticationCheckOk);
+                }
+            }
+        }
     }
 }

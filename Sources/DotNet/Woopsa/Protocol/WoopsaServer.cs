@@ -138,19 +138,19 @@ namespace Woopsa
                 if (_authenticator != null)
                 {
                     _prefixRouteMapper.RemoveProcessor(_authenticator);
-                    _metaRouteMapper.AddProcessor(_authenticator);
-                    _readRouteMapper.AddProcessor(_authenticator);
-                    _writeRouteMapper.AddProcessor(_authenticator);
-                    _invokeRouteMapper.AddProcessor(_authenticator);
+                    _metaRouteMapper.RemoveProcessor(_authenticator);
+                    _readRouteMapper.RemoveProcessor(_authenticator);
+                    _writeRouteMapper.RemoveProcessor(_authenticator);
+                    _invokeRouteMapper.RemoveProcessor(_authenticator);
                     _authenticator = null;
                 }
                 if (value != null)
                 {
-                    _prefixRouteMapper.AddProcessor(_authenticator);
-                    _metaRouteMapper.AddProcessor(_authenticator);
-                    _readRouteMapper.AddProcessor(_authenticator);
-                    _writeRouteMapper.AddProcessor(_authenticator);
-                    _invokeRouteMapper.AddProcessor(_authenticator);
+                    _prefixRouteMapper.AddProcessor(value);
+                    _metaRouteMapper.AddProcessor(value);
+                    _readRouteMapper.AddProcessor(value);
+                    _writeRouteMapper.AddProcessor(value);
+                    _invokeRouteMapper.AddProcessor(value);
                     _authenticator = value;
                 }
             }

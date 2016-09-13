@@ -40,14 +40,14 @@ namespace WoopsaDemoServer
             IsRaining = false;
             Altitude = 430;
             Sensitivity = 0.5;
-            City = "Geneva";            
+            City = "Geneva";
             TimeSinceLastRain = TimeSpan.FromDays(3);
             Thermostat = new Thermostat();
         }
 
         public string GetWeatherAtDate(DateTime date)
         {
-            switch(date.DayOfWeek)
+            switch (date.DayOfWeek)
             {
                 case DayOfWeek.Monday:
                     return "rainy";
@@ -65,19 +65,43 @@ namespace WoopsaDemoServer
             try
             {
                 WeatherStation root = new WeatherStation();
-                WoopsaServer woopsaServer = new WoopsaServer(root, 80);
+                bool done = false;
+                using (WoopsaServer woopsaServer = new WoopsaServer(root, 80))
+                {
 
-                Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-                Console.WriteLine("Some examples of what you can do directly from your browser:");
-                Console.WriteLine(" * View the object hierarchy of the root object:");
-                Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-                Console.WriteLine(" * Read the value of a property:");
-                Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+                    Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+                    Console.WriteLine("Some examples of what you can do directly from your browser:");
+                    Console.WriteLine(" * View the object hierarchy of the root object:");
+                    Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
+                    Console.WriteLine(" * Read the value of a property:");
+                    Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
 
-                Console.WriteLine("Press any key to exit.");
-                Console.ReadLine();
 
-                woopsaServer.Dispose();
+                    Console.WriteLine();
+                    Console.WriteLine("Commands : QUIT, AUTH, NOAUTH");
+                    do
+                    {
+                        Console.Write(">");
+                        switch (Console.ReadLine().ToUpper())
+                        {
+                            case "QUIT":
+                                done = true;
+                                break;
+                            case "AUTH":
+                                woopsaServer.Authenticator = new SimpleAuthenticator(
+                                    "WoopsaDemoServer",
+                                    (sender, e) => { e.IsAuthenticated = e.Username == "woopsa"; });
+                                break;
+                            case "NOAUTH":
+                                woopsaServer.Authenticator = null;
+                                break;
+                            default:
+                                Console.WriteLine("Invalid command");
+                                break;
+                        }
+                    }
+                    while (!done);
+                }
             }
             catch (SocketException e)
             {
