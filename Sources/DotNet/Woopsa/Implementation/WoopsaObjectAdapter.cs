@@ -96,6 +96,9 @@ namespace Woopsa
 
     public class WoopsaObjectAdapter : WoopsaObject
     {
+        public const WoopsaVisibility DefaultDefaultVisibility = 
+            WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited;
+
         public const string IEnumerableIndexerFormat = "{0}[{1}]";
 
         public const string IEnumerableItemBaseName = "Item";
@@ -120,9 +123,9 @@ namespace Woopsa
                 Type declaredExposedType = null,
                 WoopsaConverters customValueTypeConverters = null,
                 WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
-                WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility) :
+                WoopsaVisibility defaultVisibility = DefaultDefaultVisibility) :
             this(container, name, () => targetObject, declaredExposedType,
-                new Woopsa.TypeDescriptions(defaultVisibility, customValueTypeConverters), 
+                new TypeDescriptions(customValueTypeConverters), 
                 options, defaultVisibility)
         {
         }
@@ -147,7 +150,7 @@ namespace Woopsa
             Type declaredExposedType,
             TypeDescriptions typeDescriptions,
             WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
-            WoopsaVisibility defaultVisibility = WoopsaReflection.DefaultVisibility)
+            WoopsaVisibility defaultVisibility = DefaultDefaultVisibility)
             : base(container, name)
         {
             TargetObjectGetter = targetObjectGetter;
@@ -342,10 +345,46 @@ namespace Woopsa
             }
         }
 
+
         protected virtual bool IsMemberWoopsaVisible(object targetObject, MemberInfo memberInfo)
         {
-            return WoopsaReflection.IsMemberWoopsaVisible(targetObject.GetType(),
-                memberInfo, DefaultVisibility, OnMemberWoopsaVisibilityCheck);
+            var woopsaVisibleAttribute = WoopsaReflection.GetCustomAttribute<WoopsaVisibleAttribute>(memberInfo);
+            bool isVisible;
+            Type targetType = targetObject.GetType();
+            if (woopsaVisibleAttribute != null)
+                isVisible = woopsaVisibleAttribute.Visible;
+            else
+                isVisible = Visibility.HasFlag(WoopsaVisibility.DefaultIsVisible);
+            if (isVisible)
+            {
+                if (memberInfo.DeclaringType != targetType)
+                    isVisible = Visibility.HasFlag(WoopsaVisibility.Inherited);
+            }
+            if (isVisible)
+            {
+                if (memberInfo.DeclaringType == typeof(object))
+                    isVisible = Visibility.HasFlag(WoopsaVisibility.ObjectClassMembers);
+            }
+            if (isVisible)
+            {
+                if (memberInfo is MethodBase)
+                    if ((memberInfo as MethodBase).IsSpecialName)
+                        isVisible = Visibility.HasFlag(WoopsaVisibility.MethodSpecialName);
+            }
+            if (isVisible)
+            {
+                if (memberInfo is PropertyInfo)
+                {
+                    PropertyInfo property = (PropertyInfo)memberInfo;
+                    if (typeof(IEnumerable<object>).IsAssignableFrom(property.PropertyType))
+                        isVisible = Visibility.HasFlag(WoopsaVisibility.IEnumerableObject);
+                }
+            }
+            EventArgsMemberVisibilityCheck e = new EventArgsMemberVisibilityCheck(memberInfo);
+            e.IsVisible = isVisible;
+            OnMemberWoopsaVisibilityCheck(e);
+            isVisible = e.IsVisible;
+            return isVisible;
         }
 
         protected DateTime? GetTimeStamp()
@@ -395,7 +434,7 @@ namespace Woopsa
         protected virtual WoopsaObjectAdapter CreateItemWoopsaAdapter(string name,
             Func<object> itemGetter, Type exposedType)
         {
-            return new WoopsaObjectAdapter(this, name, itemGetter, exposedType, TypeDescriptions, Options, DefaultVisibility);
+            return new WoopsaObjectAdapter(this, name, itemGetter, exposedType, TypeDescriptions, Options, Visibility);
         }
 
         protected void AddWoopsaMethod(MethodDescription methodDescription)
