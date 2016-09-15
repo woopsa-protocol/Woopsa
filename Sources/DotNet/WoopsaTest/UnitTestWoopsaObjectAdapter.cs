@@ -5,8 +5,24 @@ using System.Collections;
 
 namespace WoopsaTest
 {
+    public class ClassAInner1Inner
+    {
+        public string APropertyString { get; set; }
+
+        [WoopsaVisible(true)]
+        public string APropertyVisible { get; set; }
+
+        [WoopsaVisible(false)]
+        public string APropertyHidden { get; set; }
+    }
+
     public class ClassAInner1
     {
+        public ClassAInner1()
+        {
+            Inner = new ClassAInner1Inner();
+        }
+
         public int APropertyInt { get; set; }
 
         [WoopsaVisible(false)]
@@ -15,13 +31,25 @@ namespace WoopsaTest
         [WoopsaVisible(true)]
         public int APropertyIntVisible { get; set; }
 
+        [WoopsaVisible(true)]
+        public ClassAInner1Inner Inner { get; set; }
+
+    }
+
+   
+    public class SubClassAInner1 : ClassAInner1
+    {
+        [WoopsaVisible(true)]
+        public int ExtraProperty { get; set; }
+
     }
 
     [WoopsaVisibility(WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited | WoopsaVisibility.ObjectClassMembers)]
-    public class SubClassAInner1 : ClassAInner1
+    public class SubClassAInner2 : SubClassAInner1
     {
-        public int ExtraProperty { get; set; }
+
     }
+
 
     public class ClassA
     {
@@ -35,6 +63,7 @@ namespace WoopsaTest
         public DateTime APropertyDateTime { get; set; }
         public DateTime APropertyDateTime2 { get; set; }
 
+        [WoopsaVisible(true)]
         public ClassAInner1 Inner1 { get; set; }
     }
 
@@ -217,28 +246,50 @@ namespace WoopsaTest
             Assert.IsNull(adapterA3.Properties.ByNameOrNull(nameof(aInner1.APropertyIntHidden)));
             Assert.IsNotNull(adapterA3.Properties.ByNameOrNull(nameof(aInner1.APropertyIntVisible)));
             Assert.IsNull(adapterA3.Methods.ByNameOrNull(nameof(aInner1.ToString)));
-            // DefaultVisibility
+            // Visiblity All
             WoopsaObjectAdapter adapterA4 = new WoopsaObjectAdapter(null, "a", aInner1,
                 null, null, WoopsaObjectAdapterOptions.None, WoopsaVisibility.All);
             Assert.IsNotNull(adapterA4.Properties.ByNameOrNull(nameof(aInner1.APropertyInt)));
             Assert.IsNull(adapterA4.Properties.ByNameOrNull(nameof(aInner1.APropertyIntHidden)));
             Assert.IsNotNull(adapterA4.Properties.ByNameOrNull(nameof(aInner1.APropertyIntVisible)));
             Assert.IsNotNull(adapterA4.Methods.ByNameOrNull(nameof(aInner1.ToString)));
-            // Inherited
+            // Inherited - no visibility attribute
+            SubClassAInner1 aSubInner1 = new SubClassAInner1();
+            WoopsaObjectAdapter adapterA5 = new WoopsaObjectAdapter(null, "a", aSubInner1,
+                null, null, WoopsaObjectAdapterOptions.None, WoopsaVisibility.None);
+            Assert.IsNotNull(adapterA5.Properties.ByNameOrNull(nameof(aSubInner1.ExtraProperty)));
+            Assert.IsNull(adapterA5.Properties.ByNameOrNull(nameof(aSubInner1.APropertyIntHidden)));
+            Assert.IsNull(adapterA5.Properties.ByNameOrNull(nameof(aSubInner1.APropertyIntVisible)));
+            Assert.IsNull(adapterA5.Methods.ByNameOrNull(nameof(aSubInner1.ToString)));
+            // Inherited - visibility attribute
+            SubClassAInner2 aSubInner2 = new SubClassAInner2();
+            WoopsaObjectAdapter adapterA6 = new WoopsaObjectAdapter(null, "a", aSubInner2,
+                null, null, WoopsaObjectAdapterOptions.None, WoopsaVisibility.None);
+            Assert.IsNotNull(adapterA6.Properties.ByNameOrNull(nameof(aSubInner2.ExtraProperty)));
+            Assert.IsNull(adapterA6.Properties.ByNameOrNull(nameof(aSubInner2.APropertyIntHidden)));
+            Assert.IsNotNull(adapterA6.Properties.ByNameOrNull(nameof(aSubInner2.APropertyIntVisible)));
+            Assert.IsNotNull(adapterA6.Methods.ByNameOrNull(nameof(aSubInner2.ToString)));
+            // Inner objects
+            ClassA a1 = new ClassA();
+            WoopsaObjectAdapter adapterA7 = new WoopsaObjectAdapter(null, "a", a1);
+            var a1Inner1 = adapterA7.Items.ByNameOrNull(nameof(a1.Inner1));
+            Assert.IsNotNull(a1Inner1);
+            var a1Inner1Inner = a1Inner1.Items.ByNameOrNull(nameof(ClassAInner1.Inner)) as WoopsaObjectAdapter;
+            Assert.IsNotNull(a1Inner1Inner);
+            Assert.IsNotNull(a1Inner1Inner.Properties.ByNameOrNull(
+                nameof(a1.Inner1.Inner.APropertyVisible)));
+            Assert.IsNotNull(a1Inner1Inner.Properties.ByNameOrNull(
+                nameof(a1.Inner1.Inner.APropertyString)));
+            Assert.IsNull(a1Inner1Inner.Properties.ByNameOrNull(
+                nameof(a1.Inner1.Inner.APropertyHidden)));
+            Assert.IsNull(a1Inner1Inner.Methods.ByNameOrNull(
+                nameof(a1.Inner1.Inner.ToString)));
+            // Update innerObject, retrieve again the adapter and proceeds new Checks
+            a1.Inner1 = new SubClassAInner2();
+            a1Inner1Inner = a1Inner1.Items.ByNameOrNull(nameof(ClassAInner1.Inner)) as WoopsaObjectAdapter;
+            Assert.IsNotNull(a1Inner1Inner.Methods.ByNameOrNull(
+                nameof(a1.Inner1.Inner.ToString)));
 
-            // WoopsaVisibilityAttribute
-
-            /*
-
-            WoopsaObjectAdapter adapterA3 = new WoopsaObjectAdapter(null, "a", aInner1,
-                null, null, WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible
-
-                );
-            Assert.IsNotNull(adapterA3.Properties.ByNameOrNull(nameof(aInner1.APropertyInt)));
-            Assert.IsNull(adapterA3.Methods.ByNameOrNull(nameof(aInner1.ToString)));
-            //           Assert.IsNull(adapterA1.Properties.ByNameOrNull(nameof(aInner1.ExtraProperty)));
-            //          Assert.IsNotNull(adapterA2.Properties.ByNameOrNull(nameof(aInner1.ExtraProperty)));
-       */
         }
 
         [TestMethod]
