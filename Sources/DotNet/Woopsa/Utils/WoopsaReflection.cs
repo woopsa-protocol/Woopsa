@@ -67,70 +67,76 @@ namespace Woopsa
             MethodDescriptions methodDescriptions,
             WoopsaConverters customValueTypeConverters = null)
         {
-            MethodInfo[] methods;
+            const BindingFlags flags = BindingFlags.Public |  BindingFlags.Instance;
 
-            methods = targetType.GetMethods(BindingFlags.Public | BindingFlags.Instance);
+            List<MethodInfo> methods = new List<MethodInfo>(targetType.GetMethods(flags));
+            foreach (Type inter in targetType.GetInterfaces())
+            {
+                foreach (MethodInfo method in inter.GetMethods(flags))
+                    if (!methods.Contains(method))
+                        methods.Add(method);
+            }
             foreach (var methodInfo in methods)
+            {
+                WoopsaConverter converter;
+                WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
+                WoopsaValueType woopsaReturnType;
+                bool isValidWoopsaMethod = false;
+                isValidWoopsaMethod = customValueTypeConverters.InferWoopsaType(methodInfo.ReturnType, out woopsaReturnType, out converter);
+                if (attribute != null)
                 {
-                    WoopsaConverter converter;
-                    WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
-                    WoopsaValueType woopsaReturnType;
-                    bool isValidWoopsaMethod = false;
-                    isValidWoopsaMethod = customValueTypeConverters.InferWoopsaType(methodInfo.ReturnType, out woopsaReturnType, out converter);
-                    if (attribute != null)
+                    woopsaReturnType = attribute.ValueType;
+                    isValidWoopsaMethod = true;
+                }
+                if (isValidWoopsaMethod)
+                {
+                    bool argumentsTypeCompatible = true;
+                    ArgumentDescriptions arguments = new ArgumentDescriptions();
+                    int parameterIndex = 0;
+                    foreach (var parameter in methodInfo.GetParameters())
                     {
-                        woopsaReturnType = attribute.ValueType;
-                        isValidWoopsaMethod = true;
+                        WoopsaConverter argumentConverter;
+                        WoopsaValueType argumentType;
+                        if (customValueTypeConverters.InferWoopsaType(parameter.ParameterType, out argumentType, out argumentConverter))
+                        {
+                            string parameterName;
+                            parameterName = parameter.Name;
+                            if (string.IsNullOrEmpty(parameterName))
+                            {
+                                if (typeof(Array).IsAssignableFrom(targetType))
+                                    if (methodInfo.Name == "Set")
+                                    {
+                                        if (parameterIndex == 0)
+                                            parameterName = "index";
+                                        else if (parameterIndex == 1)
+                                            parameterName = "value";
+                                    }
+                                    else if (methodInfo.Name == "Get")
+                                        if (parameterIndex == 0)
+                                            parameterName = "index";
+                                if (parameterName == null)
+                                    parameterName = "p" + parameterIndex.ToString();
+                            }
+                            ArgumentDescription newArgument = new ArgumentDescription(
+                                new WoopsaMethodArgumentInfo(parameterName, argumentType),
+                                parameter.ParameterType, argumentConverter);
+                            arguments.Add(newArgument);
+                        }
+                        else
+                        {
+                            argumentsTypeCompatible = false;
+                            break;
+                        }
+                        parameterIndex++;
                     }
-                    if (isValidWoopsaMethod)
+                    if (argumentsTypeCompatible)
                     {
-                        bool argumentsTypeCompatible = true;
-                        ArgumentDescriptions arguments = new ArgumentDescriptions();
-                        int parameterIndex = 0;
-                        foreach (var parameter in methodInfo.GetParameters())
-                        {
-                            WoopsaConverter argumentConverter;
-                            WoopsaValueType argumentType;
-                            if (customValueTypeConverters.InferWoopsaType(parameter.ParameterType, out argumentType, out argumentConverter))
-                            {
-                                string parameterName;
-                                parameterName = parameter.Name;
-                                if (string.IsNullOrEmpty(parameterName))
-                                {
-                                    if (typeof(Array).IsAssignableFrom(targetType))
-                                        if (methodInfo.Name == "Set")
-                                        {
-                                            if (parameterIndex == 0)
-                                                parameterName = "index";
-                                            else if (parameterIndex == 1)
-                                                parameterName = "value";
-                                        }
-                                        else if (methodInfo.Name == "Get")
-                                            if (parameterIndex == 0)
-                                                parameterName = "index";
-                                    if (parameterName == null)
-                                        parameterName = "p" + parameterIndex.ToString();
-                                }
-                                ArgumentDescription newArgument = new ArgumentDescription(
-                                    new WoopsaMethodArgumentInfo(parameterName, argumentType),
-                                    parameter.ParameterType, argumentConverter);
-                                arguments.Add(newArgument);
-                            }
-                            else
-                            {
-                                argumentsTypeCompatible = false;
-                                break;
-                            }
-                            parameterIndex++;
-                        }
-                        if (argumentsTypeCompatible)
-                        {
-                            MethodDescription newMethod = new MethodDescription(
-                                woopsaReturnType, arguments, methodInfo, converter);
-                            methodDescriptions.Add(newMethod);
-                        }
+                        MethodDescription newMethod = new MethodDescription(
+                            woopsaReturnType, arguments, methodInfo, converter);
+                        methodDescriptions.Add(newMethod);
                     }
                 }
+            }
         }
 
         public static T GetCustomAttribute<T>(MemberInfo element) where T : Attribute
@@ -308,7 +314,7 @@ namespace Woopsa
             return result;
         }
 
-        public WoopsaConverters CustomTypeConverters { get; private set; }               
+        public WoopsaConverters CustomTypeConverters { get; private set; }
         private Dictionary<Type, TypeDescription> _typeDescriptions;
     }
 

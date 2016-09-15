@@ -36,7 +36,7 @@ namespace WoopsaTest
 
     }
 
-   
+
     public class SubClassAInner1 : ClassAInner1
     {
         [WoopsaVisible(true)]
@@ -413,6 +413,62 @@ namespace WoopsaTest
             Assert.AreEqual(dataArray[1], 7);
             Assert.AreEqual(dataItem1, 7);
         }
+
+        public interface InterfaceA
+        {
+            string A { get; set; }
+
+            void MethodA();
+        }
+
+        public interface InterfaceB : InterfaceA
+        {
+            int B { get; set; }
+
+            void MethodB();
+        }
+
+        public class ClassInterfaceA : InterfaceA
+        {
+            public string A { get; set; }
+
+            public void MethodA() { }
+        }
+
+        public class ClassInterfaceB : InterfaceB
+        {
+            public string A { get; set; }
+            public int B { get; set; }
+
+            public void MethodA() { }
+            public void MethodB() { }
+        }
+
+        [TestMethod]
+        public void TestWoopsaObjectAdapterInterfaces()
+        {
+            // Base interface
+            ClassInterfaceA a = new ClassInterfaceA();
+            // Access through type
+            WoopsaObjectAdapter adapterA1 = new WoopsaObjectAdapter(null, "a", a);
+            Assert.IsNotNull(adapterA1.Properties.ByNameOrNull(nameof(InterfaceA.A)));
+            Assert.IsNotNull(adapterA1.Methods.ByNameOrNull(nameof(InterfaceA.MethodA)));
+            // Access through Interface
+            WoopsaObjectAdapter adapterA2 = new WoopsaObjectAdapter(null, "a", a, typeof(InterfaceA));
+            Assert.IsNotNull(adapterA2.Properties.ByNameOrNull(nameof(InterfaceA.A)));
+            Assert.IsNotNull(adapterA2.Methods.ByNameOrNull(nameof(InterfaceA.MethodA)));
+            // Derived interface
+            ClassInterfaceB b = new ClassInterfaceB();
+            // Access through type
+            WoopsaObjectAdapter adapterB1 = new WoopsaObjectAdapter(null, "b", b);
+            Assert.IsNotNull(adapterB1.Properties.ByNameOrNull(nameof(InterfaceA.A)));
+            Assert.IsNotNull(adapterB1.Methods.ByNameOrNull(nameof(InterfaceA.MethodA)));
+            // Access through Interface
+            WoopsaObjectAdapter adapterB2 = new WoopsaObjectAdapter(null, "b", b, typeof(InterfaceB));
+            Assert.IsNotNull(adapterB2.Properties.ByNameOrNull(nameof(InterfaceA.A)));
+            Assert.IsNotNull(adapterB2.Methods.ByNameOrNull(nameof(InterfaceA.MethodA)));
+        }
+
 
     }
 }
