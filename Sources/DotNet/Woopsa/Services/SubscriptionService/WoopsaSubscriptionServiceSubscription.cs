@@ -233,8 +233,8 @@ namespace Woopsa
                 }
                 else
                 {
-                    value = null;
-                    return false;
+                    value = WoopsaValue.Null;
+                    return true;
                 }
             }
             catch (Exception)

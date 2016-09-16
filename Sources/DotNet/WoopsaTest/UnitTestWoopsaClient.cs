@@ -68,6 +68,63 @@ namespace WoopsaTest
             }
         }
 
+        public class BaseInnerClass
+        {
+
+        }
+
+        public class InnerClass: BaseInnerClass
+        {
+            public string Info { get; set; }
+        }
+
+        public class MainClass
+        {            
+            public BaseInnerClass Inner { get; set; }
+        }
+
+        [TestMethod]
+        public void TestWoopsaClientSubscriptionDisappearingProperty()
+        {
+            bool isValueChanged = false;
+            MainClass objectServer = new MainClass();
+            InnerClass inner = new InnerClass();
+            objectServer.Inner = inner;
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                {
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    WoopsaObject Inner = root.Items.ByName(nameof(MainClass.Inner)) as WoopsaObject;
+                    WoopsaClientProperty propertyInfo = Inner.Properties.ByName(nameof(InnerClass.Info)) as WoopsaClientProperty;
+                    WoopsaClientSubscription subscription = propertyInfo.Subscribe(
+                        (sender, e) =>
+                        {
+                            isValueChanged = true;
+                        },
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+                    inner.Info = "Test";
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                        Thread.Sleep(10);
+                    if (isValueChanged)
+                        Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No notification received");
+                    isValueChanged = false;
+                    objectServer.Inner = new BaseInnerClass();
+//                    objectServer.Inner = new object();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                        Thread.Sleep(10);
+                    subscription.Unsubscribe();
+                    Assert.AreEqual(true, isValueChanged);
+                }
+            }
+        }
+
+
+
         public class ManySubscriptionTestObject
         {
             public int Trigger { get; set; }
@@ -86,7 +143,7 @@ namespace WoopsaTest
             using (WoopsaServer server = new WoopsaServer(new WoopsaObjectAdapter(null, "list", list, null, null,
                 WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.IEnumerableObject)))
             {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa",null, ObjectsCount))
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa", null, ObjectsCount))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     for (int i = 0; i < list.Count; i++)
@@ -105,7 +162,7 @@ namespace WoopsaTest
                     }
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((totalNotifications < ObjectsCount) && (watch.Elapsed < TimeSpan.FromSeconds(5))) 
+                    while ((totalNotifications < ObjectsCount) && (watch.Elapsed < TimeSpan.FromSeconds(5)))
                         Thread.Sleep(10);
                     if (totalNotifications == ObjectsCount)
                         Console.WriteLine("All notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -224,7 +281,7 @@ namespace WoopsaTest
         {
             bool isValueChanged = false;
             WoopsaObject objectServer = new WoopsaObject(null, "");
-            int Votes =0;
+            int Votes = 0;
             WoopsaProperty propertyVotes = new WoopsaProperty(objectServer, "Votes", WoopsaValueType.Integer, (p) => Votes,
                 (p, value) => { Votes = value.ToInt32(); });
             using (WoopsaServer server = new WoopsaServer((IWoopsaContainer)objectServer))

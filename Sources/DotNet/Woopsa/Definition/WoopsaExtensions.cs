@@ -22,7 +22,7 @@ namespace Woopsa
                 else
                     return false;
             else
-                return true;
+                return right == null;
         }
 
         public static bool ToBool(this IWoopsaValue value)

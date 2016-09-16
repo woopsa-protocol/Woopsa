@@ -31,11 +31,7 @@ namespace WoopsaTest
                     dynamicClient.SubscriptionService.RegisterSubscription(channel,
                        WoopsaValue.WoopsaRelativeLink("/Votes"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
                        TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
-
-                    // Subscription for an nonexistent variable (should work)
-                    dynamicClient.SubscriptionService.RegisterSubscription(channel,
-                        WoopsaValue.WoopsaRelativeLink("/Vote"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
-                        TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
+                                        
 
                     Stopwatch watch = new Stopwatch();
                     WoopsaValue lastNotifications;
@@ -88,5 +84,50 @@ namespace WoopsaTest
                 }
             }
         } //end TestWoopsaDynamicNotification
+
+
+        [TestMethod]
+        public void TestWoopsaDynamicNotificationUnexistingProperty()
+        {
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaServer server = new WoopsaServer(objectServer))
+            {
+                // Solution with dynamic client
+                using (dynamic dynamicClient = new WoopsaDynamicClient("http://localhost/woopsa"))
+                {
+                    int channel = dynamicClient.SubscriptionService.CreateSubscriptionChannel(QUEUE_SIZE);
+                    // Subscription for an nonexistent variable (should work)
+                    dynamicClient.SubscriptionService.RegisterSubscription(channel,
+                        WoopsaValue.WoopsaRelativeLink("/Vote"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
+                        TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
+
+                    Stopwatch watch = new Stopwatch();
+                    WoopsaValue lastNotifications;
+                    WoopsaJsonData jsonData;
+                    int lastNotificationId;
+                    watch.Start();
+                    do
+                    {
+                        lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
+                        Assert.AreEqual(lastNotifications.Type, WoopsaValueType.JsonData);
+                        jsonData = lastNotifications.JsonData;
+                        if (watch.ElapsedMilliseconds > 1000)
+                            Assert.Fail("Timeout without receveiving any notification");
+                    }
+                    while (jsonData.Length == 0);
+                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(lastNotificationId, 1);
+                    // Get again the same notification
+                    lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
+                    jsonData = lastNotifications.JsonData;
+                    Assert.IsTrue(jsonData.IsArray);
+                    Assert.AreEqual(jsonData.Length, 1);
+                    Assert.IsTrue(jsonData[0].IsDictionary);
+                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(lastNotificationId, 1);
+                }
+            }
+        } //end TestWoopsaDynamicNotification
+
     }
 }
