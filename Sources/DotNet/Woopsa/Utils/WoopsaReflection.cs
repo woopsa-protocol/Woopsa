@@ -305,13 +305,18 @@ namespace Woopsa
 
         public TypeDescription GetTypeDescription(Type type)
         {
-            TypeDescription result;
-            if (!_typeDescriptions.TryGetValue(type, out result))
+            if (type != null)
             {
-                result = WoopsaReflection.ReflectType(type, CustomTypeConverters);
-                _typeDescriptions[type] = result;
+                TypeDescription result;
+                if (!_typeDescriptions.TryGetValue(type, out result))
+                {
+                    result = WoopsaReflection.ReflectType(type, CustomTypeConverters);
+                    _typeDescriptions[type] = result;
+                }
+                return result;
             }
-            return result;
+            else
+                return null;
         }
 
         public WoopsaConverters CustomTypeConverters { get; private set; }
