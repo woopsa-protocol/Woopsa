@@ -69,20 +69,23 @@ namespace Woopsa
 
         public void ExecuteMultiRequest(WoopsaClientMultiRequest multiRequest)
         {
-            multiRequest.Reset();
-            if (!_disableRemoteMultiRequest)
-                try
-                {
-                    WoopsaValue results = _remoteMethodMultiRequest.Invoke(
-                        WoopsaValue.WoopsaJsonData(multiRequest.Requests.Serialize()));
-                    multiRequest.DispatchResults(results.JsonData);
-                }
-                catch (WoopsaNotFoundException)
-                {
-                    _disableRemoteMultiRequest = true;
-                }
-            if (_disableRemoteMultiRequest)
-                ExecuteMultiRequestLocally(multiRequest);
+            if (multiRequest.Count > 0)
+            {
+                multiRequest.Reset();
+                if (!_disableRemoteMultiRequest)
+                    try
+                    {
+                        WoopsaValue results = _remoteMethodMultiRequest.Invoke(
+                            WoopsaValue.WoopsaJsonData(multiRequest.Requests.Serialize()));
+                        multiRequest.DispatchResults(results.JsonData);
+                    }
+                    catch (WoopsaNotFoundException)
+                    {
+                        _disableRemoteMultiRequest = true;
+                    }
+                if (_disableRemoteMultiRequest)
+                    ExecuteMultiRequestLocally(multiRequest);
+            }
         }
 
         #endregion

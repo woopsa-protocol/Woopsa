@@ -49,7 +49,7 @@ namespace Woopsa
             return newRequest;
         }
 
-        public WoopsaClientRequest Invoke(string methodPath, 
+        public WoopsaClientRequest Invoke(string methodPath,
             WoopsaMethodArgumentInfo[] argumentInfos, params WoopsaValue[] arguments)
         {
             if (argumentInfos.Length == arguments.Length)
@@ -121,6 +121,8 @@ namespace Woopsa
             _clientRequestsById.Clear();
         }
 
+        public int Count { get { return _clientRequests.Count; } }
+
         public WoopsaClientRequest RequestById(int Id)
         {
             WoopsaClientRequest result;
@@ -160,7 +162,7 @@ namespace Woopsa
                     int id = item[WoopsaFormat.KeyId];
                     WoopsaClientRequest request;
                     if (_clientRequestsById.TryGetValue(id, out request))
-                    {                        
+                    {
                         WoopsaJsonData result = item[WoopsaFormat.KeyResult];
                         if (result.ContainsKey(WoopsaFormat.KeyError))
                         {

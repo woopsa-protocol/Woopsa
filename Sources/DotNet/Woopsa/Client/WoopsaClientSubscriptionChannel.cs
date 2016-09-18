@@ -546,7 +546,14 @@ namespace Woopsa
         internal void Execute(WoopsaClientNotification notification)
         {
             if (Handler != null && !UnsubscriptionRequested)
-                Handler(Channel, new WoopsaNotificationEventArgs(notification, this));
+                try
+                {
+                    Handler(Channel, new WoopsaNotificationEventArgs(notification, this));
+                }
+                catch (Exception)
+                {
+                    // TODO : how to manage exceptions thrown by notification handlers ?
+                }
         }
 
         #region IDisposable
