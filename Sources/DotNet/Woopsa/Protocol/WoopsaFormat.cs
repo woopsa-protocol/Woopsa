@@ -520,7 +520,7 @@ namespace Woopsa
     {
         public string Name { get; set; }
         public string Type { get; set; }
-        public bool ReadOnly { get; set; }
+        public bool IsReadOnly { get; set; }
     }
 
     public class WoopsaMethodMeta

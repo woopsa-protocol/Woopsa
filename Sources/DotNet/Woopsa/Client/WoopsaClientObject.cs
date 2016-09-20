@@ -184,7 +184,7 @@ namespace Woopsa
                     CreateProperty(
                         property.Name,
                             (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), property.Type),
-                            property.ReadOnly);
+                            property.IsReadOnly);
             // Create methods
             if (meta.Methods != null)
                 foreach (WoopsaMethodMeta method in meta.Methods)
