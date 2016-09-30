@@ -85,5 +85,23 @@ namespace Woopsa
             return !IsWoopsaValueType(type) && !type.IsValueType;
         }
 
+        public static bool GetGenericEnumerableItemType(Type type, out Type itemsType)
+        {
+            if (type.IsInterface)
+            {
+                if (type.IsGenericType &&
+                    type.GetGenericTypeDefinition() == typeof(IEnumerable<>))
+                {
+                    itemsType = type.GetGenericArguments()[0];
+                    return true;
+                }
+            }
+            else
+                foreach (Type interfaceType in type.GetInterfaces())
+                    if (GetGenericEnumerableItemType(interfaceType, out itemsType))
+                        return true;
+            itemsType = null;
+            return false;
+        }
     }
 }

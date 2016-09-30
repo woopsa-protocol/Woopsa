@@ -29,6 +29,7 @@ namespace Woopsa
             _registeredSubscriptions = new Dictionary<int, WoopsaClientSubscription>();
             _channelLock = new object();
             _subscriptionLock = new object();
+            _lostSubscriptions = new List<int>();
         }
 
         public WoopsaClientSubscription Subscribe(string path,
@@ -45,6 +46,9 @@ namespace Woopsa
                 WoopsaSubscriptionServiceConst.DefaultMonitorInterval,
                 WoopsaSubscriptionServiceConst.DefaultPublishInterval);
         }
+
+        public const int MaxSubscriptionsPerMultiRequest = 100;
+        public const int MaxUnsubscriptionsPerMultiRequest = 500;
 
         public bool Terminated { get { return _terminated; } }
 
@@ -228,30 +232,78 @@ namespace Woopsa
         private void ManageSubscriptions()
         {
             // New subscriptions
-            List<WoopsaClientSubscription> newSubscriptions = null;
+            List<WoopsaClientSubscription> newSubscriptions;
             SubscriptionsChanged = false;
-            lock (_subscriptions)
-                foreach (var item in _subscriptions)
-                    if (item.SubscriptionId == null)
-                    {
-                        if (newSubscriptions == null)
-                            newSubscriptions = new List<WoopsaClientSubscription>();
-                        newSubscriptions.Add(item);
-                    }
-            if (newSubscriptions != null)
-                RegisterSubscriptions(newSubscriptions);
+            do
+            {
+                newSubscriptions = null;
+                lock (_subscriptions)
+                    foreach (var item in _subscriptions)
+                        if (item.SubscriptionId == null)
+                        {
+                            if (newSubscriptions == null)
+                                newSubscriptions = new List<WoopsaClientSubscription>();
+                            newSubscriptions.Add(item);
+                            if (newSubscriptions.Count >= MaxSubscriptionsPerMultiRequest)
+                                break;
+                        }
+                if (newSubscriptions != null)
+                    RegisterSubscriptions(newSubscriptions);
+            }
+            while (newSubscriptions != null);
             // New unsubscriptions
-            List<WoopsaClientSubscription> newUnsubscriptions = null;
-            lock (_subscriptions)
-                foreach (var item in _subscriptions)
-                    if (item.UnsubscriptionRequested)
+            List<WoopsaClientSubscription> newUnsubscriptions;
+            // Unsubscription can be unsuccessful (for example when the server is down)
+            // So process every unsubscription only once to avoid staying in this loop
+            HashSet<WoopsaClientSubscription> processedSubscriptions = null;
+            do
+            {
+                newUnsubscriptions = null;
+                lock (_subscriptions)
+                    foreach (var item in _subscriptions)
+                        if (item.UnsubscriptionRequested)
+                        {
+                            if (processedSubscriptions == null)
+                                processedSubscriptions = new HashSet<WoopsaClientSubscription>();
+                            if (!processedSubscriptions.Contains(item))
+                            {
+                                processedSubscriptions.Add(item);
+                                if (newUnsubscriptions == null)
+                                    newUnsubscriptions = new List<WoopsaClientSubscription>();
+                                newUnsubscriptions.Add(item);
+                                if (newUnsubscriptions.Count >= MaxUnsubscriptionsPerMultiRequest)
+                                    break;
+                            }
+                        }
+                if (newUnsubscriptions != null)
+                    UnregisterSubscriptions(newUnsubscriptions);
+            }
+            while (newUnsubscriptions != null);
+            // Unsubscribe lost subscriptions
+            List<int> newLostUnsubscriptions;
+            HashSet<int> processedLostSubscriptions = null;
+            do
+            {
+                newLostUnsubscriptions = null;
+                lock (_lostSubscriptions)
+                    foreach (var item in _lostSubscriptions)
                     {
-                        if (newUnsubscriptions == null)
-                            newUnsubscriptions = new List<WoopsaClientSubscription>();
-                        newUnsubscriptions.Add(item);
+                        if (processedLostSubscriptions == null)
+                            processedLostSubscriptions = new HashSet<int>();
+                        if (!processedLostSubscriptions.Contains(item))
+                        {
+                            processedLostSubscriptions.Add(item);
+                            if (newLostUnsubscriptions == null)
+                                newLostUnsubscriptions = new List<int>();
+                            newLostUnsubscriptions.Add(item);
+                            if (newLostUnsubscriptions.Count >= MaxUnsubscriptionsPerMultiRequest)
+                                break;
+                        }
                     }
-            if (newUnsubscriptions != null)
-                UnregisterSubscriptions(newUnsubscriptions);
+                if (newLostUnsubscriptions != null)
+                    UnregisterLostSubscriptions(newLostUnsubscriptions);
+            }
+            while (newLostUnsubscriptions != null);
         }
 
         private void ProcessNotifications()
@@ -299,6 +351,7 @@ namespace Woopsa
 
         private void ExecuteNotifications(WoopsaClientNotifications notifications)
         {
+            List<int> lostSubscriptions = null;
             // Synchronize with the notification registration process to be sure we will not
             // process notifications for subscriptions that are not yet completely registered
             lock (_subscriptionLock)
@@ -307,10 +360,20 @@ namespace Woopsa
                 {
                     if (_registeredSubscriptions.ContainsKey(notification.SubscriptionId))
                         _registeredSubscriptions[notification.SubscriptionId].Execute(notification);
+                    else
+                    {
+                        // there is a lost Subscription in the server which produces notifications, we have to unsubscribe it
+                        if (lostSubscriptions == null)
+                            lostSubscriptions = new List<int>();
+                        lostSubscriptions.Add(notification.SubscriptionId);
+                    }
                     if (notification.Id > _lastNotificationId)
                         _lastNotificationId = notification.Id;
                 }
             }
+            if (lostSubscriptions != null)
+                lock (_lostSubscriptions)
+                    _lostSubscriptions.AddRange(lostSubscriptions);
         }
 
         #region IDisposable
@@ -500,6 +563,44 @@ namespace Woopsa
             }
         }
 
+        private void UnregisterLostSubscriptions(IEnumerable<int> lostSubscriptionIds)
+        {
+            if (_localSubscriptionService == null)
+            {
+                // Remote unsubscription using multirequest
+                Dictionary<int, WoopsaClientRequest> requests =
+                    new Dictionary<int, WoopsaClientRequest>();
+                WoopsaClientMultiRequest multiRequest = new WoopsaClientMultiRequest();
+                foreach (var item in lostSubscriptionIds)
+                    requests[item] = multiRequest.Invoke(UnregisterSubscriptionMethodPath,
+                        WoopsaSubscriptionServiceConst.UnregisterSubscriptionArguments,
+                        _subscriptionOpenChannel.Value, item);
+                try
+                {
+                    _client.ExecuteMultiRequest(multiRequest);
+                    // Remove the unsubscribed subscriptions
+                    foreach (var item in lostSubscriptionIds)
+                    {
+                        WoopsaClientRequest request = requests[item];
+                        if (request.Result.ResultType == WoopsaClientRequestResultType.Value)
+                            lock (_lostSubscriptions)
+                                _lostSubscriptions.Remove(item);
+                    }
+                }
+                catch
+                {
+                }
+            }
+            else
+            {
+                foreach (var item in lostSubscriptionIds)
+                {
+                    lock (_lostSubscriptions)
+                        _lostSubscriptions.Remove(item);
+                }
+            }
+        }
+
         [ThreadStatic]
         private static WoopsaClientSubscriptionChannel _currentChannel;
 
@@ -521,6 +622,7 @@ namespace Woopsa
         private int? _subscriptionOpenChannel;
         private WoopsaSubscriptionServiceImplementation _localSubscriptionService;
         private int _lastNotificationId;
+        private List<int> _lostSubscriptions;
     }
 
     public class WoopsaClientSubscription : IDisposable

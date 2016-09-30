@@ -132,6 +132,7 @@ namespace Woopsa
 
         public bool UnregisterSubscription(int subscriptionId)
         {
+            bool result;
             BaseWoopsaSubscriptionServiceSubscription subscription;
             _watchClientActivity.Restart();
             lock (_subscriptions)
@@ -146,10 +147,12 @@ namespace Woopsa
                 subscription.Dispose();
                 lock (_subscriptions)
                     _subscriptions.Remove(subscriptionId);
-                return true;
+                result = true;
             }
             else
-                return false;
+                result =false;
+            _pendingNotifications.RemoveNotificationsForSubscription(subscriptionId);
+            return result;
         }
 
         public void Stop()
@@ -370,6 +373,23 @@ namespace Woopsa
                 }
             }
             return newAgeOrigin;
+        }
+
+        public void RemoveNotificationsForSubscription(int subscriptionId)
+        {
+            lock (_notifications)
+            {
+                LinkedListNode<PairSubscriptionNotification> node = _notifications.First;
+                while (node != null)
+                {
+                    var next = node.Next;
+                    if (node.Value.Value.SubscriptionId == subscriptionId)
+                        _notifications.Remove(node);
+                    else
+                        break;
+                    node = next;
+                }
+            }
         }
 
         private int notificationAge(int notificationIdOrigin, int notificationId)

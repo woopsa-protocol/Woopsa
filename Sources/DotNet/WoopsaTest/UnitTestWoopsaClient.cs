@@ -4,6 +4,7 @@ using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Diagnostics;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
 
 namespace WoopsaTest
 {
@@ -26,7 +27,7 @@ namespace WoopsaTest
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -56,7 +57,7 @@ namespace WoopsaTest
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -106,7 +107,7 @@ namespace WoopsaTest
                     inner.Info = "Test";
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -115,7 +116,7 @@ namespace WoopsaTest
                     isValueChanged = false;
                     objectServer.Inner = new BaseInnerClass();
 //                    objectServer.Inner = new object();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) // TODO : 2 s
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
                         Thread.Sleep(10);
                     subscription.Unsubscribe();
                     Assert.AreEqual(true, isValueChanged);
@@ -133,11 +134,12 @@ namespace WoopsaTest
         }
 
         [TestMethod]
-        public void TestWoopsaClientSubscriptionChannelManySubscriptions()
+        public void TestWoopsaClientSubscriptionChannel500SubscriptionsList()
         {
-            const int ObjectsCount = 5000;
+            const int ObjectsCount = 500;
             int totalNotifications = 0;
-            List<ManySubscriptionTestObject> list = new List<WoopsaTest.UnitTestWoopsaClient.ManySubscriptionTestObject>();
+            List<ManySubscriptionTestObject> list = 
+                new List<WoopsaTest.UnitTestWoopsaClient.ManySubscriptionTestObject>();
             for (int i = 0; i < ObjectsCount; i++)
                 list.Add(new ManySubscriptionTestObject() { Trigger = i });
             using (WoopsaServer server = new WoopsaServer(new WoopsaObjectAdapter(null, "list", list, null, null,
@@ -151,7 +153,7 @@ namespace WoopsaTest
                         int index = i;
                         WoopsaClientSubscription subscription = root.Subscribe(
                             WoopsaUtils.CombinePath(
-                                string.Format(WoopsaObjectAdapter.IEnumerableIndexerFormat, WoopsaObjectAdapter.IEnumerableItemBaseName, i),
+                                WoopsaObjectAdapter.EnumerableItemName(i), 
                                 nameof(ManySubscriptionTestObject.Trigger)),
                             (sender, e) =>
                             {
@@ -162,7 +164,49 @@ namespace WoopsaTest
                     }
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((totalNotifications < ObjectsCount) && (watch.Elapsed < TimeSpan.FromSeconds(5)))
+                    while ((totalNotifications < ObjectsCount) && (watch.Elapsed < TimeSpan.FromSeconds(500)))
+                        Thread.Sleep(10);
+                    if (totalNotifications == ObjectsCount)
+                        Console.WriteLine("All notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("{0} notification received, {1} expected", totalNotifications, ObjectsCount);
+                    Assert.AreEqual(ObjectsCount, totalNotifications);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestWoopsaClientSubscriptionChannel5000SubscriptionsObservableCollection()
+        {
+            const int ObjectsCount = 5000;
+            int totalNotifications = 0;
+            ObservableCollection<ManySubscriptionTestObject> list =
+                new ObservableCollection<WoopsaTest.UnitTestWoopsaClient.ManySubscriptionTestObject>();
+            for (int i = 0; i < ObjectsCount; i++)
+                list.Add(new ManySubscriptionTestObject() { Trigger = i });
+            using (WoopsaServer server = new WoopsaServer(new WoopsaObjectAdapter(null, "list", list, null, null,
+                WoopsaObjectAdapterOptions.None, WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.IEnumerableObject)))
+            {
+                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa", null, ObjectsCount))
+                {
+                    WoopsaBoundClientObject root = client.CreateBoundRoot();
+                    for (int i = 0; i < list.Count; i++)
+                    {
+                        int index = i;
+                        WoopsaClientSubscription subscription = root.Subscribe(
+                            WoopsaUtils.CombinePath(
+                                WoopsaObjectAdapter.EnumerableItemName(i),
+                                nameof(ManySubscriptionTestObject.Trigger)),
+                            (sender, e) =>
+                            {
+                                list[index].HasNotified = true;
+                                totalNotifications++;
+                            },
+                            TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(200));
+                    }
+                    Stopwatch watch = new Stopwatch();
+                    watch.Start();
+                    while ((totalNotifications < ObjectsCount) && (watch.Elapsed < TimeSpan.FromSeconds(500)))
                         Thread.Sleep(10);
                     if (totalNotifications == ObjectsCount)
                         Console.WriteLine("All notification after {0} ms", watch.Elapsed.TotalMilliseconds);

@@ -20,6 +20,7 @@ namespace Woopsa
         bool Contains(T element);
 
         int Count { get; }
+
     }
 
     public abstract class WoopsaElement : IWoopsaElement, IDisposable
@@ -514,15 +515,15 @@ namespace Woopsa
     {
         public WoopsaElementList()
         {
-            _items = new Dictionary<string, T>();
+            _itemsByName = new Dictionary<string, T>();
         }
 
         public T this[string name]
         {
             get
             {
-                lock (_items)
-                    return _items[name];
+                lock (_itemsByName)
+                    return _itemsByName[name];
             }
         }
 
@@ -530,72 +531,76 @@ namespace Woopsa
         {
             get
             {
-                lock (_items)
-                    return _items.Count;
+                lock (_itemsByName)
+                    return _itemsByName.Count;
             }
         }
 
         public IEnumerator<T> GetEnumerator()
         {
-            lock (_items)
-                return _items.Values.GetEnumerator();
+            lock (_itemsByName)
+            {
+                // TODO : thread safety
+                return _itemsByName.Values.GetEnumerator();
+            }
         }
 
         IEnumerator IEnumerable.GetEnumerator()
         {
-            lock (_items)
-                return _items.Values.GetEnumerator();
+            // TODO : thread safety
+            lock (_itemsByName)
+                return _itemsByName.Values.GetEnumerator();
         }
 
         public void Add(T item)
         {
-            lock (_items)
-                _items.Add(item.Name, item);
+            lock (_itemsByName)
+                _itemsByName.Add(item.Name, item);
         }
 
         public void Remove(T item)
         {
-            lock (_items)
-                _items.Remove(item.Name);
+            lock (_itemsByName)
+                _itemsByName.Remove(item.Name);
         }
 
         public bool Contains(string key)
         {
-            lock (_items)
-                return _items.ContainsKey(key);
+            lock (_itemsByName)
+                return _itemsByName.ContainsKey(key);
         }
 
         public bool Contains(T element)
         {
-            lock (_items)
-                return _items.ContainsValue(element);
+            lock (_itemsByName)
+                return _itemsByName.ContainsValue(element);
         }
 
         public void Clear()
         {
             T[] items;
-            lock (_items)
-                items = _items.Values.ToArray();
+            lock (_itemsByName)
+                items = _itemsByName.Values.ToArray();
             foreach (var item in items)
                 item.Dispose();
         }
 
         public T ByName(string name)
         {
-            lock (_items)
-                return _items[name];
+            lock (_itemsByName)
+                return _itemsByName[name];
         }
 
         public T ByNameOrNull(string name)
         {
-            lock (_items)
+            lock (_itemsByName)
                 if (Contains(name))
                     return ByName(name);
                 else
                     return null;
         }
 
-        private Dictionary<string, T> _items;
+        private Dictionary<string, T> _itemsByName;
 
     }
 }

@@ -78,5 +78,6 @@ namespace Woopsa
         {
             return TimeSpan.FromTicks(timeSpan.Ticks * n);
         }
+
     }
 }

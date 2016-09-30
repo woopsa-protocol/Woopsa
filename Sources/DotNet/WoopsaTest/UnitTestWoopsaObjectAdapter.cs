@@ -2,6 +2,7 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Collections;
+using System.Collections.Generic;
 
 namespace WoopsaTest
 {
@@ -199,9 +200,9 @@ namespace WoopsaTest
             WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
                 WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]"));
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]") as IWoopsaObject);
-            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull("Item[1]");
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)) as IWoopsaObject);
+            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1));
             Assert.IsNotNull(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)));
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 3);
             item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value = new WoopsaValue(5, DateTime.Now);
@@ -289,7 +290,6 @@ namespace WoopsaTest
             a1Inner1Inner = a1Inner1.Items.ByNameOrNull(nameof(ClassAInner1.Inner)) as WoopsaObjectAdapter;
             Assert.IsNotNull(a1Inner1Inner.Methods.ByNameOrNull(
                 nameof(a1.Inner1.Inner.ToString)));
-
         }
 
         [TestMethod]
@@ -389,9 +389,9 @@ namespace WoopsaTest
             WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
                 WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]"));
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull("Item[1]") as IWoopsaObject);
-            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull("Item[1]");
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)) as IWoopsaObject);
+            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1));
             Assert.IsNotNull(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)));
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 3);
             item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value = new WoopsaValue(5, DateTime.Now);
@@ -412,6 +412,27 @@ namespace WoopsaTest
             dataItem1 = methodGet.Invoke(1);
             Assert.AreEqual(dataArray[1], 7);
             Assert.AreEqual(dataItem1, 7);
+        }
+
+        [TestMethod]
+        public void TestWoopsaObjectAdapterEnumerable()
+        {
+            List<ClassA> list = new List<WoopsaTest.ClassA>();
+            list.Add(new ClassA());
+            list.Add(new ClassA());
+            WoopsaObjectAdapter adapterList = new WoopsaObjectAdapter(null, "list",
+                list, null, null, WoopsaObjectAdapterOptions.None,
+                WoopsaVisibility.IEnumerableObject | WoopsaVisibility.Inherited);
+            Assert.AreEqual(adapterList.Items.Count, 2);
+            list.Add(new ClassA());
+            Assert.AreEqual(adapterList.Items.Count, 3);
+
+            List<ClassA> list2 = new List<WoopsaTest.ClassA>();
+            WoopsaObjectAdapter adapterList2 = new WoopsaObjectAdapter(null, "list",
+                list2, null, null, WoopsaObjectAdapterOptions.None,
+                WoopsaVisibility.DefaultIsVisible| WoopsaVisibility.IEnumerableObject | WoopsaVisibility.Inherited |
+                WoopsaVisibility.ListClassMembers);
+            Assert.AreEqual(adapterList2.Items.Count, 1); // List "Item" indexer
         }
 
         public interface InterfaceA

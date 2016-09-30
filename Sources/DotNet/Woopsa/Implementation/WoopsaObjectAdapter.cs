@@ -1,8 +1,11 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.Collections.Specialized;
 using System.Linq;
 using System.Reflection;
+using System.Text;
 
 namespace Woopsa
 {
@@ -59,9 +62,13 @@ namespace Woopsa
         /// </summary>
         ObjectClassMembers = 16,
         /// <summary>
+        /// Publish members inherited from ArrayList, List<>, Collection, ObservableCollection
+        /// </summary>
+        ListClassMembers = 32,
+        /// <summary>
         /// Publish all
         /// </summary>
-        All = DefaultIsVisible | MethodSpecialName | Inherited | IEnumerableObject | ObjectClassMembers
+        All = DefaultIsVisible | MethodSpecialName | Inherited | IEnumerableObject | ObjectClassMembers | ListClassMembers
     }
 
     [AttributeUsage(AttributeTargets.Class)]
@@ -96,12 +103,24 @@ namespace Woopsa
 
     public class WoopsaObjectAdapter : WoopsaObject
     {
-        public const WoopsaVisibility DefaultDefaultVisibility = 
+        public const WoopsaVisibility DefaultDefaultVisibility =
             WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited;
 
-        public const string IEnumerableIndexerFormat = "{0}[{1}]";
+        #region static
 
-        public const string IEnumerableItemBaseName = "Item";
+        public const string EnumerableItemBaseName = "Item";
+
+        public static string EnumerableItemName(long id)
+        {
+            return EnumerableItemBaseName + id.ToString();
+        }
+
+        public static int EnumerableItemIdFromName(string itemName)
+        {
+            return int.Parse(itemName.Substring(EnumerableItemBaseName.Length));
+        }
+
+        #endregion static
 
         /// <summary>
         /// Create a WoopsaObjectAdapter for a fixed object reference
@@ -125,7 +144,7 @@ namespace Woopsa
                 WoopsaObjectAdapterOptions options = WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility defaultVisibility = DefaultDefaultVisibility) :
             this(container, name, () => targetObject, declaredExposedType,
-                new TypeDescriptions(customValueTypeConverters), 
+                new TypeDescriptions(customValueTypeConverters),
                 options, defaultVisibility)
         {
         }
@@ -187,6 +206,7 @@ namespace Woopsa
                 {
                     lock (_lock)
                     {
+                        UnsubscribeCollectionChanged();
                         object currentTargetObjectType = _targetObject != null ? ExposedType(_targetObject) : null;
                         object newTargetObjectType = newTargetObject != null ? ExposedType(newTargetObject) : null;
                         if (newTargetObjectType != currentTargetObjectType)
@@ -216,7 +236,40 @@ namespace Woopsa
         /// </summary>
         public WoopsaVisibility Visibility { get; private set; }
 
+        public string OrderedItemIds
+        {
+            get
+            {
+                UpdateItems();
+                bool first = true;
+                // Format as a Json array
+                StringBuilder stringBuilder = new StringBuilder();
+                stringBuilder.Append("[");
+                if (_enumerableItems != null)
+                {
+                    var sortedItemAdapters = _enumerableItems.Values.OrderBy(s => s.EnumerableItemIndex);
+                    foreach (var item in sortedItemAdapters)
+                    {
+                        if (!first)
+                            stringBuilder.Append(",");
+                        stringBuilder.Append(item.EnumerableItemId.ToString());
+                        first = false;
+                    }
+                }
+                stringBuilder.Append("]");
+                return stringBuilder.ToString();
+            }
+        }
+
         #region Private/Protected Methods
+
+        protected override void Clear()
+        {
+            base.Clear();
+            if (_enumerableItems != null)
+                _enumerableItems = null;
+            UnsubscribeCollectionChanged();
+        }
 
         protected virtual void OnMemberWoopsaVisibilityCheck(EventArgsMemberVisibilityCheck e)
         {
@@ -306,45 +359,100 @@ namespace Woopsa
         {
             base.UpdateItems();
             // Enforce object update if needed (implemented in TargetObjectGetter) :
-            object targetObject = TargetObject;
+            IEnumerable enumerable = TargetObject as IEnumerable;
+            if (enumerable != null)
+                // We cannot know if the enumerable has changed, or we know it has changed
+                // then we update
+                if (_iNotifyCollectionChanged == null || _collectionChanged)
+                {
+                    HashSet<object> existingItems = new HashSet<object>();
+                    // Add missing items
+                    foreach (var item in enumerable)
+                    {
+                        if (!_enumerableItems.ContainsKey(item))
+                            AddEnumerableItem(item);
+                        existingItems.Add(item);
+                    }
+                    // Remove items that have disappeared
+                    foreach (var item in _enumerableItems.Keys.ToArray())
+                        if (!existingItems.Contains(item))
+                            DeleteEnumerableItem(item);
+                    // Order items
+                    int index = 0;
+                    foreach (var item in enumerable)
+                    {
+                        WoopsaObjectAdapter itemAdapter;
+                        if (_enumerableItems.TryGetValue(item, out itemAdapter))
+                            itemAdapter.EnumerableItemIndex = index;
+                        index++;
+                    }
+                }
         }
 
         protected virtual void PopulateProperties(object targetObject, Type exposedType,
             IEnumerable<PropertyDescription> properties)
         {
+            HashSet<string> addedElements = new HashSet<string>();
+
             foreach (var property in properties)
                 if (IsMemberWoopsaVisible(targetObject, property.PropertyInfo))
-                    AddWoopsaProperty(property);
+                    if (!addedElements.Contains(property.Name))
+                    {
+                        AddWoopsaProperty(property);
+                        addedElements.Add(property.Name);
+                    }
+            if (targetObject is IEnumerable)
+                new WoopsaProperty(this, nameof(OrderedItemIds), WoopsaValueType.JsonData,
+                   (p) => WoopsaValue.WoopsaJsonData(OrderedItemIds));
         }
+
         protected virtual void PopulateMethods(object targetObject, Type exposedType,
             IEnumerable<MethodDescription> methods)
         {
+            HashSet<string> addedElements = new HashSet<string>();
+
             foreach (var method in methods)
                 if (IsMemberWoopsaVisible(targetObject, method.MethodInfo))
-                    AddWoopsaMethod(method);
+                    if (!addedElements.Contains(method.Name))
+                    {
+                        AddWoopsaMethod(method);
+                        addedElements.Add(method.Name);
+                    }
         }
 
         protected virtual void PopulateItems(object targetObject, Type exposedType, IEnumerable<ItemDescription> items)
         {
+            HashSet<string> addedElements = new HashSet<string>();
+
             foreach (var item in items)
                 if (IsMemberWoopsaVisible(targetObject, item.PropertyInfo))
-                    CreateItemWoopsaAdapter(
-                        item.Name,
-                        () => item.PropertyInfo.GetValue(TargetObject, EmptyParameters),
-                        ItemExposedType(item.PropertyInfo.PropertyType));
+                    if (!addedElements.Contains(item.Name))
+                    {
+                        CreateItemWoopsaAdapter(
+                            item.Name,
+                            () => item.PropertyInfo.GetValue(TargetObject, EmptyParameters),
+                            ItemExposedType(item.PropertyInfo.PropertyType));
+                        addedElements.Add(item.Name);
+                    }
         }
 
         protected virtual void PopulateEnumerableItems(IEnumerable enumerable, Type exposedType)
         {
+            if (_enumerableItems == null)
+                _enumerableItems = new Dictionary<object, WoopsaObjectAdapter>();
+            if (exposedType != null)
+                WoopsaTypeUtils.GetGenericEnumerableItemType(exposedType, out _itemExposedType);
+            _iNotifyCollectionChanged = enumerable as INotifyCollectionChanged;
+            if (_iNotifyCollectionChanged != null)
+                _iNotifyCollectionChanged.CollectionChanged += EnumerableCollectionChanged;
             int index = 0;
             foreach (object item in enumerable)
             {
-                string name = String.Format(IEnumerableIndexerFormat, IEnumerableItemBaseName, index);
+                WoopsaObjectAdapter adapter = AddEnumerableItem(item);
+                adapter.EnumerableItemIndex = index;
                 index++;
-                CreateItemWoopsaAdapter(name, () => item, ItemExposedType(item.GetType()));
             }
         }
-
 
         protected virtual bool IsMemberWoopsaVisible(object targetObject, MemberInfo memberInfo)
         {
@@ -364,6 +472,16 @@ namespace Woopsa
             {
                 if (memberInfo.DeclaringType == typeof(object))
                     isVisible = Visibility.HasFlag(WoopsaVisibility.ObjectClassMembers);
+            }
+            if (isVisible)
+            {
+                if (memberInfo.DeclaringType == typeof(ArrayList) ||
+                    (memberInfo.DeclaringType.IsGenericType &&
+                        (memberInfo.DeclaringType.GetGenericTypeDefinition() == typeof(List<>) ||
+                        memberInfo.DeclaringType.GetGenericTypeDefinition() == typeof(Collection<>) ||
+                        memberInfo.DeclaringType.GetGenericTypeDefinition() == typeof(ObservableCollection<>)))
+                   )
+                    isVisible = Visibility.HasFlag(WoopsaVisibility.ListClassMembers);
             }
             if (isVisible)
             {
@@ -474,10 +592,10 @@ namespace Woopsa
                 }
                 catch (TargetInvocationException e)
                 {
-                    // Because we are invoking using reflection, the 
-                    // exception that is actually thrown is a TargetInvocationException
-                    // containing the actual exception
-                    if (e.InnerException != null)
+                // Because we are invoking using reflection, the 
+                // exception that is actually thrown is a TargetInvocationException
+                // containing the actual exception
+                if (e.InnerException != null)
                         throw e.InnerException;
                     else
                         throw;
@@ -485,15 +603,64 @@ namespace Woopsa
             };
         }
 
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            UnsubscribeCollectionChanged();
+        }
+
         protected Type DeclaredExposedType { get; private set; }
+
+        protected long EnumerableItemId { get; private set; }
+
+        protected int EnumerableItemIndex { get; private set; }
 
         #endregion
 
+        private void EnumerableCollectionChanged(object sender, NotifyCollectionChangedEventArgs e)
+        {
+            _collectionChanged = true;
+        }
+
+        private void UnsubscribeCollectionChanged()
+        {
+            if (_iNotifyCollectionChanged != null)
+            {
+                _iNotifyCollectionChanged.CollectionChanged -= EnumerableCollectionChanged;
+                _iNotifyCollectionChanged = null;
+                _collectionChanged = false;
+            }
+        }
+
+        private WoopsaObjectAdapter AddEnumerableItem(object item)
+        {
+            WoopsaObjectAdapter itemAdapter = CreateItemWoopsaAdapter(EnumerableItemName(_nextEnumerableItemId),
+                () => item, _itemExposedType);
+            itemAdapter.EnumerableItemId = _nextEnumerableItemId;
+            _enumerableItems[item] = itemAdapter;
+            _nextEnumerableItemId++;
+            return itemAdapter;
+        }
+
+        private void DeleteEnumerableItem(object item)
+        {
+            WoopsaObjectAdapter enumerableItemAdapter;
+            if (_enumerableItems.TryGetValue(item, out enumerableItemAdapter))
+            {
+                enumerableItemAdapter.Dispose();
+                _enumerableItems.Remove(item);
+            }
+        }
+
         private object _targetObject;
         private object _lock;
+        private Dictionary<object, WoopsaObjectAdapter> _enumerableItems;
+        private long _nextEnumerableItemId;
+        private Type _itemExposedType;
+        private INotifyCollectionChanged _iNotifyCollectionChanged;
+        private bool _collectionChanged;
 
         protected static readonly object[] EmptyParameters = new object[] { };
-
     }
 
 }

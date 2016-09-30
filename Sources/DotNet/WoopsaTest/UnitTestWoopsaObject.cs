@@ -2,25 +2,26 @@
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Linq;
+using System.Diagnostics;
 
 namespace WoopsaTest
 {
-	[TestClass]
-	public class UnitTestWoopsaObject
-	{
-		private double _minLevel, _maxLevel;
+    [TestClass]
+    public class UnitTestWoopsaObject
+    {
+        private double _minLevel, _maxLevel;
 
-		[TestMethod]
-		public void TestWoopsaObjects()
-		{
-			WoopsaRoot root = new WoopsaRoot();
-			WoopsaObject tunnel1 = new WoopsaObject(root, "Tunnel1");
-            
-			Assert.AreEqual(root.Items.Count(), 1);
-			WoopsaObject tunnel2 = new WoopsaObject(root, "Tunnel2");
-			Assert.AreEqual(root.Items.Count(), 2);
-			WoopsaObject coMessung1 = new WoopsaObject(tunnel1, "CoMessung1");
-			Assert.AreEqual(coMessung1.GetPath(), "/Tunnel1/CoMessung1");
+        [TestMethod]
+        public void TestWoopsaObjects()
+        {
+            WoopsaRoot root = new WoopsaRoot();
+            WoopsaObject tunnel1 = new WoopsaObject(root, "Tunnel1");
+
+            Assert.AreEqual(root.Items.Count(), 1);
+            WoopsaObject tunnel2 = new WoopsaObject(root, "Tunnel2");
+            Assert.AreEqual(root.Items.Count(), 2);
+            WoopsaObject coMessung1 = new WoopsaObject(tunnel1, "CoMessung1");
+            Assert.AreEqual(coMessung1.GetPath(), "/Tunnel1/CoMessung1");
 
             WoopsaProperty property1 = new WoopsaProperty(coMessung1, "Level", WoopsaValueType.Real,
                 (sender) => 1040.0);
@@ -29,7 +30,7 @@ namespace WoopsaTest
                 (sender) => property2Value, (sender, value) => property2Value = value.ToInt32());
 
             Assert.AreEqual(coMessung1.Properties.Count(), 2);
-			Assert.AreEqual(coMessung1.Properties.First().Value.ToDouble(), 1040.0);
+            Assert.AreEqual(coMessung1.Properties.First().Value.ToDouble(), 1040.0);
             coMessung1.Properties.ByName("Variation").Value = 45;
             Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToInt32(), 45);
             Assert.AreEqual(coMessung1.Properties.ByName("Variation").Value.ToString(), "45");
@@ -40,22 +41,43 @@ namespace WoopsaTest
             int variation = coMessung1.Properties["Variation"].Value;
             Assert.AreEqual(variation, 5);
             WoopsaMethod method1 = new WoopsaMethod(coMessung1, "Calibrate", WoopsaValueType.Null,
-				new WoopsaMethodArgumentInfo[] { 
-					new WoopsaMethodArgumentInfo("minLevel", WoopsaValueType.Real), 
-					new WoopsaMethodArgumentInfo("maxLevel", WoopsaValueType.Real)
-				},
-				Calibrate);
-			IWoopsaValue result = method1.Invoke(1.1, 5.5);
-			Assert.AreEqual(result, WoopsaValue.Null);
-			Assert.AreEqual(_minLevel, 1.1);
-			Assert.AreEqual(_maxLevel, 5.5);
-		}
+                new WoopsaMethodArgumentInfo[] {
+                    new WoopsaMethodArgumentInfo("minLevel", WoopsaValueType.Real),
+                    new WoopsaMethodArgumentInfo("maxLevel", WoopsaValueType.Real)
+                },
+                Calibrate);
+            IWoopsaValue result = method1.Invoke(1.1, 5.5);
+            Assert.AreEqual(result, WoopsaValue.Null);
+            Assert.AreEqual(_minLevel, 1.1);
+            Assert.AreEqual(_maxLevel, 5.5);
+        }
 
-		private WoopsaValue Calibrate(System.Collections.Generic.IEnumerable<IWoopsaValue> Arguments)
-		{
-			_minLevel = Arguments.ElementAt(0).ToDouble();
-			_maxLevel = Arguments.ElementAt(1).ToDouble();
-			return WoopsaValue.Null;
-		}
-	}
+        private WoopsaValue Calibrate(System.Collections.Generic.IEnumerable<IWoopsaValue> Arguments)
+        {
+            _minLevel = Arguments.ElementAt(0).ToDouble();
+            _maxLevel = Arguments.ElementAt(1).ToDouble();
+            return WoopsaValue.Null;
+        }
+
+        [TestMethod]
+        public void TestWoopsaObjectPerformance()
+        {
+            const int ObjectCount = 5000;
+            const int AccessCount = 50000;
+            WoopsaRoot root = new WoopsaRoot();
+            for (int i = 0; i < ObjectCount; i++)
+            {
+                WoopsaObject newObject = new WoopsaObject(root, "Item" + i.ToString());
+                int x = i;
+                new WoopsaProperty(newObject, "Data", WoopsaValueType.Integer, (p) => x);
+            }
+            Stopwatch watch = new Stopwatch();
+            watch.Start();
+            for (int i = 0; i < AccessCount; i++)
+            {
+                int k = ((WoopsaProperty)(root.ByPath("Item" + (ObjectCount - 1).ToString() + "/Data"))).Value.ToInt32();
+            }
+            Assert.IsTrue(watch.ElapsedMilliseconds < 1000);
+        }
+    }
 }

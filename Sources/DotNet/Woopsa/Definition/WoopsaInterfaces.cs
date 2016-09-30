@@ -17,7 +17,7 @@ namespace Woopsa
 		public const string WoopsaFalse = "false";
 		public const string WoopsaTrue = "true";
 		public const string WoopsaNull = "null";
-	}
+    }
 
 	public enum WoopsaValueType 
 	{ 

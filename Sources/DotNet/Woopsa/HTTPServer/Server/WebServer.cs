@@ -256,12 +256,10 @@ namespace Woopsa
                     {
                         stream = processor.ProcessStream(stream);
                     }
-                    // Do not dispose the reader so that the inner stream stays open (no using)
-                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096);
                     bool leaveOpen = true;
                     HTTPResponse response = null;
-                    HTTPRequest request = null;
-
+                    HTTPRequest request = null;                    
+                    StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096);
                     try
                     {
                         while (leaveOpen && !_aborted)
