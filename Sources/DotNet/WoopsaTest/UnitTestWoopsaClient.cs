@@ -153,7 +153,7 @@ namespace WoopsaTest
                         int index = i;
                         WoopsaClientSubscription subscription = root.Subscribe(
                             WoopsaUtils.CombinePath(
-                                WoopsaObjectAdapter.EnumerableItemName(i), 
+                                WoopsaObjectAdapter.EnumerableItemDefaultName(i), 
                                 nameof(ManySubscriptionTestObject.Trigger)),
                             (sender, e) =>
                             {
@@ -195,7 +195,7 @@ namespace WoopsaTest
                         int index = i;
                         WoopsaClientSubscription subscription = root.Subscribe(
                             WoopsaUtils.CombinePath(
-                                WoopsaObjectAdapter.EnumerableItemName(i),
+                                WoopsaObjectAdapter.EnumerableItemDefaultName(i),
                                 nameof(ManySubscriptionTestObject.Trigger)),
                             (sender, e) =>
                             {

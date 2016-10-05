@@ -108,16 +108,11 @@ namespace Woopsa
 
         #region static
 
-        public const string EnumerableItemBaseName = "Item";
+        public const string EnumerableItemDefaultBaseName = "Item";
 
-        public static string EnumerableItemName(long id)
+        public static string EnumerableItemDefaultName(long id)
         {
-            return EnumerableItemBaseName + id.ToString();
-        }
-
-        public static int EnumerableItemIdFromName(string itemName)
-        {
-            return int.Parse(itemName.Substring(EnumerableItemBaseName.Length));
+            return EnumerableItemDefaultBaseName + id.ToString();
         }
 
         #endregion static
@@ -603,17 +598,22 @@ namespace Woopsa
             };
         }
 
-        protected override void Dispose(bool disposing)
-        {
-            base.Dispose(disposing);
-            UnsubscribeCollectionChanged();
-        }
-
         protected Type DeclaredExposedType { get; private set; }
 
         protected long EnumerableItemId { get; private set; }
 
         protected int EnumerableItemIndex { get; private set; }
+
+        protected virtual string EnumerableItemName(object enumerableItem, long enumerableItemId)
+        {
+            return EnumerableItemDefaultName(enumerableItemId);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            base.Dispose(disposing);
+            UnsubscribeCollectionChanged();
+        }
 
         #endregion
 
@@ -634,7 +634,8 @@ namespace Woopsa
 
         private WoopsaObjectAdapter AddEnumerableItem(object item)
         {
-            WoopsaObjectAdapter itemAdapter = CreateItemWoopsaAdapter(EnumerableItemName(_nextEnumerableItemId),
+            // todo rendre surchargeable
+            WoopsaObjectAdapter itemAdapter = CreateItemWoopsaAdapter(EnumerableItemName(item, _nextEnumerableItemId),
                 () => item, _itemExposedType);
             itemAdapter.EnumerableItemId = _nextEnumerableItemId;
             _enumerableItems[item] = itemAdapter;

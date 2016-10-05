@@ -200,9 +200,9 @@ namespace WoopsaTest
             WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
                 WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)));
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)) as IWoopsaObject);
-            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemDefaultName(1)));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemDefaultName(1)) as IWoopsaObject);
+            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemDefaultName(1));
             Assert.IsNotNull(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)));
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 3);
             item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value = new WoopsaValue(5, DateTime.Now);
@@ -389,9 +389,9 @@ namespace WoopsaTest
             WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
                 WoopsaObjectAdapterOptions.None,
                 WoopsaVisibility.IEnumerableObject | WoopsaVisibility.DefaultIsVisible);
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)));
-            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1)) as IWoopsaObject);
-            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemName(1));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemDefaultName(1)));
+            Assert.IsNotNull(adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemDefaultName(1)) as IWoopsaObject);
+            IWoopsaObject item1 = (IWoopsaObject)adapterArrayObject.Items.ByNameOrNull(WoopsaObjectAdapter.EnumerableItemDefaultName(1));
             Assert.IsNotNull(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)));
             Assert.AreEqual(item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value.ToInt64(), 3);
             item1.Properties.ByNameOrNull(nameof(ClassD.APropertyInt)).Value = new WoopsaValue(5, DateTime.Now);
