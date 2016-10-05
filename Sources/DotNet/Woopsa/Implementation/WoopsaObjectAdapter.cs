@@ -633,8 +633,7 @@ namespace Woopsa
         }
 
         private WoopsaObjectAdapter AddEnumerableItem(object item)
-        {
-            // todo rendre surchargeable
+        {            
             WoopsaObjectAdapter itemAdapter = CreateItemWoopsaAdapter(EnumerableItemName(item, _nextEnumerableItemId),
                 () => item, _itemExposedType);
             itemAdapter.EnumerableItemId = _nextEnumerableItemId;
