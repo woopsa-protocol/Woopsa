@@ -115,6 +115,11 @@ namespace Woopsa
             return EnumerableItemDefaultBaseName + id.ToString();
         }
 
+        public static int EnumerableItemIdFromDefaultName(string itemName)
+        {
+            return int.Parse(itemName.Substring(EnumerableItemDefaultBaseName.Length));
+        }
+
         #endregion static
 
         /// <summary>
