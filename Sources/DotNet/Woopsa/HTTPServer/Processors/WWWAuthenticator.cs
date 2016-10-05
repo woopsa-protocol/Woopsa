@@ -5,6 +5,16 @@ namespace Woopsa
 {
     public abstract class BaseAuthenticator : PostRouteProcessor, IRequestProcessor
     {
+        [ThreadStatic]
+        private static string _currentUserName;
+
+        /// <summary>
+        /// This property returns the username provided to authenticate a request within the current 
+        /// webserver thread, or null if none. The value is specific to the calling thread, the property
+        /// returns a different value in each thread.
+        /// </summary>
+        public static string CurrentUserName { get { return _currentUserName; } }
+
         public BaseAuthenticator(string realm)
         {
             Realm = realm;            
@@ -15,6 +25,7 @@ namespace Woopsa
         public bool Process(HTTPRequest request, HTTPResponse response)
         {
             bool authenticated;
+            _currentUserName = null;
             if (request.Headers.ContainsKey(HTTPHeader.Authorization))
             {
                 string authString = request.Headers[HTTPHeader.Authorization].Split(' ')[1];
@@ -23,6 +34,8 @@ namespace Woopsa
                 string username = parts[0];
                 string password = parts[1];
                 authenticated = Authenticate(username, password);
+                if (authenticated)
+                    _currentUserName = username;
             }
             else
                 authenticated = false;

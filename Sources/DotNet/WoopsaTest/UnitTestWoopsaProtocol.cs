@@ -15,6 +15,7 @@ namespace WoopsaTest
         {
             Votes += count;
         }
+
     }
 
 
@@ -146,10 +147,24 @@ namespace WoopsaTest
             }
         }
 
+        public class TestObjectServerAuthentification
+        {
+            public int Votes { get; set; }
+
+            public void IncrementVotes(int count)
+            {
+                Votes += count;
+            }
+
+            public string CurrentUserName { get { return BaseAuthenticator.CurrentUserName; } }
+
+        }
+
+
         [TestMethod]
         public void TestWoopsaServerAuthentication()
         {
-            TestObjectServer objectServer = new TestObjectServer();
+            TestObjectServerAuthentification objectServer = new TestObjectServerAuthentification();
             using (WoopsaServer server = new WoopsaServer(objectServer))
             {
                 server.Authenticator = new SimpleAuthenticator("TestRealm",
@@ -157,12 +172,15 @@ namespace WoopsaTest
 
                 using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
                 {
-                    client.Username = "woopsa";
+                    const string TestUserName ="woopsa";
+                    client.Username = TestUserName;
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     WoopsaProperty propertyVotes = root.Properties.ByName("Votes");
                     propertyVotes.Value = 5;
                     Assert.AreEqual(objectServer.Votes, 5);
                     Assert.AreEqual((int)propertyVotes.Value, 5);
+                    WoopsaProperty propertyCurrentUserName = root.Properties.ByName(nameof(TestObjectServerAuthentification.CurrentUserName));
+                    Assert.AreEqual(propertyCurrentUserName.Value, TestUserName);
                     client.Username = "invalid";
                     bool authenticationCheckOk;
                     try
