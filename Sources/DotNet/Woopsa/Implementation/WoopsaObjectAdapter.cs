@@ -321,7 +321,7 @@ namespace Woopsa
                 if (targetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 {
                     IEnumerable enumerable = (IEnumerable)targetObject;
-                    PopulateEnumerableItems(enumerable, exposedType);
+                    PopulateEnumerableItems(enumerable, DeclaredExposedType);
                 }
             }
         }
