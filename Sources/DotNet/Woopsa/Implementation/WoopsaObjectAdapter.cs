@@ -361,30 +361,33 @@ namespace Woopsa
             // Enforce object update if needed (implemented in TargetObjectGetter) :
             IEnumerable enumerable = TargetObject as IEnumerable;
             if (enumerable != null)
-                // We cannot know if the enumerable has changed, or we know it has changed
+                // If we cannot know if the enumerable has changed, or if we know it has changed
                 // then we update
                 if (_iNotifyCollectionChanged == null || _collectionChanged)
                 {
-                    HashSet<object> existingItems = new HashSet<object>();
-                    // Add missing items
-                    foreach (var item in enumerable)
+                    if (_enumerableItems != null)
                     {
-                        if (!_enumerableItems.ContainsKey(item))
-                            AddEnumerableItem(item);
-                        existingItems.Add(item);
-                    }
-                    // Remove items that have disappeared
-                    foreach (var item in _enumerableItems.Keys.ToArray())
-                        if (!existingItems.Contains(item))
-                            DeleteEnumerableItem(item);
-                    // Order items
-                    int index = 0;
-                    foreach (var item in enumerable)
-                    {
-                        WoopsaObjectAdapter itemAdapter;
-                        if (_enumerableItems.TryGetValue(item, out itemAdapter))
-                            itemAdapter.EnumerableItemIndex = index;
-                        index++;
+                        HashSet<object> existingItems = new HashSet<object>();
+                        // Add missing items
+                        foreach (var item in enumerable)
+                        {
+                            if (!_enumerableItems.ContainsKey(item))
+                                AddEnumerableItem(item);
+                            existingItems.Add(item);
+                        }
+                        // Remove items that have disappeared
+                        foreach (var item in _enumerableItems.Keys.ToArray())
+                            if (!existingItems.Contains(item))
+                                DeleteEnumerableItem(item);
+                        // Order items
+                        int index = 0;
+                        foreach (var item in enumerable)
+                        {
+                            WoopsaObjectAdapter itemAdapter;
+                            if (_enumerableItems.TryGetValue(item, out itemAdapter))
+                                itemAdapter.EnumerableItemIndex = index;
+                            index++;
+                        }
                     }
                 }
         }
@@ -401,7 +404,7 @@ namespace Woopsa
                         AddWoopsaProperty(property);
                         addedElements.Add(property.Name);
                     }
-            if (targetObject is IEnumerable)
+            if (targetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 new WoopsaProperty(this, nameof(OrderedItemIds), WoopsaValueType.JsonData,
                    (p) => WoopsaValue.WoopsaJsonData(OrderedItemIds));
         }
@@ -425,6 +428,7 @@ namespace Woopsa
             HashSet<string> addedElements = new HashSet<string>();
 
             foreach (var item in items)
+            {                
                 if (IsMemberWoopsaVisible(targetObject, item.PropertyInfo))
                     if (!addedElements.Contains(item.Name))
                     {
@@ -434,6 +438,7 @@ namespace Woopsa
                             ItemExposedType(item.PropertyInfo.PropertyType));
                         addedElements.Add(item.Name);
                     }
+            }
         }
 
         protected virtual void PopulateEnumerableItems(IEnumerable enumerable, Type exposedType)
@@ -592,10 +597,10 @@ namespace Woopsa
                 }
                 catch (TargetInvocationException e)
                 {
-                // Because we are invoking using reflection, the 
-                // exception that is actually thrown is a TargetInvocationException
-                // containing the actual exception
-                if (e.InnerException != null)
+                    // Because we are invoking using reflection, the 
+                    // exception that is actually thrown is a TargetInvocationException
+                    // containing the actual exception
+                    if (e.InnerException != null)
                         throw e.InnerException;
                     else
                         throw;
@@ -638,7 +643,7 @@ namespace Woopsa
         }
 
         private WoopsaObjectAdapter AddEnumerableItem(object item)
-        {            
+        {
             WoopsaObjectAdapter itemAdapter = CreateItemWoopsaAdapter(EnumerableItemName(item, _nextEnumerableItemId),
                 () => item, _itemExposedType);
             itemAdapter.EnumerableItemId = _nextEnumerableItemId;
