@@ -12,9 +12,9 @@ namespace Woopsa
             _server = server;
             _subscriptionServiceImplementation = new WoopsaSubscriptionServiceImplementation(container, true);
             _subscriptionServiceImplementation.BeforeWoopsaModelAccess +=
-                (sender, e) => { server.OnBeforeWoopsaModelAccess(); };
+                (sender, e) => { server.ExecuteBeforeWoopsaModelAccess(); };
             _subscriptionServiceImplementation.AfterWoopsaModelAccess +=
-                (sender, e) => { server.OnAfterWoopsaModelAccess(); };
+                (sender, e) => { server.ExecuteAfterWoopsaModelAccess(); };
             MethodCreateSubscriptionChannel = new WoopsaMethod(
                 this,
                 WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannel,

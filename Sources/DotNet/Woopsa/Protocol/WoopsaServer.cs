@@ -201,6 +201,25 @@ namespace Woopsa
                 AfterWoopsaModelAccess(this, new EventArgs());
         }
 
+        [ThreadStatic]
+        private static int _woopsaModelAccessCounter;
+
+        internal protected void ExecuteBeforeWoopsaModelAccess()
+        {
+            _woopsaModelAccessCounter++;
+            if (_woopsaModelAccessCounter == 1)
+                OnBeforeWoopsaModelAccess();
+        }
+
+        internal protected void ExecuteAfterWoopsaModelAccess()
+        {
+            _woopsaModelAccessCounter--;
+            if (_woopsaModelAccessCounter == 0)
+                OnAfterWoopsaModelAccess();
+            else if (_woopsaModelAccessCounter < 0)
+                throw new WoopsaException("Woopsa internal model lock counting error");
+        }
+
         #region IDisposable
         protected virtual void Dispose(bool disposing)
         {
@@ -274,7 +293,7 @@ namespace Woopsa
                 if (AllowCrossOrigin)
                     response.SetHeader("Access-Control-Allow-Origin", "*");
                 string result = null;
-                OnBeforeWoopsaModelAccess();
+                ExecuteBeforeWoopsaModelAccess();
                 try
                 {
                     switch (verb)
@@ -295,7 +314,7 @@ namespace Woopsa
                 }
                 finally
                 {
-                    OnAfterWoopsaModelAccess();
+                    ExecuteAfterWoopsaModelAccess();
                 }
                 response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
                 if (result != null)
@@ -426,12 +445,12 @@ namespace Woopsa
         internal WoopsaServerModelAccessFreeSection(WoopsaServer server)
         {
             _server = server;
-            server.OnAfterWoopsaModelAccess();
+            server.ExecuteAfterWoopsaModelAccess();
         }
 
         public void Dispose()
         {
-            _server.OnBeforeWoopsaModelAccess();
+            _server.ExecuteBeforeWoopsaModelAccess();
         }
 
         private WoopsaServer _server;
