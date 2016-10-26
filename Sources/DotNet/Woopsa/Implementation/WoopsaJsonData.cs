@@ -72,7 +72,7 @@ namespace Woopsa
                     return CreateFromDeserializedData(arr[index]);
                 }
                 else
-                    throw new InvalidOperationException("Integer indexer is only available on JsonDataof type Array.");
+                    throw new InvalidOperationException("Integer indexer is only available on WoopsaJsonData of type Array.");
             }
         }
 

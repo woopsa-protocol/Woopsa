@@ -236,6 +236,8 @@ namespace Woopsa
             SubscriptionsChanged = false;
             do
             {
+                if (_terminated)
+                    break;
                 newSubscriptions = null;
                 lock (_subscriptions)
                     foreach (var item in _subscriptions)
@@ -248,7 +250,8 @@ namespace Woopsa
                                 break;
                         }
                 if (newSubscriptions != null)
-                    RegisterSubscriptions(newSubscriptions);
+                    if (!RegisterSubscriptions(newSubscriptions))
+                        break;
             }
             while (newSubscriptions != null);
             // New unsubscriptions
@@ -258,6 +261,8 @@ namespace Woopsa
             HashSet<WoopsaClientSubscription> processedSubscriptions = null;
             do
             {
+                if (_terminated)
+                    break;
                 newUnsubscriptions = null;
                 lock (_subscriptions)
                     foreach (var item in _subscriptions)
@@ -276,7 +281,8 @@ namespace Woopsa
                             }
                         }
                 if (newUnsubscriptions != null)
-                    UnregisterSubscriptions(newUnsubscriptions);
+                    if (!UnregisterSubscriptions(newUnsubscriptions))
+                        break;
             }
             while (newUnsubscriptions != null);
             // Unsubscribe lost subscriptions
@@ -284,6 +290,8 @@ namespace Woopsa
             HashSet<int> processedLostSubscriptions = null;
             do
             {
+                if (_terminated)
+                    break;
                 newLostUnsubscriptions = null;
                 lock (_lostSubscriptions)
                     foreach (var item in _lostSubscriptions)
@@ -301,7 +309,8 @@ namespace Woopsa
                         }
                     }
                 if (newLostUnsubscriptions != null)
-                    UnregisterLostSubscriptions(newLostUnsubscriptions);
+                    if (!UnregisterLostSubscriptions(newLostUnsubscriptions))
+                        break;
             }
             while (newLostUnsubscriptions != null);
         }
@@ -447,7 +456,7 @@ namespace Woopsa
             WoopsaUtils.CombinePath(WoopsaSubscriptionServiceConst.WoopsaServiceSubscriptionName,
                 WoopsaSubscriptionServiceConst.WoopsaRegisterSubscription);
 
-        private void RegisterSubscriptions(List<WoopsaClientSubscription> subscriptions)
+        private bool RegisterSubscriptions(List<WoopsaClientSubscription> subscriptions)
         {
             if (_localSubscriptionService == null)
             {
@@ -479,9 +488,11 @@ namespace Woopsa
                                 _registeredSubscriptions[item.SubscriptionId.Value] = item;
                         }
                     }
+                    return true;
                 }
                 catch
                 {
+                    return false;
                 }
             }
             else
@@ -502,6 +513,7 @@ namespace Woopsa
                     if (!item.FailedSubscription)
                         _registeredSubscriptions[item.SubscriptionId.Value] = item;
                 }
+                return true;
             }
         }
 
@@ -509,7 +521,7 @@ namespace Woopsa
             WoopsaUtils.CombinePath(WoopsaSubscriptionServiceConst.WoopsaServiceSubscriptionName,
                 WoopsaSubscriptionServiceConst.WoopsaUnregisterSubscription);
 
-        private void UnregisterSubscriptions(IEnumerable<WoopsaClientSubscription> unsubscriptions)
+        private bool UnregisterSubscriptions(IEnumerable<WoopsaClientSubscription> unsubscriptions)
         {
             if (_localSubscriptionService == null)
             {
@@ -540,9 +552,11 @@ namespace Woopsa
                                 item.SubscriptionId = null;
                             }
                         }
+                    return true;
                 }
                 catch
                 {
+                    return false;
                 }
             }
             else
@@ -560,10 +574,11 @@ namespace Woopsa
                     }
                     item.SubscriptionId = null;
                 }
+                return true;
             }
         }
 
-        private void UnregisterLostSubscriptions(IEnumerable<int> lostSubscriptionIds)
+        private bool UnregisterLostSubscriptions(IEnumerable<int> lostSubscriptionIds)
         {
             if (_localSubscriptionService == null)
             {
@@ -586,9 +601,11 @@ namespace Woopsa
                             lock (_lostSubscriptions)
                                 _lostSubscriptions.Remove(item);
                     }
+                    return true;
                 }
                 catch
                 {
+                    return false;
                 }
             }
             else
@@ -598,6 +615,7 @@ namespace Woopsa
                     lock (_lostSubscriptions)
                         _lostSubscriptions.Remove(item);
                 }
+                return true;
             }
         }
 
