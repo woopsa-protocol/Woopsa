@@ -129,12 +129,12 @@ namespace Woopsa
 
         public string this[string key]
         {
-            get { return _headers[key]; }
+            get { return _headers[key.ToLower()]; }
         }
         
         public bool ContainsKey(string key)
         {
-            return _headers.ContainsKey(key);
+            return _headers.ContainsKey(key.ToLower());
         }
 
         private Dictionary<string, string> _headers;

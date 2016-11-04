@@ -10,6 +10,8 @@ using System.Web;
 
 namespace Woopsa
 {
+    // TODO : AllowCrossOrigin on error responses
+
     /// <summary>
     /// Provides a simple Web Server
     /// <para>
@@ -414,7 +416,7 @@ namespace Woopsa
                     throw new HandlingException(HTTPStatusCode.BadRequest, "Bad Request");
                 }
                 string[] newHeader = headerLine.Split(':');
-                request._headers.Add(newHeader[0].Replace(" ", ""), newHeader[1].Trim());
+                request._headers.Add(newHeader[0].Replace(" ", "").ToLower(), newHeader[1].Trim());
             }
         }
 

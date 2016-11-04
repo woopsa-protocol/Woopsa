@@ -189,13 +189,13 @@ namespace Woopsa
             WebServer.Shutdown();
         }
 
-        internal protected virtual void OnBeforeWoopsaModelAccess()
+        protected virtual void OnBeforeWoopsaModelAccess()
         {
             if (BeforeWoopsaModelAccess != null)
                 BeforeWoopsaModelAccess(this, new EventArgs());
         }
 
-        internal protected virtual void OnAfterWoopsaModelAccess()
+        protected virtual void OnAfterWoopsaModelAccess()
         {
             if (AfterWoopsaModelAccess != null)
                 AfterWoopsaModelAccess(this, new EventArgs());
@@ -291,6 +291,7 @@ namespace Woopsa
             {
                 // This is the first thing we do, that way even 404 errors have the right headers
                 if (AllowCrossOrigin)
+                    // TODO: constantes symboliques
                     response.SetHeader("Access-Control-Allow-Origin", "*");
                 string result = null;
                 ExecuteBeforeWoopsaModelAccess();
@@ -431,6 +432,7 @@ namespace Woopsa
         public bool Process(HTTPRequest request, HTTPResponse response)
         {
             response.SetHeader("Access-Control-Allow-Headers", "Authorization");
+            // TODO : constante symbolique + déterminer si AllowCrossOrigin doit être utilisé ici
             response.SetHeader("Access-Control-Allow-Origin", "*");
             response.SetHeader("Access-Control-Allow-Credentials", "true");
             response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString(CultureInfo.InvariantCulture));
