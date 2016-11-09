@@ -1,37 +1,36 @@
 ﻿
 namespace Woopsa
 {
-    public enum WoopsaRedirection
+    public enum WoopsaRedirectionType
     {
         Temporary = 1,
-        Premanent = 2
+        Permanent = 2
     }
     public class RouteHandlerRedirect : IHTTPRouteHandler
     {
-        public RouteHandlerRedirect(string location, WoopsaRedirection redirection)
+        public RouteHandlerRedirect(string targetLocation, WoopsaRedirectionType redirectionType)
         {
-            _location = location;
-            _redirection = redirection;
-
+            _targetLocation = targetLocation;
+            _redirectionType = redirectionType;
         }
+
+        #region IHTTPRouteHandler
         public bool AcceptSubroutes
         {
-            get
-            {
-                return true;
-            }
+            get { return true; }
         }
 
         public void HandleRequest(HTTPRequest request, HTTPResponse response)
         {
-            if(_redirection == WoopsaRedirection.Temporary)
+            if (_redirectionType == WoopsaRedirectionType.Temporary)
                 response.SetStatusCode((int)HTTPStatusCode.TemporaryRedirect, "Temporary redirect");
-            else if(_redirection == WoopsaRedirection.Temporary)
+            else if (_redirectionType == WoopsaRedirectionType.Permanent)
                 response.SetStatusCode((int)HTTPStatusCode.Moved, "Permanent redirection");
-            response.SetHeader("Location", _location);
+            response.SetHeader("Location", _targetLocation);
         }
+        #endregion IHTTPRouteHandler
 
-        private string _location;
-        private WoopsaRedirection _redirection;
+        private string _targetLocation;
+        private WoopsaRedirectionType _redirectionType;
     }
 }
