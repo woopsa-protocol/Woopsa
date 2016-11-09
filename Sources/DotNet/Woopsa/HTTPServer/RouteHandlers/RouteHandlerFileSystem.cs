@@ -26,7 +26,7 @@ namespace Woopsa
             }
 
             //Find the requested file
-            string requestedFile = _baseDirectory + request.Subroute.Replace('/', '\\');
+            string requestedFile = _baseDirectory + request.Subroute.Replace(WoopsaConst.UrlSeparator, Path.DirectorySeparatorChar);
 
             if (!IsFileAllowed(requestedFile))
             {
