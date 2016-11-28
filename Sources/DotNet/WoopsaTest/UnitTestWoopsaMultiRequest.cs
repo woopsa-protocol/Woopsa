@@ -1,6 +1,7 @@
 ﻿using System;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
+using System.Collections.Generic;
 
 namespace WoopsaTest
 {
@@ -8,6 +9,7 @@ namespace WoopsaTest
     {
         public double A { get; set; }
         public double B { get; set; }
+        public string S { get; set; }
 
         public double Sum { get { return A + B; } }
 
@@ -16,6 +18,15 @@ namespace WoopsaTest
             A = a;
             B = b;
         }
+
+        public void SetS(string value)
+        {
+            S = value;
+        }
+
+        public void Click() { IsClicked = true; }
+
+        public bool IsClicked { get; set; }
     }
 
     [TestClass]
@@ -39,14 +50,25 @@ namespace WoopsaTest
                     WoopsaClientRequest request4 = multiRequest.Write("TestObject/C", 4);
                     WoopsaClientRequest request5 = multiRequest.Meta("TestObject");
 
-                    WoopsaMethodArgumentInfo[] argumentInfos = new WoopsaMethodArgumentInfo[]
+                    WoopsaMethodArgumentInfo[] argumentInfosSet = new WoopsaMethodArgumentInfo[]
                     {
                         new WoopsaMethodArgumentInfo("a", WoopsaValueType.Real),
                         new WoopsaMethodArgumentInfo("b", WoopsaValueType.Real)
                     };
                     WoopsaClientRequest request6 = multiRequest.Invoke("TestObject/Set",
-                        argumentInfos, 4, 5);
+                        argumentInfosSet, 4, 5);
                     WoopsaClientRequest request7 = multiRequest.Read("TestObject/Sum");
+                    WoopsaClientRequest request8 = multiRequest.Invoke("TestObject/Click",
+                        new Dictionary<string,string>());
+                    WoopsaMethodArgumentInfo[] argumentInfosSetS = new WoopsaMethodArgumentInfo[]
+                    {
+                        new WoopsaMethodArgumentInfo("value", WoopsaValueType.Text)
+                    };
+                    WoopsaClientRequest request9 = multiRequest.Invoke("TestObject/SetS",
+                        argumentInfosSetS, "Hello");
+                    WoopsaClientRequest request10 = multiRequest.Read("TestObject/S");
+                    WoopsaClientRequest request11 = multiRequest.Write("TestObject/S", "ABC");
+                    WoopsaClientRequest request12 = multiRequest.Read("TestObject/S");
 
                     client.ExecuteMultiRequest(multiRequest);
                     Assert.AreEqual(objectServer.A, 4);
@@ -63,6 +85,18 @@ namespace WoopsaTest
                     Assert.AreEqual(request7.Result.ResultType, WoopsaClientRequestResultType.Value);
                     Assert.IsNotNull(request7.Result.Value);
                     Assert.AreEqual(request7.Result.Value, 9.0);
+                    Assert.AreEqual(request8.Result.ResultType, WoopsaClientRequestResultType.Value);
+                    Assert.AreEqual(request8.Result.Value.Type, WoopsaValueType.Null);
+                    Assert.AreEqual(request9.Result.ResultType, WoopsaClientRequestResultType.Value);
+                    Assert.AreEqual(request9.Result.Value.Type, WoopsaValueType.Null);
+                    Assert.IsTrue(objectServer.IsClicked);
+                    Assert.AreEqual(request10.Result.ResultType, WoopsaClientRequestResultType.Value);
+                    Assert.IsNotNull(request10.Result.Value);
+                    Assert.AreEqual(request10.Result.Value, "Hello");
+                    Assert.AreEqual(objectServer.S, "ABC");
+                    Assert.AreEqual(request12.Result.ResultType, WoopsaClientRequestResultType.Value);
+                    Assert.IsNotNull(request12.Result.Value);
+                    Assert.AreEqual(request12.Result.Value, "ABC");
                 }
             }
         }

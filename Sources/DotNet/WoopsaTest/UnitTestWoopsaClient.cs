@@ -24,7 +24,6 @@ namespace WoopsaTest
                     WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
                         (sender, e) => { isValueChanged = true; },
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
-                    objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
                     while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 

@@ -105,7 +105,7 @@ namespace Woopsa
                     Id = GetNextRequestId(),
                     Verb = WoopsaFormat.VerbWrite,
                     Path = propertyPath,
-                    Value = value
+                    Value = value.JsonValueText()
                 }
             };
             Add(newRequest);

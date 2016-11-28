@@ -307,8 +307,8 @@ namespace Woopsa
                             {
                                 throw new HandlingException(HTTPStatusCode.NotImplemented, method + " Method Not Implemented");
                             }
-                            HTTPMethod httpMethod = _supportedMethods[method];
-
+                            HTTPMethod httpMethod = _supportedMethods[method];                            
+                           
                             url = HttpUtility.UrlDecode(url);
 
                             //Build the request object

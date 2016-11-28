@@ -155,6 +155,7 @@ namespace Woopsa
                     case '\f': stringBuilder.Append("\\f"); break;
                     case '\r': stringBuilder.Append("\\r"); break;
                     case '\t': stringBuilder.Append("\\t"); break;
+                    // TODO : compléter l'échappement des caractères spéciaux
                     default: stringBuilder.Append(item); break;
                 }
         }

@@ -116,7 +116,8 @@ namespace Woopsa
                         for (var i = 0; i < postData.Count; i++)
                         {
                             string key = postData.AllKeys[i];
-                            stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                             stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", 
+                                 HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
                         }                        
                         using (var writer = new StreamWriter(request.GetRequestStream()))
                             writer.Write(stringBuilder.ToString());
