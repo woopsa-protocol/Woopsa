@@ -33,9 +33,9 @@ namespace Woopsa
         private WoopsaValue HandleCall(IWoopsaValue requestsArgument)
         {
             var serializer = new JavaScriptSerializer();
-            Request[] requestsList = serializer.Deserialize<Request[]>(requestsArgument.AsText);
+            ServerRequest[] requestsList = serializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
             List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
-            foreach (Request request in requestsList)
+            foreach (var request in requestsList)
             {
                 string result = null;
                 try
@@ -45,10 +45,10 @@ namespace Woopsa
                     else if (request.Verb.Equals(WoopsaFormat.VerbMeta))
                         result = _server.GetMetadata(request.Path);
                     else if (request.Verb.Equals(WoopsaFormat.VerbWrite))
-                        result = _server.WriteValue(request.Path, request.Value);
+                        result = _server.WriteValueDeserializedJson(request.Path, request.Value);
                     else if (request.Verb.Equals(WoopsaFormat.VerbInvoke))
-                        result = _server.InvokeMethod(request.Path, 
-                            request.Arguments.ToNameValueCollection());
+                        result = _server.InvokeMethodDeserializedJson(request.Path,
+                            request.Arguments);
                 }
                 catch (Exception e)
                 {
@@ -71,7 +71,7 @@ namespace Woopsa
         public string Result { get; set; }
     }
 
-    public class Request
+    public class ServerRequest
     {
         public int Id { get; set; }
 
@@ -79,9 +79,9 @@ namespace Woopsa
 
         public string Path { get; set; }
 
-        public string Value { get; set; }
+        public object Value { get; set; }
 
-        public Dictionary<string, string> Arguments { get; set; }
+        public Dictionary<string, object> Arguments { get; set; }
 
     }
 }

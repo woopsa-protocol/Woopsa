@@ -88,6 +88,11 @@ namespace Woopsa
             return value.ToString(CultureInfo.InvariantCulture);
         }
 
+        public static string ToStringWoopsa(bool value)
+        {
+            return value ? WoopsaConst.WoopsaTrue : WoopsaConst.WoopsaFalse;
+        }
+
         public static string ToStringWoopsa(int value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
@@ -172,7 +177,8 @@ namespace Woopsa
             return stringBuilder.ToString();
         }
 
-        public static void Serialize(StringBuilder stringBuilder, Dictionary<string, string> keyValuePairs)
+        public static void Serialize(StringBuilder stringBuilder, 
+            Dictionary<string, WoopsaValue> keyValuePairs)
         {
             bool next = false;
             stringBuilder.Append(ElementOpen);
@@ -180,13 +186,13 @@ namespace Woopsa
             {
                 if (next)
                     stringBuilder.Append(MultipleElementsSeparator);
-                SerializeKeyValue(stringBuilder, item.Key, item.Value, false, false);
+                SerializeKeyValue(stringBuilder, item.Key, item.Value.JsonValueText(), false, false);
                 next = true;
             }
             stringBuilder.Append(ElementClose);
         }
 
-        public static void Serialize(StringBuilder stringBuilder, Request request)
+        public static void Serialize(StringBuilder stringBuilder, ClientRequest request)
         {
             stringBuilder.Append(ElementOpen);
             SerializeKeyValue(stringBuilder, KeyId, request.Id.ToString(), false, false);
@@ -198,7 +204,7 @@ namespace Woopsa
             {
                 case VerbWrite:
                     stringBuilder.Append(ElementSeparator);
-                    SerializeKeyValue(stringBuilder, KeyValue, request.Value, false, false);
+                    SerializeKeyValue(stringBuilder, KeyValue, request.Value.JsonValueText(), false, false);
                     break;
                 case VerbInvoke:
                     stringBuilder.Append(ElementSeparator);
@@ -209,7 +215,7 @@ namespace Woopsa
             stringBuilder.Append(ElementClose);
         }
 
-        public static void Serialize(StringBuilder stringBuilder, IEnumerable<Request> requests)
+        public static void Serialize(StringBuilder stringBuilder, IEnumerable<ClientRequest> requests)
         {
             bool next = false;
             stringBuilder.Append(MultipleElementsOpen);
@@ -223,7 +229,7 @@ namespace Woopsa
             stringBuilder.Append(MultipleElementsClose);
         }
 
-        public static string Serialize(this IEnumerable<Request> requests)
+        public static string Serialize(this IEnumerable<ClientRequest> requests)
         {
             StringBuilder stringBuilder = new StringBuilder();
             Serialize(stringBuilder, requests);
@@ -293,7 +299,7 @@ namespace Woopsa
 
         private static bool MustQuote(WoopsaValueType type)
         {
-            return 
+            return
                 type != WoopsaValueType.JsonData &&
                 type != WoopsaValueType.Real &&
                 type != WoopsaValueType.Integer &&

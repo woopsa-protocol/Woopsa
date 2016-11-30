@@ -87,7 +87,7 @@ namespace Woopsa
             {
                 var request = (HttpWebRequest)WebRequest.Create(Url + path);
 
-                // TODO : enlever
+                // TODO : affiner l'optimisation de performance
                 request.ServicePoint.UseNagleAlgorithm = false;
                 request.ServicePoint.Expect100Continue = false;
 

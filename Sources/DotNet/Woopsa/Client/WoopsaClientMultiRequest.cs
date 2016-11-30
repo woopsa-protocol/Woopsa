@@ -16,7 +16,7 @@ namespace Woopsa
 
         public IEnumerable<WoopsaClientRequest> ClientRequests { get { return _clientRequests; } }
 
-        public IEnumerable<Request> Requests
+        public IEnumerable<ClientRequest> Requests
         {
             get
             {
@@ -38,7 +38,7 @@ namespace Woopsa
         {
             WoopsaClientRequest newRequest = new WoopsaClientRequest()
             {
-                Request = new Woopsa.Request()
+                Request = new ClientRequest()
                 {
                     Id = GetNextRequestId(),
                     Verb = WoopsaFormat.VerbMeta,
@@ -54,9 +54,9 @@ namespace Woopsa
         {
             if (argumentInfos.Length == arguments.Length)
             {
-                Dictionary<string, string> dictionary = new Dictionary<string, string>();
+                Dictionary<string, WoopsaValue> dictionary = new Dictionary<string, WoopsaValue>();
                 for (int i = 0; i < argumentInfos.Length; i++)
-                    dictionary[argumentInfos[i].Name] = arguments[i].JsonValueText();
+                    dictionary[argumentInfos[i].Name] = arguments[i];
                 return Invoke(methodPath, dictionary);
             }
             else
@@ -65,11 +65,11 @@ namespace Woopsa
                     argumentInfos.Length, arguments.Length));
         }
 
-        public WoopsaClientRequest Invoke(string methodPath, Dictionary<string, string> arguments)
+        public WoopsaClientRequest Invoke(string methodPath, Dictionary<string, WoopsaValue> arguments)
         {
             WoopsaClientRequest newRequest = new WoopsaClientRequest()
             {
-                Request = new Woopsa.Request()
+                Request = new ClientRequest()
                 {
                     Id = GetNextRequestId(),
                     Verb = WoopsaFormat.VerbInvoke,
@@ -85,7 +85,7 @@ namespace Woopsa
         {
             WoopsaClientRequest newRequest = new WoopsaClientRequest()
             {
-                Request = new Woopsa.Request()
+                Request = new ClientRequest()
                 {
                     Id = GetNextRequestId(),
                     Verb = WoopsaFormat.VerbRead,
@@ -100,12 +100,12 @@ namespace Woopsa
         {
             WoopsaClientRequest newRequest = new WoopsaClientRequest()
             {
-                Request = new Woopsa.Request()
+                Request = new ClientRequest()
                 {
                     Id = GetNextRequestId(),
                     Verb = WoopsaFormat.VerbWrite,
                     Path = propertyPath,
-                    Value = value.JsonValueText()
+                    Value = value
                 }
             };
             Add(newRequest);
@@ -204,7 +204,7 @@ namespace Woopsa
 
     public class WoopsaClientRequest
     {
-        public Request Request { get; internal set; }
+        public ClientRequest Request { get; internal set; }
 
         public bool IsDone { get; internal set; }
 
@@ -225,4 +225,17 @@ namespace Woopsa
         public WoopsaMetaResult Meta { get; internal set; }
     }
 
+    public class ClientRequest
+    {
+        public int Id { get; set; }
+
+        public string Verb { get; set; }
+
+        public string Path { get; set; }
+
+        public WoopsaValue Value { get; set; }
+
+        public Dictionary<string, WoopsaValue> Arguments { get; set; }
+
+    }
 }

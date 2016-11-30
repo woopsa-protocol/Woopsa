@@ -71,7 +71,11 @@ namespace Woopsa
                     case WoopsaValueType.DateTime:
                         return new WoopsaValue((DateTime)value, timeStamp);
                     case WoopsaValueType.TimeSpan:
-                        return new WoopsaValue((TimeSpan)value, timeStamp);
+                        if (value is TimeSpan)
+                            return new WoopsaValue((TimeSpan)value, timeStamp);
+                        else
+                            return new WoopsaValue(TimeSpan.FromSeconds(Convert.ToDouble(value)),
+                                timeStamp);
                     case WoopsaValueType.Text:
                         if (string.IsNullOrEmpty((string)value))
                             return new WoopsaValue(string.Empty, timeStamp);
@@ -87,6 +91,15 @@ namespace Woopsa
             }
         }
 
+        public static WoopsaValue DeserializedJsonToWoopsaValue(object deserializedJson,
+            WoopsaValueType type, DateTime? timeStamp = null)
+        {
+            if (type == WoopsaValueType.JsonData)
+                return new WoopsaValue(Woopsa.WoopsaJsonData.CreateFromDeserializedData(deserializedJson));
+            else
+                return ToWoopsaValue(deserializedJson, type, timeStamp);
+        }
+
         private WoopsaValue(string text, WoopsaValueType type)
             : this(text, type, null)
         {
@@ -100,7 +113,7 @@ namespace Woopsa
         }
 
         public WoopsaValue(bool value, DateTime? timestamp = null)
-            : this(value ? WoopsaConst.WoopsaTrue : WoopsaConst.WoopsaFalse, WoopsaValueType.Logical, timestamp)
+            : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Logical, timestamp)
         {
         }
 

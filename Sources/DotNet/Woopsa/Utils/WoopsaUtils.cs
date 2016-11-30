@@ -66,11 +66,11 @@ namespace Woopsa
         }
 
         public static NameValueCollection ToNameValueCollection(
-            this Dictionary<string, string> dictionary)
+            this Dictionary<string, WoopsaValue> dictionary)
         {
-            NameValueCollection result = new  NameValueCollection();
+            NameValueCollection result = new NameValueCollection();
             foreach (var item in dictionary)
-                result.Add(item.Key, item.Value);
+                result.Add(item.Key, item.Value.AsText);
             return result;
         }
 
