@@ -365,7 +365,7 @@ namespace Woopsa
                         "Cannot write a read-only WoopsaProperty for path {0}", path));
                 }
                 property.Value = WoopsaValue.CreateUnchecked(value, property.Type);
-                return WoopsaValue.Null.Serialize();
+                return property.Value.Serialize();
             }
             else
                 throw new WoopsaInvalidOperationException(String.Format("Cannot write value of a non-WoopsaProperty for path {0}", path));
