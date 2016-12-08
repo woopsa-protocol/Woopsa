@@ -166,7 +166,6 @@ namespace Woopsa
 
         protected virtual void Clear()
         {
-            CheckDisposed();
             lock (Lock)
             {
                 DisposeWoopsaElements(_items);
@@ -188,8 +187,11 @@ namespace Woopsa
         protected override void Dispose(bool disposing)
         {
             if (disposing)
+            {
+                Clear();
                 if (Owner != null)
                     Owner.Remove(this);
+            }
             base.Dispose(disposing);
         }
 
