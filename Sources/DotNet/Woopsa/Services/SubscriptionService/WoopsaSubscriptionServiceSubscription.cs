@@ -221,6 +221,9 @@ namespace Woopsa
         {
             try
             {
+                if (_watchedProperty is WoopsaElement)
+                    if (((WoopsaElement)_watchedProperty).IsDisposed)
+                        _watchedProperty = null;
                 if (_watchedProperty == null)
                 {
                     var item = Root.ByPathOrNull(PropertyPath);

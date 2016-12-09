@@ -48,6 +48,8 @@ namespace Woopsa
 
         #endregion IWoopsaElement
 
+        public bool IsDisposed { get { return _isDisposed; } }
+
         #region IDisposable
 
         protected virtual void Dispose(bool disposing)
