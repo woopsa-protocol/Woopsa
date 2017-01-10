@@ -371,9 +371,12 @@ namespace Woopsa
                         // Add missing items
                         foreach (var item in enumerable)
                         {
-                            if (!_enumerableItems.ContainsKey(item))
-                                AddEnumerableItem(item);
-                            existingItems.Add(item);
+                            if (item != null)
+                            {
+                                if (!_enumerableItems.ContainsKey(item))
+                                    AddEnumerableItem(item);
+                                existingItems.Add(item);
+                            }
                         }
                         // Remove items that have disappeared
                         foreach (var item in _enumerableItems.Keys.ToArray())
@@ -382,12 +385,13 @@ namespace Woopsa
                         // Order items
                         int index = 0;
                         foreach (var item in enumerable)
-                        {
-                            WoopsaObjectAdapter itemAdapter;
-                            if (_enumerableItems.TryGetValue(item, out itemAdapter))
-                                itemAdapter.EnumerableItemIndex = index;
-                            index++;
-                        }
+                            if (item != null)
+                            {
+                                WoopsaObjectAdapter itemAdapter;
+                                if (_enumerableItems.TryGetValue(item, out itemAdapter))
+                                    itemAdapter.EnumerableItemIndex = index;
+                                index++;
+                            }
                     }
                 }
         }
@@ -428,7 +432,7 @@ namespace Woopsa
             HashSet<string> addedElements = new HashSet<string>();
 
             foreach (var item in items)
-            {                
+            {
                 if (IsMemberWoopsaVisible(targetObject, item.PropertyInfo))
                     if (!addedElements.Contains(item.Name))
                     {
@@ -452,11 +456,12 @@ namespace Woopsa
                 _iNotifyCollectionChanged.CollectionChanged += EnumerableCollectionChanged;
             int index = 0;
             foreach (object item in enumerable)
-            {
-                WoopsaObjectAdapter adapter = AddEnumerableItem(item);
-                adapter.EnumerableItemIndex = index;
-                index++;
-            }
+                if (item != null)
+                {
+                    WoopsaObjectAdapter adapter = AddEnumerableItem(item);
+                    adapter.EnumerableItemIndex = index;
+                    index++;
+                }
         }
 
         protected virtual bool IsMemberWoopsaVisible(object targetObject, MemberInfo memberInfo)
