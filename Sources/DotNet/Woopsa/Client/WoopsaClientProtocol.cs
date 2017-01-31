@@ -71,6 +71,29 @@ namespace Woopsa
             AbortPendingRequests();
         }
 
+        public bool IsLastCommunicationSuccessful
+        {
+            get { return _isLastCommunicationSuccessFul; }
+            private set
+            {
+                if (value != _isLastCommunicationSuccessFul)
+                {
+                    _isLastCommunicationSuccessFul = value;
+                    OnIsLastCommunicationSuccessfulChange();
+                }
+            }
+        }
+
+        public event EventHandler IsLastCommunicationSuccessfulChange;
+
+        protected void OnIsLastCommunicationSuccessfulChange()
+        {
+            if (IsLastCommunicationSuccessfulChange != null)
+                IsLastCommunicationSuccessfulChange(this, new EventArgs());
+        }
+
+        private volatile bool _isLastCommunicationSuccessFul;
+
         #endregion
 
         #region Private Helpers
@@ -95,38 +118,39 @@ namespace Woopsa
                     _pendingRequests.Add(request);
                 try
                 {
-                    if (Username != null)
-                        request.Credentials = new NetworkCredential(Username, Password);
-
-                    request.Timeout = (int)timeout.TotalMilliseconds;
-
-                    if (postData != null)
-                    {
-                        request.Method = "POST";
-                        request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-                    }
-                    else
-                        request.Method = "GET";
-
-                    request.Accept = "*/*";
-
-                    if (postData != null)
-                    {
-                        StringBuilder stringBuilder = new StringBuilder();
-                        for (var i = 0; i < postData.Count; i++)
-                        {
-                            string key = postData.AllKeys[i];
-                             stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&", 
-                                 HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
-                        }                        
-                        using (var writer = new StreamWriter(request.GetRequestStream()))
-                            writer.Write(stringBuilder.ToString());
-                    }
-
-                    HttpWebResponse response;
+                    HttpWebResponse response = null;
                     try
                     {
+                        if (Username != null)
+                            request.Credentials = new NetworkCredential(Username, Password);
+
+                        request.Timeout = (int)timeout.TotalMilliseconds;
+
+                        if (postData != null)
+                        {
+                            request.Method = "POST";
+                            request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
+                        }
+                        else
+                            request.Method = "GET";
+
+                        request.Accept = "*/*";
+
+                        if (postData != null)
+                        {
+                            StringBuilder stringBuilder = new StringBuilder();
+                            for (var i = 0; i < postData.Count; i++)
+                            {
+                                string key = postData.AllKeys[i];
+                                stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&",
+                                    HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                            }
+                            using (var writer = new StreamWriter(request.GetRequestStream()))
+                                writer.Write(stringBuilder.ToString());
+                        }
+
                         response = (HttpWebResponse)request.GetResponse();
+                        IsLastCommunicationSuccessful = true;
                     }
                     catch (WebException exception)
                     {
@@ -136,11 +160,17 @@ namespace Woopsa
                         response = (HttpWebResponse)exception.Response;
                         if (response == null)
                         {
+                            IsLastCommunicationSuccessful = false;
                             // Sometimes, we can make the request, but the server dies
                             // before we get a reply - in that case the Response
                             // is null, so we re-throw the exception
                             throw;
                         }
+                    }
+                    catch (Exception)
+                    {
+                        IsLastCommunicationSuccessful = false;
+                        throw;
                     }
 
                     string resultString;

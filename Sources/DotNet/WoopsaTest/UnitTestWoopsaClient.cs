@@ -26,7 +26,7 @@ namespace WoopsaTest
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -35,6 +35,46 @@ namespace WoopsaTest
                     subscription.Unsubscribe();
                     Assert.AreEqual(true, isValueChanged);
                 }
+            }
+        }
+
+        [TestMethod]
+        public void TestWoopsaIsLastCommunicationSuccessful()
+        {
+            bool isSuccessfull = false;
+            TestObjectServer objectServer = new TestObjectServer();
+            using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+            {
+                WoopsaUnboundClientObject root = client.CreateUnboundRoot("root");
+                WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
+                    (sender, e) => {  },
+                    TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+                client.ClientProtocol.IsLastCommunicationSuccessfulChange +=
+                    (sender, e) =>
+                    {
+                        isSuccessfull = client.ClientProtocol.IsLastCommunicationSuccessful;
+                    };
+                Stopwatch watch = new Stopwatch();
+                using (WoopsaServer server = new WoopsaServer(objectServer))
+                {                    
+                    watch.Restart();
+                    while ((!isSuccessfull) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
+                        Thread.Sleep(10);
+                    if (isSuccessfull)
+                        Console.WriteLine("Sucessful after {0} ms", watch.Elapsed.TotalMilliseconds);
+                    else
+                        Console.WriteLine("No successful communication");
+                    Assert.IsTrue(isSuccessfull);
+                }
+                watch.Restart();
+                while ((isSuccessfull) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
+                    Thread.Sleep(10);
+                if (!isSuccessfull)
+                    Console.WriteLine("Communication loss detected after {0} ms", watch.Elapsed.TotalMilliseconds);
+                else
+                    Console.WriteLine("No communication loss detection");
+                Assert.IsFalse(isSuccessfull);
+                subscription.Unsubscribe();
             }
         }
 
@@ -56,7 +96,7 @@ namespace WoopsaTest
                     objectServer.Votes = 2;
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -73,13 +113,13 @@ namespace WoopsaTest
 
         }
 
-        public class InnerClass: BaseInnerClass
+        public class InnerClass : BaseInnerClass
         {
             public string Info { get; set; }
         }
 
         public class MainClass
-        {            
+        {
             public BaseInnerClass Inner { get; set; }
         }
 
@@ -106,7 +146,7 @@ namespace WoopsaTest
                     inner.Info = "Test";
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
                         Thread.Sleep(10);
                     if (isValueChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
@@ -114,8 +154,8 @@ namespace WoopsaTest
                         Console.WriteLine("No notification received");
                     isValueChanged = false;
                     objectServer.Inner = new BaseInnerClass();
-//                    objectServer.Inner = new object();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20))) 
+                    //                    objectServer.Inner = new object();
+                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
                         Thread.Sleep(10);
                     subscription.Unsubscribe();
                     Assert.AreEqual(true, isValueChanged);
@@ -137,7 +177,7 @@ namespace WoopsaTest
         {
             const int ObjectsCount = 500;
             int totalNotifications = 0;
-            List<ManySubscriptionTestObject> list = 
+            List<ManySubscriptionTestObject> list =
                 new List<WoopsaTest.UnitTestWoopsaClient.ManySubscriptionTestObject>();
             for (int i = 0; i < ObjectsCount; i++)
                 list.Add(new ManySubscriptionTestObject() { Trigger = i });
@@ -152,7 +192,7 @@ namespace WoopsaTest
                         int index = i;
                         WoopsaClientSubscription subscription = root.Subscribe(
                             WoopsaUtils.CombinePath(
-                                WoopsaObjectAdapter.EnumerableItemDefaultName(i), 
+                                WoopsaObjectAdapter.EnumerableItemDefaultName(i),
                                 nameof(ManySubscriptionTestObject.Trigger)),
                             (sender, e) =>
                             {
