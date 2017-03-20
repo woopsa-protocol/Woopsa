@@ -86,7 +86,7 @@ namespace Woopsa
 
         public event EventHandler IsLastCommunicationSuccessfulChange;
 
-        protected void OnIsLastCommunicationSuccessfulChange()
+        protected virtual void OnIsLastCommunicationSuccessfulChange()
         {
             if (IsLastCommunicationSuccessfulChange != null)
                 IsLastCommunicationSuccessfulChange(this, new EventArgs());

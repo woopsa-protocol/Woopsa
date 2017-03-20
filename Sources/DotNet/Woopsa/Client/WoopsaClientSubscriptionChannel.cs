@@ -170,19 +170,21 @@ namespace Woopsa
         {
             _currentChannel = this;
             while (!_terminated)
+            {
                 try
                 {
                     lock (_channelLock)
                         if (_subscriptionOpenChannel != null)
                             if (SubscriptionsChanged)
                                 ManageSubscriptions();
-                    // do not manage too quickly the subscriptions update to improve 
-                    // grouping of subscriptions into a single multirequest
-                    Thread.Sleep(WoopsaSubscriptionServiceConst.ClientSubscriptionUpdateInterval);
                 }
                 catch (Exception)
                 {
                 }
+                // do not manage too quickly the subscriptions update to improve 
+                // grouping of subscriptions into a single multirequest
+                Thread.Sleep(WoopsaSubscriptionServiceConst.ClientSubscriptionUpdateInterval);
+            }
         }
 
         private void OpenChannel()
