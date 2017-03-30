@@ -53,6 +53,7 @@
     <Compile Include="Client\WoopsaClientSubscriptionChannel.cs" />
     <Compile Include="Dynamic\WoopsaJsonDataDynamic.cs" />
     <Compile Include="HTTPServer\Processors\TlsProcessor.cs" />
+    <Compile Include="HTTPServer\RouteHandlers\RouteHandlerMemory.cs" />
     <Compile Include="HTTPServer\RouteHandlers\RouteHandlerRedirect.cs" />
     <Compile Include="HTTPServer\Server\CustomThreadPool.cs" />
     <Compile Include="Implementation\WoopsaJsonData.cs" />
