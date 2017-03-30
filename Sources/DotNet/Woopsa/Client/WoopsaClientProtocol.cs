@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Globalization;
 using System.IO;
 using System.Net;
+using System.Net.Cache;
 using System.Text;
 using System.Web;
 using System.Web.Script.Serialization;
@@ -109,16 +110,18 @@ namespace Woopsa
             if (!_terminating)
             {
                 var request = (HttpWebRequest)WebRequest.Create(Url + path);
+                request.CachePolicy = _cachePolicy;
 
                 // TODO : affiner l'optimisation de performance
                 request.ServicePoint.UseNagleAlgorithm = false;
                 request.ServicePoint.Expect100Continue = false;
 
+                HttpWebResponse response = null;
+
                 lock (_pendingRequests)
                     _pendingRequests.Add(request);
                 try
                 {
-                    HttpWebResponse response = null;
                     try
                     {
                         if (Username != null)
@@ -196,6 +199,8 @@ namespace Woopsa
                 {
                     lock (_pendingRequests)
                         _pendingRequests.Remove(request);
+                    if (response != null)
+                        response.Close();
                 }
             }
             else
@@ -235,6 +240,8 @@ namespace Woopsa
 
         private List<WebRequest> _pendingRequests;
         private bool _terminating;
+
+        static private HttpRequestCachePolicy _cachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
 
         #endregion
 

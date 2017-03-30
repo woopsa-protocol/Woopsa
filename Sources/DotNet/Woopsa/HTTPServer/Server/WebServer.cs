@@ -64,7 +64,8 @@ namespace Woopsa
             Routes = new RouteSolver();
             Routes.Error += _routeSolver_Error;
             _openTcpClients = new List<TcpClient>();
-            _listener = new TcpListener(IPAddress.Any, port);
+            _listener = new TcpListener(IPAddress.IPv6Any, port);
+            _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             if (threadPoolSize == CustomThreadPool.DefaultThreadPoolSize || threadPoolSize > 1)
                 _threadPool = new CustomThreadPool("WoopsaWebServer", threadPoolSize, priority);
             _listenerThread = new Thread(Listen);
@@ -193,7 +194,7 @@ namespace Woopsa
                     // The HandleClient method should NEVER close the stream
                     // as this is done from the upper scope.
                     TcpClient client = _listener.AcceptTcpClient();
-                                        
+                    client.NoDelay = true;
                     if (MultiThreaded)
                     {
                         try
@@ -278,7 +279,7 @@ namespace Woopsa
                             {
                                 requestString = reader.ReadLine();
                             }
-                            catch (Exception)
+                            catch (Exception e)
                             {
                                 requestString = null;
                                 leaveOpen = false;
