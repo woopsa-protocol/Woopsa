@@ -318,7 +318,7 @@ namespace Woopsa
                 PopulateProperties(targetObject, exposedType, typeDescription.Properties);
                 PopulateMethods(targetObject, exposedType, typeDescription.Methods);
                 PopulateItems(targetObject, exposedType, typeDescription.Items);
-                if (targetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
+                if (typeof(IEnumerable<object>).IsAssignableFrom(exposedType) && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 {
                     IEnumerable enumerable = (IEnumerable)targetObject;
                     PopulateEnumerableItems(enumerable, DeclaredExposedType);
@@ -408,7 +408,7 @@ namespace Woopsa
                         AddWoopsaProperty(property);
                         addedElements.Add(property.Name);
                     }
-            if (targetObject is IEnumerable && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
+            if (typeof(IEnumerable<object>).IsAssignableFrom(exposedType) && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 new WoopsaProperty(this, nameof(OrderedItemIds), WoopsaValueType.JsonData,
                    (p) => WoopsaValue.WoopsaJsonData(OrderedItemIds));
         }

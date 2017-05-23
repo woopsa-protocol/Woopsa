@@ -256,7 +256,7 @@ namespace Woopsa
                 try
                 {
                     foreach (PreRouteProcessor processor in PreRouteProcessors)
-                    {
+                    { 
                         stream = processor.ProcessStream(stream);
                     }
                     bool leaveOpen = true;
