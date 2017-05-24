@@ -202,14 +202,21 @@ namespace Woopsa
                             _threadPool.StartUserWorkItem(
                                 (o) =>
                                 {
-                                    _currentWebServer = this;
                                     try
                                     {
-                                        HandleClient(client);
+                                        _currentWebServer = this;
+                                        try
+                                        {
+                                            HandleClient(client);
+                                        }
+                                        finally
+                                        {
+                                            client.Close();
+                                        }
                                     }
-                                    finally
+                                    catch (Exception e)
                                     {
-                                        client.Close();
+                                        OnError(new ThreadExceptionEventArgs(e));
                                     }
                                 });
                         }
@@ -513,18 +520,12 @@ namespace Woopsa
 
         protected virtual void OnLog(HTTPRequest request, HTTPResponse response)
         {
-            if (Log != null)
-            {
-                Log(this, new LogEventArgs(request, response));
-            }
+            Log?.Invoke(this, new LogEventArgs(request, response));
         }
 
         protected virtual void OnError(EventArgs args)
         {
-            if (Error != null)
-            {
-                Error(this, args);
-            }
+            Error?.Invoke(this, args);
         }
 
         private void _routeSolver_Error(object sender, RoutingErrorEventArgs e)
