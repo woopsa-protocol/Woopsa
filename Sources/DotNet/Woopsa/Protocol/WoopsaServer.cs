@@ -323,19 +323,19 @@ namespace Woopsa
             }
             catch (WoopsaNotFoundException e)
             {
-                response.WriteError(HTTPStatusCode.NotFound, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
             catch (WoopsaInvalidOperationException e)
             {
-                response.WriteError(HTTPStatusCode.BadRequest, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
             catch (WoopsaException e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.Message, WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
             }
         }
 

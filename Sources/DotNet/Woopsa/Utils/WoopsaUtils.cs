@@ -79,5 +79,27 @@ namespace Woopsa
             return TimeSpan.FromTicks(timeSpan.Ticks * n);
         }
 
+		#region Exceptions utilities
+        public static Exception RootException(this Exception e)
+        {
+            Exception ex = e;
+            while (ex.InnerException != null)
+                ex = ex.InnerException;
+            return ex;
+        }
+
+        public static string GetFullMessage(this Exception exception)
+        {
+            string eMessage = string.Empty;
+            while (exception != null)
+            {
+                eMessage += exception.Message;
+                exception = exception.InnerException;
+                if (exception != null)
+                    eMessage += " Inner exception: ";
+            }
+            return eMessage;
+        } 
+        #endregion
     }
 }
