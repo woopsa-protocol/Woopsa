@@ -125,7 +125,7 @@ namespace Woopsa
         /// <summary>
         /// Create a WoopsaObjectAdapter for a fixed object reference
         /// </summary>
-        /// <param name="container"></param>
+        /// <param name="container">Can be null if it's the root object.</param>
         /// <param name="name"></param>
         /// <param name="targetObjectGetter"></param>
         /// <param name="declaredExposedType">

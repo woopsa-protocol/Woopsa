@@ -118,7 +118,7 @@ namespace Woopsa
 
         public static string Serialize(this Exception e)
         {
-            return String.Format(ErrorFormat, JsonEscape(e.Message), e.GetType().Name);
+            return String.Format(ErrorFormat, JsonEscape(e.GetFullMessage()), e.GetType().Name);
         }
 
         private class WoopsaErrorResult
