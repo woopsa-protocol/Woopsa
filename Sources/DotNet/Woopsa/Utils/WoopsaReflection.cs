@@ -380,7 +380,7 @@ namespace Woopsa
             return InferWoopsaType(type, out woopsaValueType, out converter);
         }
 
-        public bool InferWoopsaType(Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
+        public virtual bool InferWoopsaType(Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
         {
             WoopsaConverterDescription converterDescription;
             if (_converterDescriptions.TryGetValue(type, out converterDescription))

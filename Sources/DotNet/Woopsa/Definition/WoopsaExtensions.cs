@@ -265,6 +265,12 @@ namespace Woopsa
                     else
                         break;
                 case WoopsaValueType.Text:
+                    if (targetType == typeof(string))
+                        return value.AsText;
+                    else if (targetType.IsEnum)
+                        return Enum.Parse(targetType, value.AsText);
+                    else
+                        break;
                 case WoopsaValueType.WoopsaLink:
                 case WoopsaValueType.JsonData:
                 case WoopsaValueType.ResourceUrl:

@@ -21,6 +21,11 @@ namespace Woopsa
                 resultType = WoopsaValueType.Null;
                 return true;
             }
+            else if (targetType.IsEnum)
+            {
+                resultType = WoopsaValueType.Text;
+                return true;
+            }
             else
                 switch (System.Type.GetTypeCode(targetType))
                 {

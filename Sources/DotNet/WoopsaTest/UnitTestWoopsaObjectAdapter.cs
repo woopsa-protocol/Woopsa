@@ -6,6 +6,8 @@ using System.Collections.Generic;
 
 namespace WoopsaTest
 {
+    public enum Day { Monday, Thursday, Wednesday }
+
     public class ClassAInner1Inner
     {
         public string APropertyString { get; set; }
@@ -15,6 +17,7 @@ namespace WoopsaTest
 
         [WoopsaVisible(false)]
         public string APropertyHidden { get; set; }
+
     }
 
     public class ClassAInner1
@@ -66,6 +69,9 @@ namespace WoopsaTest
 
         [WoopsaVisible(true)]
         public ClassAInner1 Inner1 { get; set; }
+
+        public Day Day { get; set; }
+
     }
 
     [WoopsaVisibility(WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.Inherited | WoopsaVisibility.MethodSpecialName)]
@@ -101,6 +107,16 @@ namespace WoopsaTest
     {
         public ClassD(int n) { APropertyInt = n; }
         public int APropertyInt { get; set; }
+    }
+
+    public class ClassE
+    {
+        public ClassE()
+        {
+        }
+
+        public Day Day { get; set; }
+
     }
 
     [TestClass]
@@ -223,6 +239,19 @@ namespace WoopsaTest
             dataItem1 = methodGet.Invoke(1);
             Assert.AreEqual(dataArray[1], 7);
             Assert.AreEqual(dataItem1, 7);
+        }
+
+        [TestMethod]
+        public void TestWoopsaObjectAdapterEnum()
+        {
+            ClassE e = new ClassE();
+            WoopsaObjectAdapter adapterE = new WoopsaObjectAdapter(null, "e", e, null,
+                new WoopsaConverters());
+            Assert.IsNotNull(adapterE.Properties.ByNameOrNull(nameof(e.Day)));
+            Assert.AreEqual(adapterE.Properties.ByNameOrNull(nameof(e.Day)).Value.Type, WoopsaValueType.Text);
+            Assert.AreEqual(adapterE.Properties.ByNameOrNull(nameof(e.Day)).Value.AsText, default(Day).ToString());
+            adapterE.Properties.ByNameOrNull(nameof(e.Day)).Value = new WoopsaValue(Day.Thursday.ToString());
+            Assert.AreEqual(adapterE.Properties.ByNameOrNull(nameof(e.Day)).Value.AsText, Day.Thursday.ToString());
         }
 
         [TestMethod]
@@ -430,7 +459,7 @@ namespace WoopsaTest
             List<ClassA> list2 = new List<WoopsaTest.ClassA>();
             WoopsaObjectAdapter adapterList2 = new WoopsaObjectAdapter(null, "list",
                 list2, null, null, WoopsaObjectAdapterOptions.None,
-                WoopsaVisibility.DefaultIsVisible| WoopsaVisibility.IEnumerableObject | WoopsaVisibility.Inherited |
+                WoopsaVisibility.DefaultIsVisible | WoopsaVisibility.IEnumerableObject | WoopsaVisibility.Inherited |
                 WoopsaVisibility.ListClassMembers);
             Assert.AreEqual(adapterList2.Items.Count, 1); // List "Item" indexer
         }

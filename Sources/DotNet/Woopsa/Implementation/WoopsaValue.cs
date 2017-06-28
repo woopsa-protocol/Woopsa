@@ -77,7 +77,11 @@ namespace Woopsa
                             return new WoopsaValue(TimeSpan.FromSeconds(Convert.ToDouble(value)),
                                 timeStamp);
                     case WoopsaValueType.Text:
-                        if (string.IsNullOrEmpty((string)value))
+                        if (value == null)
+                            return new WoopsaValue(string.Empty, timeStamp);
+                        else if (value.GetType().IsEnum)
+                            return new WoopsaValue(value.ToString(), timeStamp);
+                        else if (string.IsNullOrEmpty((string)value))
                             return new WoopsaValue(string.Empty, timeStamp);
                         else
                             return new WoopsaValue(WoopsaFormat.ToStringWoopsa(value), timeStamp);
