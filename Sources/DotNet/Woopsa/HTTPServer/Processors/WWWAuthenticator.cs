@@ -22,7 +22,7 @@ namespace Woopsa
 
         public string Realm { get; private set; }
 
-        public bool Process(HTTPRequest request, HTTPResponse response)
+        public virtual bool Process(HTTPRequest request, HTTPResponse response)
         {
             bool authenticated;
             _currentUserName = null;
