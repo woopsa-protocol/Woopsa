@@ -100,6 +100,23 @@ namespace Woopsa
         #region Common Headers
         public const string Connection = "Connection";
         #endregion
+
+        #region Access control
+        public const string AccessControlMaxAge = "Access-Control-Max-Age";
+        public const string AccessControlAllowOrigin = "Access-Control-Allow-Origin";
+        public const string AccessControlAllowOriginDefaultValue = "*";
+
+        public const string AccessControlAllowMethods = "Access-Control-Allow-Methods";
+        public const string AccessControlAllowMethodsDefaultValue = "POST, GET, OPTIONS";
+        public const string AccessControlRequestMethod = "Access-Control-Request-Method";
+        public const string AccessControlAllowHeaders = "Access-Control-Allow-Headers";
+        public const string AccessControlRequestHeaders = "Access-Control-Request-Headers";
+        public const string AccessControlAllowCredentials = "Access-Control-Allow-Credentials";
+        public const string Origin = "Origin";
+
+        public static readonly TimeSpan AccessControlMaxAgeDefaultValue = TimeSpan.FromDays(20);
+        #endregion
+
     }
 
     public class MIMETypes

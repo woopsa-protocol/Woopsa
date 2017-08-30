@@ -160,19 +160,16 @@ namespace Woopsa
                 if (!matchFound)
                 {
                     response.WriteError(HTTPStatusCode.NotFound, "Not Found");
-                    response.Respond(stream);
                     OnError(RoutingErrorType.NO_MATCHES, "No route found for request", request);
                 }
                 else
                 {
                     mapper.HandleRequest(request, response);
-                    response.Respond(stream);
                 }
             }
             catch (Exception e)
             {
                 response.WriteError(HTTPStatusCode.InternalServerError, String.Format("Internal Server Error {0}", e.Message));
-                response.Respond(stream);
                 OnError(RoutingErrorType.INTERNAL, "A RouteHandler threw an exception.", request);
             }
         }

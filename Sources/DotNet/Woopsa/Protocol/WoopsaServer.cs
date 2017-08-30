@@ -122,8 +122,6 @@ namespace Woopsa
 
         public string RoutePrefix { get { return _routePrefix; } }
 
-        public bool AllowCrossOrigin { get; set; }
-
         /// <summary>
         /// The authenticator in use by Woopsa. Set to null if no authenticator is used. 
         /// </summary>
@@ -250,7 +248,6 @@ namespace Woopsa
         #region Private Members
         private void AddRoutes()
         {
-            AllowCrossOrigin = true;
             _prefixRouteMapper = WebServer.Routes.Add(_routePrefix, HTTPMethod.OPTIONS, (Request, response) => { }, true);
             _prefixRouteMapper.AddProcessor(_accessControlProcessor);
             // meta route
@@ -289,10 +286,6 @@ namespace Woopsa
         {
             try
             {
-                // This is the first thing we do, that way even 404 errors have the right headers
-                if (AllowCrossOrigin)
-                    // TODO: constantes symboliques
-                    response.SetHeader("Access-Control-Allow-Origin", "*");
                 string result = null;
                 ExecuteBeforeWoopsaModelAccess();
                 try
@@ -481,15 +474,8 @@ namespace Woopsa
     }
     internal class AccessControlProcessor : PostRouteProcessor, IRequestProcessor
     {
-        public static readonly TimeSpan MaxAge = TimeSpan.FromDays(20);
-
         public bool Process(HTTPRequest request, HTTPResponse response)
         {
-            response.SetHeader("Access-Control-Allow-Headers", "Authorization");
-            // TODO : constante symbolique + déterminer si AllowCrossOrigin doit être utilisé ici
-            response.SetHeader("Access-Control-Allow-Origin", "*");
-            response.SetHeader("Access-Control-Allow-Credentials", "true");
-            response.SetHeader("Access-Control-Max-Age", MaxAge.TotalSeconds.ToString(CultureInfo.InvariantCulture));
             // Make IE stop cacheing AJAX requests
             response.SetHeader("Cache-Control", "no-cache, no-store");
             return true;

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
@@ -86,6 +87,8 @@ namespace Woopsa
         public event EventHandler Error;
 
         public event EventHandler<LogEventArgs> Log;
+
+        public event EventHandler<CorsRequestArgs> CorsRequest;
 
         /// <summary>
         /// Whether this server is using a thread pool to handle requests
@@ -263,12 +266,12 @@ namespace Woopsa
                 try
                 {
                     foreach (PreRouteProcessor processor in PreRouteProcessors)
-                    { 
+                    {
                         stream = processor.ProcessStream(stream);
                     }
                     bool leaveOpen = true;
                     HTTPResponse response = null;
-                    HTTPRequest request = null;                    
+                    HTTPRequest request = null;
                     StreamReader reader = new StreamReader(stream, Encoding.UTF8, false, 4096);
                     try
                     {
@@ -315,8 +318,8 @@ namespace Woopsa
                             {
                                 throw new HandlingException(HTTPStatusCode.NotImplemented, method + " Method Not Implemented");
                             }
-                            HTTPMethod httpMethod = _supportedMethods[method];                            
-                           
+                            HTTPMethod httpMethod = _supportedMethods[method];
+
                             url = HttpUtility.UrlDecode(url);
 
                             //Build the request object
@@ -355,7 +358,8 @@ namespace Woopsa
                             }
                             //Pass this on to the route solver
                             OnLog(request, null);
-                            Routes.HandleRequest(request, response, stream);
+                            HandleRequest(request, response, stream);
+                            response.Respond(stream);
                             OnLog(request, response);
                         }
                     }
@@ -368,12 +372,12 @@ namespace Woopsa
                                 // try to return the response
                                 response.WriteError(e.Status, e.ErrorMessage);
                                 response.Respond(stream);
+                                OnLog(request, response);
                             }
                             catch
                             {
                                 // ignore silently if it is not posible
                             }
-                            OnLog(request, response);
                         }
                     }
                     catch (ThreadAbortException)
@@ -389,12 +393,12 @@ namespace Woopsa
                                 // try to return the response
                                 response.WriteError(HTTPStatusCode.InternalServerError, "Internal Server Error. " + e.Message);
                                 response.Respond(stream);
+                                OnLog(request, response);
                             }
                             catch
                             {
                                 // ignore silently if it is not posible
                             }
-                            OnLog(request, response);
                         }
                     }
                     finally
@@ -412,6 +416,59 @@ namespace Woopsa
                 lock (_openTcpClients)
                     _openTcpClients.Remove(client);
             }
+        }
+
+        protected virtual void HandleRequest(HTTPRequest request, HTTPResponse response, Stream stream)
+        {
+            bool executeRequest = true;
+            response.SetHeader("Access-Control-Allow-Credentials", "true");
+            if (request.Headers.ContainsKey(HTTPHeader.Origin))
+                executeRequest = HandleCorsRequest(request, response, stream);
+            if (executeRequest)
+                Routes.HandleRequest(request, response, stream);
+        }
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="request"></param>
+        /// <param name="response"></param>
+        /// <param name="stream"></param>
+        /// <returns>true if the request must be executed normally, false otherwise</returns>
+        protected virtual bool HandleCorsRequest(HTTPRequest request, HTTPResponse response, Stream stream)
+        {
+            // 1. Prepare default values in event args
+            CorsRequestArgs eventArgs = new Woopsa.CorsRequestArgs(request, response, stream);
+            eventArgs.AccessControlMaxAgeValue = HTTPHeader.AccessControlMaxAgeDefaultValue;
+            if (request.Headers.ContainsKey(HTTPHeader.AccessControlRequestHeaders))
+                eventArgs.AccessControlAllowHeadersValue = request.Headers[HTTPHeader.AccessControlRequestHeaders];
+            eventArgs.AccessControlAllowOriginValue = HTTPHeader.AccessControlAllowOriginDefaultValue;
+            if (request.Headers.ContainsKey(HTTPHeader.AccessControlRequestMethod))
+                eventArgs.AccessControlAllowMethodsValue = HTTPHeader.AccessControlAllowMethodsDefaultValue;
+            eventArgs.IsPreflightCorsRequest = request.Method == HTTPMethod.OPTIONS;
+            eventArgs.ExecuteRequest = !eventArgs.IsPreflightCorsRequest;
+            // 2. call event
+            if (CorsRequest != null)
+                CorsRequest(this, eventArgs);
+            // 3. Set headers into response
+            // AccessControlAllowOrigin must be set for simple and preflight CORS requests
+            if (eventArgs.AccessControlAllowOriginValue != null)
+                response.SetHeader(HTTPHeader.AccessControlAllowOrigin,
+                    eventArgs.AccessControlAllowOriginValue);
+            if (eventArgs.IsPreflightCorsRequest)
+            {
+                // Set additional preflight CORS request headers 
+                if (eventArgs.AccessControlAllowHeadersValue != null)
+                    response.SetHeader(HTTPHeader.AccessControlAllowHeaders,
+                        eventArgs.AccessControlAllowHeadersValue);
+                if (eventArgs.AccessControlAllowMethodsValue != null)
+                    response.SetHeader(HTTPHeader.AccessControlAllowMethods,
+                        eventArgs.AccessControlAllowMethodsValue);
+                if (eventArgs.AccessControlMaxAgeValue != null)
+                    response.SetHeader(HTTPHeader.AccessControlMaxAge, eventArgs.AccessControlMaxAgeValue.Value.
+                        TotalSeconds.ToString(CultureInfo.InvariantCulture));
+            }
+            return eventArgs.ExecuteRequest;
         }
 
         private void FillHeaders(HTTPRequest request, StreamReader reader)
@@ -547,14 +604,65 @@ namespace Woopsa
         #endregion
     }
 
-    public class LogEventArgs : EventArgs
+    public class WebServerEventArgs : EventArgs
     {
-        public LogEventArgs(HTTPRequest request, HTTPResponse response)
+        public WebServerEventArgs(HTTPRequest request, HTTPResponse response)
         {
             Request = request;
             Response = response;
         }
         public HTTPRequest Request { get; private set; }
         public HTTPResponse Response { get; private set; }
+    }
+
+    public class WebServerStreamEventArgs : WebServerEventArgs
+    {
+        public WebServerStreamEventArgs(HTTPRequest request, HTTPResponse response, Stream stream) :
+            base(request, response)
+        {
+            Stream = stream;
+        }
+
+        public Stream Stream { get; private set; }
+    }
+
+    public class LogEventArgs : WebServerEventArgs
+    {
+        public LogEventArgs(HTTPRequest request, HTTPResponse response) : base(request, response)
+        {
+        }
+    }
+
+    public class CorsRequestArgs : WebServerStreamEventArgs
+    {
+        public CorsRequestArgs(HTTPRequest request, HTTPResponse response, Stream stream) :
+            base(request, response, stream)
+        {
+        }
+
+        /// <value>
+        /// null value means do not include the field in the response's header
+        /// </value>
+        public string AccessControlAllowHeadersValue { get; set; }
+        /// <value>
+        /// null value means do not include the field in the response's header
+        /// </value>
+        public TimeSpan? AccessControlMaxAgeValue { get; set; }
+        /// <value>
+        /// null value means do not include the field in the response's header
+        /// </value>
+        public string AccessControlAllowOriginValue { get; set; }
+        /// <value>
+        /// null value means do not include the field in the response's header
+        /// </value>
+        public string AccessControlAllowMethodsValue { get; set; }
+
+        /// <summary>
+        /// Set to true to execute the request normally, 
+        /// Set to false to ignore the request (typically for preflight CORS request)
+        /// </summary>
+        public bool ExecuteRequest { get; set; }
+
+        public bool IsPreflightCorsRequest { get; internal set; }
     }
 }
