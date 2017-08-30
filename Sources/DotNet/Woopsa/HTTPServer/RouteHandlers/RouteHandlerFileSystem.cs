@@ -87,9 +87,9 @@ namespace Woopsa
             string extension = Path.GetExtension(filePath);
             response.SetHeader(HTTPHeader.ContentType, MIMETypeMap.GetMIMEType(extension));
             response.SetHeader(HTTPHeader.LastModified, System.IO.File.GetLastWriteTime(filePath).ToHTTPDate());
-            FileStream file = File.Open(filePath, FileMode.Open);
-            response.WriteStream(file);
-            file.Close();
+            
+            using (var stream = File.Open(filePath, FileMode.Open, FileAccess.Read, FileShare.Read))
+                response.WriteStream(stream);
         }
     }
 }
