@@ -483,16 +483,16 @@ namespace Woopsa
         public const string KeyPath = "Path";
         public const string KeyArguments = "Arguments";
 
-        const char ElementOpen = '{';
-        const char ElementSeparator = ',';
-        const char ElementClose = '}';
-        const char KeyValueSeparator = ':';
+        public const char ElementOpen = '{';
+        public const char ElementSeparator = ',';
+        public const char ElementClose = '}';
+        public const char KeyValueSeparator = ':';
 
-        const char MultipleElementsOpen = '[';
-        const char MultipleElementsSeparator = ',';
-        const char MultipleElementsClose = ']';
+        public const char MultipleElementsOpen = '[';
+        public const char MultipleElementsSeparator = ',';
+        public const char MultipleElementsClose = ']';
 
-        const char ValueEscapeCharacter = '"';
+        public const char ValueEscapeCharacter = '"';
 
         const string NotificationFormat = "{{\"" + KeyValue + "\":{0},\"" + KeySubscriptionId + "\":{1}, \"" + KeyId + "\": {2}}}";
 
