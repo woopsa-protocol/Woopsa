@@ -24,6 +24,12 @@ namespace Woopsa
         public const string WoopsaAuthenticationRealm = "Woopsa authentication";
 
         /// <summary>
+        /// returns the executing woopsa server in which we are executing, if any.
+        /// return null if the current context is not a Woopsa request.
+        /// </summary>
+        public static WoopsaServer CurrentWoopsaServer { get { return _currentWoopsaServer; } }
+
+        /// <summary>
         /// Creates an instance of the Woopsa server without using the Reflector. You
         /// will have to create the object hierarchy yourself, using WoopsaObjects 
         /// or implementing IWoopsaContainer yourself.
@@ -286,33 +292,41 @@ namespace Woopsa
         {
             try
             {
-                string result = null;
-                ExecuteBeforeWoopsaModelAccess();
+                _currentWoopsaServer = this;
                 try
                 {
-                    switch (verb)
+                    string result = null;
+                    ExecuteBeforeWoopsaModelAccess();
+                    try
                     {
-                        case WoopsaVerb.Meta:
-                            result = GetMetadata(request.Subroute);
-                            break;
-                        case WoopsaVerb.Read:
-                            result = ReadValue(request.Subroute);
-                            break;
-                        case WoopsaVerb.Write:
-                            result = WriteValue(request.Subroute, request.Body["value"]);
-                            break;
-                        case WoopsaVerb.Invoke:
-                            result = InvokeMethod(request.Subroute, request.Body);
-                            break;
+                        switch (verb)
+                        {
+                            case WoopsaVerb.Meta:
+                                result = GetMetadata(request.Subroute);
+                                break;
+                            case WoopsaVerb.Read:
+                                result = ReadValue(request.Subroute);
+                                break;
+                            case WoopsaVerb.Write:
+                                result = WriteValue(request.Subroute, request.Body["value"]);
+                                break;
+                            case WoopsaVerb.Invoke:
+                                result = InvokeMethod(request.Subroute, request.Body);
+                                break;
+                        }
                     }
+                    finally
+                    {
+                        ExecuteAfterWoopsaModelAccess();
+                    }
+                    response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
+                    if (result != null)
+                        response.WriteString(result);
                 }
                 finally
                 {
-                    ExecuteAfterWoopsaModelAccess();
+                    _currentWoopsaServer = null;
                 }
-                response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
-                if (result != null)
-                    response.WriteString(result);
             }
             catch (WoopsaNotFoundException e)
             {
@@ -460,6 +474,9 @@ namespace Woopsa
             return _root.ByPath(searchPath);
         }
         #endregion
+
+        [ThreadStatic]
+        private static WoopsaServer _currentWoopsaServer;
 
         private BaseAuthenticator _authenticator;
         private WoopsaSubscriptionService _subscriptionService;
