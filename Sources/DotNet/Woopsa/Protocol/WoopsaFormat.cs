@@ -20,13 +20,30 @@ namespace Woopsa
 
         public static bool ToBool(string text)
         {
-            if (text == WoopsaConst.WoopsaTrue)
-                return true;
-            else if (text == WoopsaConst.WoopsaFalse)
-                return false;
+            bool result;
+            if (TryParseWoopsa(text, out result))
+                return result;
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("bool", text));
+        }
 
+        public static bool TryParseWoopsa(string value, out bool result)
+        {
+            if (value == WoopsaConst.WoopsaTrue)
+            {
+                result = true;
+                return true;
+            }
+            else if (value == WoopsaConst.WoopsaFalse)
+            {
+                result = false;
+                return true;
+            }
+            else
+            {
+                result = false;
+                return false;
+            }
         }
 
         public static bool TryParseWoopsa(string value, out float result)
