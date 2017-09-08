@@ -33,13 +33,26 @@ namespace Woopsa
         {
             get
             {
-                if (IsDictionary)
-                {
-                    var dic = (_data as Dictionary<string, object>);
-                    return CreateFromDeserializedData(dic[key]);
-                }
+                WoopsaJsonData result;
+                if (TryGetDictionaryKey(key, out result))
+                    return result;
                 else
                     throw new InvalidOperationException("String indexer is only available on WoopsaJsonData of type Object.");
+            }
+        }
+
+        public bool TryGetDictionaryKey(string key, out WoopsaJsonData value)
+        {
+            if (IsDictionary)
+            {
+                var dic = (_data as Dictionary<string, object>);
+                value = CreateFromDeserializedData(dic[key]);
+                return true;
+            }
+            else
+            {
+                value = null;
+                return false;
             }
         }
 
@@ -66,13 +79,26 @@ namespace Woopsa
         {
             get
             {
-                if (IsArray)
-                {
-                    var arr = (_data as object[]);
-                    return CreateFromDeserializedData(arr[index]);
-                }
+                WoopsaJsonData result;
+                if (TryGetArrayIndex(index, out result))
+                    return result;
                 else
                     throw new InvalidOperationException("Integer indexer is only available on WoopsaJsonData of type Array.");
+            }
+        }
+
+        public bool TryGetArrayIndex(int index, out WoopsaJsonData result)
+        {
+            if (IsArray)
+            {
+                var arr = (_data as object[]);
+                result = CreateFromDeserializedData(arr[index]);
+                return true;
+            }
+            else
+            {
+                result = null;
+                return false;
             }
         }
 
