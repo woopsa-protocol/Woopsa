@@ -215,7 +215,12 @@ namespace Woopsa
                             DoPopulate();
                         }
                         else
+                        {
                             _targetObject = newTargetObject;
+                            Type exposedType;
+                            exposedType = GetExposedType(_targetObject);
+                            OnTargetObjectChange(_targetObject, exposedType);
+                        }
                     }
                 }
                 return _targetObject;
@@ -306,10 +311,7 @@ namespace Woopsa
             else
                 Visibility = DefaultVisibility;
             Type exposedType;
-            if (targetObject != null)
-                exposedType = ExposedType(targetObject);
-            else
-                exposedType = null;
+            exposedType = GetExposedType(targetObject);
             OnTargetObjectChange(targetObject, exposedType);
             base.PopulateObject();
             if (targetObject != null)
@@ -325,6 +327,17 @@ namespace Woopsa
                 }
             }
         }
+
+        private Type GetExposedType(object targetObject)
+        {
+            Type exposedType;
+            if (targetObject != null)
+                exposedType = ExposedType(targetObject);
+            else
+                exposedType = null;
+            return exposedType;
+        }
+
         protected virtual void OnTargetObjectChange(object targetObject, Type exposedType)
         {
         }
