@@ -45,9 +45,17 @@ namespace Woopsa
         {
             if (IsDictionary)
             {
-                var dic = (_data as Dictionary<string, object>);
-                value = CreateFromDeserializedData(dic[key]);
-                return true;
+                object dictionnaryEntry;
+                if (_asDictionary.TryGetValue(key, out dictionnaryEntry))
+                {
+                    value = CreateFromDeserializedData(dictionnaryEntry);
+                    return true;
+                }
+                else
+                {
+                    value = null;
+                    return false;
+                }
             }
             else
             {
@@ -61,7 +69,7 @@ namespace Woopsa
             get
             {
                 if (IsDictionary)
-                    return (_data as Dictionary<string, object>).Keys;
+                    return _asDictionary.Keys;
                 else
                     return new string[0];
             }
@@ -70,7 +78,7 @@ namespace Woopsa
         public bool ContainsKey(string key)
         {
             if (IsDictionary)
-                return (_data as Dictionary<string, object>).ContainsKey(key);
+                return _asDictionary.ContainsKey(key);
             else
                 return false;
         }
@@ -91,8 +99,7 @@ namespace Woopsa
         {
             if (IsArray)
             {
-                var arr = (_data as object[]);
-                result = CreateFromDeserializedData(arr[index]);
+                result = CreateFromDeserializedData(_asArray[index]);
                 return true;
             }
             else
@@ -107,7 +114,7 @@ namespace Woopsa
             get
             {
                 if (IsArray)
-                    return (_data as object[]).Length;
+                    return _asArray.Length;
                 else
                     throw new InvalidOperationException("Length is only available on WoopsaJsonData of type Array.");
             }
