@@ -187,7 +187,7 @@ namespace Woopsa
             if (value.Type == WoopsaValueType.DateTime)
             {
                 DateTime result;
-                if (DateTime.TryParse(value.AsText, null, DateTimeStyles.RoundtripKind, out result))
+                if (DateTime.TryParse(value.AsText, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("DateTime", value.AsText));
