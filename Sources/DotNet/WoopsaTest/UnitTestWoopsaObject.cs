@@ -9,8 +9,6 @@ namespace WoopsaTest
     [TestClass]
     public class UnitTestWoopsaObject
     {
-        private double _minLevel, _maxLevel;
-
         [TestMethod]
         public void TestWoopsaObjects()
         {
@@ -52,20 +50,13 @@ namespace WoopsaTest
             Assert.AreEqual(_maxLevel, 5.5);
         }
 
-        private WoopsaValue Calibrate(System.Collections.Generic.IEnumerable<IWoopsaValue> Arguments)
-        {
-            _minLevel = Arguments.ElementAt(0).ToDouble();
-            _maxLevel = Arguments.ElementAt(1).ToDouble();
-            return WoopsaValue.Null;
-        }
-
         [TestMethod]
         public void TestWoopsaObjectPerformance()
         {
-            const int ObjectCount = 5000;
-            const int AccessCount = 50000;
+            const int objectCount = 5000;
+            const int accessCount = 50000;
             WoopsaRoot root = new WoopsaRoot();
-            for (int i = 0; i < ObjectCount; i++)
+            for (int i = 0; i < objectCount; i++)
             {
                 WoopsaObject newObject = new WoopsaObject(root, "Item" + i.ToString());
                 int x = i;
@@ -73,11 +64,24 @@ namespace WoopsaTest
             }
             Stopwatch watch = new Stopwatch();
             watch.Start();
-            for (int i = 0; i < AccessCount; i++)
+            for (int i = 0; i < accessCount; i++)
             {
-                int k = ((WoopsaProperty)(root.ByPath("Item" + (ObjectCount - 1).ToString() + "/Data"))).Value.ToInt32();
+                int k = ((WoopsaProperty)(root.ByPath("Item" + (objectCount - 1).ToString() + "/Data"))).Value.ToInt32();
             }
             Assert.IsTrue(watch.ElapsedMilliseconds < 1000);
         }
+
+        #region Private Members
+
+        private WoopsaValue Calibrate(System.Collections.Generic.IEnumerable<IWoopsaValue> arguments)
+        {
+            _minLevel = arguments.ElementAt(0).ToDouble();
+            _maxLevel = arguments.ElementAt(1).ToDouble();
+            return WoopsaValue.Null;
+        }
+
+        private double _minLevel, _maxLevel; 
+
+        #endregion
     }
 }
