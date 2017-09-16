@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
@@ -12,7 +11,7 @@ namespace Woopsa
     {
         public static WoopsaJsonData CreateFromText(string jsonText)
         {
-            JavaScriptSerializer deserializer = new JavaScriptSerializer();
+            JsonSerializer deserializer = new JsonSerializer();
             object deserializedData = deserializer.Deserialize<object>(jsonText);
             return new WoopsaJsonData(deserializedData, jsonText);
         }
@@ -129,7 +128,7 @@ namespace Woopsa
                         _serializedData = WoopsaFormat.ToStringWoopsa(_data);
                     else
                     {
-                        JavaScriptSerializer serializer = new JavaScriptSerializer();
+                        JsonSerializer serializer = new JsonSerializer();
                         _serializedData = serializer.Serialize(_data);
                     }
                 }
@@ -304,7 +303,7 @@ namespace Woopsa
 
         public static string Serialize(this WoopsaJsonData data)
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            JsonSerializer serializer = new JsonSerializer();
             return serializer.Serialize(data.InternalObject);
         }
     }

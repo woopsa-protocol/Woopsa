@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 using System.IO;
 using System.Collections.Specialized;
 using System.Diagnostics;
@@ -32,7 +31,7 @@ namespace Woopsa
 
         private WoopsaValue HandleCall(IWoopsaValue requestsArgument)
         {
-            var serializer = new JavaScriptSerializer();
+            var serializer = new JsonSerializer();
             ServerRequest[] requestsList = serializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
             List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
             foreach (var request in requestsList)
