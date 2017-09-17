@@ -7,6 +7,12 @@
 	<Version>1.2.0</Version>
 	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
 	<IsPackable>false</IsPackable>
+	<Copyright>Copyright © Objectis SA 2017</Copyright>
+	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
+	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
+	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
+	<RepositoryType>git</RepositoryType>
+	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
   </PropertyGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">

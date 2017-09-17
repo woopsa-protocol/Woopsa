@@ -7,6 +7,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "Woopsa", "Woopsa\Woopsa.csp
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "WoopsaTest", "WoopsaTest\WoopsaTest.csproj", "{FD70071F-DC60-42B6-A9F6-7FD74A4C53EE}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoopsaDemoClient", "WoopsaDemoClient\WoopsaDemoClient.csproj", "{7868F636-9118-4D2D-A77A-7D96D43CDE9A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoopsaDemoServer", "WoopsaDemoServer\WoopsaDemoServer.csproj", "{2D61F67D-7840-4515-9F2C-AB788ED9B580}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -21,6 +25,14 @@ Global
 		{FD70071F-DC60-42B6-A9F6-7FD74A4C53EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{FD70071F-DC60-42B6-A9F6-7FD74A4C53EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{FD70071F-DC60-42B6-A9F6-7FD74A4C53EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{7868F636-9118-4D2D-A77A-7D96D43CDE9A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{7868F636-9118-4D2D-A77A-7D96D43CDE9A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{7868F636-9118-4D2D-A77A-7D96D43CDE9A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{7868F636-9118-4D2D-A77A-7D96D43CDE9A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{2D61F67D-7840-4515-9F2C-AB788ED9B580}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{2D61F67D-7840-4515-9F2C-AB788ED9B580}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{2D61F67D-7840-4515-9F2C-AB788ED9B580}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{2D61F67D-7840-4515-9F2C-AB788ED9B580}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

@@ -5,12 +5,6 @@
     <Authors>Objectis SA</Authors>
 	<TargetFrameworks>net40;net45;netcoreapp2.0</TargetFrameworks>
 	<AssemblyName>Woopsa</AssemblyName>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-	<GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
 	<Version>1.2.0</Version>
 	<PackageId>Woopsa</PackageId>
 	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
@@ -18,6 +12,7 @@
 	<RepositoryType>git</RepositoryType>
 	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
 	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
+	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
@@ -38,6 +33,10 @@
 
   <ItemGroup>
     <EmbeddedResource Include="HTTPServer\HTML\ErrorPage.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Folder Include="Properties\" />
   </ItemGroup>
   
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
