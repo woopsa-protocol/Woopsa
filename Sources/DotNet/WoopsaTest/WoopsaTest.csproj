@@ -1,25 +1,12 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Woopsa</Description>
+    <Description>Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things.</Description>
     <Authors>Objectis SA</Authors>
-    <TargetFrameworks>netcoreapp2.0</TargetFrameworks>
-    <AssemblyName>WoopsaTest</AssemblyName>
-    <PackageId>WoopsaTest</PackageId>
-    <PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
-	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyCopyrightAttribute>false</GenerateAssemblyCopyrightAttribute>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <IsPackable>false</IsPackable>
+	<AssemblyName>WoopsaTest</AssemblyName>
+	<Version>1.2.0</Version>
+	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
+	<IsPackable>false</IsPackable>
   </PropertyGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
@@ -27,15 +14,17 @@
     <PackageReference Include="MSTest.TestAdapter" Version="1.1.18" />
     <PackageReference Include="MSTest.TestFramework" Version="1.1.18" />
   </ItemGroup>
-
+    
+  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
+    <PackageReference Include="MSTest.TestAdapter" Version="1.1.18" />
+    <PackageReference Include="MSTest.TestFramework" Version="1.1.18" />
+    <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+  
   <ItemGroup>
     <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
   </ItemGroup>
     
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
-    <DefineConstants>$(DefineConstants);NET4_0</DefineConstants>
-  </PropertyGroup>
-
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
     <DefineConstants>$(DefineConstants);NET4_5;ASYNC_SUPPORTED</DefineConstants>
   </PropertyGroup>
