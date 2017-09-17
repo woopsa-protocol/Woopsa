@@ -1,4 +1,6 @@
 # Woopsa
+[![Build status](https://ci.appveyor.com/api/projects/status/b1rp8yg8nsub1h1i/branch/master?svg=true)](https://ci.appveyor.com/project/fabien-chevalley/woopsa/branch/master)
+ 
 Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things.
 
 Woopsa allows you to share the complete object model of your application in a way that's similar to OPC-UA. It's based on rock-solid foundations such as HTTP and JSON, which makes it work on the web out-of-the-box. Our mission is to get Woopsa on as many platforms as possible. Today, C# and JavaScript implementations exist, but there are much more to come!
