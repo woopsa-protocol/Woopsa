@@ -145,8 +145,7 @@ namespace Woopsa
 
         public static Exception DeserializeError(string jsonErrorText)
         {
-            var serializer = new JsonSerializer();
-            var error = serializer.Deserialize<WoopsaErrorResult>(jsonErrorText);
+            var error = JsonSerializer.Deserialize<WoopsaErrorResult>(jsonErrorText);
 
             // Generate one of the possible Woopsa exceptions based
             // on the JSON-serialized error
@@ -444,15 +443,12 @@ namespace Woopsa
 
         public static WoopsaMetaResult DeserializeMeta(string jsonText)
         {
-            var serializer = new JsonSerializer();
-            var result = serializer.Deserialize<WoopsaMetaResult>(jsonText);
-            return result;
+            return JsonSerializer.Deserialize<WoopsaMetaResult>(jsonText);
         }
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
-            var serializer = new JsonSerializer();
-            var result = serializer.Deserialize<WoopsaReadResult>(jsonText);
+            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
             if (result != null)
             {
                 var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);

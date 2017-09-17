@@ -31,8 +31,7 @@ namespace Woopsa
 
         private WoopsaValue HandleCall(IWoopsaValue requestsArgument)
         {
-            var serializer = new JsonSerializer();
-            ServerRequest[] requestsList = serializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
+            ServerRequest[] requestsList = JsonSerializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
             List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
             foreach (var request in requestsList)
             {
