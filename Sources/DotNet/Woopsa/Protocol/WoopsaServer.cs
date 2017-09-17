@@ -193,6 +193,8 @@ namespace Woopsa
             WebServer.Shutdown();
         }
 
+        public event EventHandler<WoopsaLogEventArgs> Log;
+
         protected virtual void OnBeforeWoopsaModelAccess()
         {
             if (BeforeWoopsaModelAccess != null)
@@ -203,6 +205,12 @@ namespace Woopsa
         {
             if (AfterWoopsaModelAccess != null)
                 AfterWoopsaModelAccess(this, new EventArgs());
+        }
+
+        protected virtual void OnLog(WoopsaVerb verb, string path, WoopsaValue[] arguments,
+            string result, bool isSuccess)
+        {
+            Log?.Invoke(this, new WoopsaLogEventArgs(verb, path, arguments, result, isSuccess));
         }
 
         [ThreadStatic]
@@ -353,119 +361,152 @@ namespace Woopsa
             if ((item is IWoopsaProperty))
             {
                 IWoopsaProperty property = item as IWoopsaProperty;
-                return property.Value.Serialize();
+                string result = property.Value.Serialize();
+                OnLog(WoopsaVerb.Read, path, NoArguments, result, true);
+                return result;
             }
             else
-                throw new WoopsaInvalidOperationException(String.Format(
-                    "Cannot read value of a non-WoopsaProperty for path {0}", path));
+            {
+                string message = String.Format("Cannot read value of a non-WoopsaProperty for path {0}", path);
+                OnLog(WoopsaVerb.Read, path, NoArguments, message, false);
+                throw new WoopsaInvalidOperationException(message);
+            }
+        }
+
+        private string WriteValue(string path, Func<WoopsaValueType, WoopsaValue> getValue)
+        {
+            IWoopsaElement item = FindByPath(path);
+            if ((item is IWoopsaProperty))
+            {
+                IWoopsaProperty property = item as IWoopsaProperty;
+                WoopsaValue argument = getValue(property.Type);
+                if (!property.IsReadOnly)
+                {
+                    property.Value = argument;
+                    string result = property.Value.Serialize();
+                    OnLog(WoopsaVerb.Write, path, new WoopsaValue[] { argument }, result, true);
+                    return result;
+                }
+                else
+                {
+                    string message = String.Format(
+                        "Cannot write a read-only WoopsaProperty for path {0}", path);
+                    OnLog(WoopsaVerb.Write, path, new WoopsaValue[] { argument }, message, false);
+                    throw new WoopsaInvalidOperationException(message);
+                }
+            }
+            else
+            {
+                WoopsaValue argument = getValue(WoopsaValueType.Text);
+                string message = String.Format("Cannot write value of a non-WoopsaProperty for path {0}", path);
+                OnLog(WoopsaVerb.Write, path, new WoopsaValue[] { argument }, message, false);
+                throw new WoopsaInvalidOperationException(message);
+            }
         }
 
         internal string WriteValue(string path, string value)
         {
-            IWoopsaElement item = FindByPath(path);
-            if ((item is IWoopsaProperty))
-            {
-                IWoopsaProperty property = item as IWoopsaProperty;
-                if (property.IsReadOnly)
-                {
-                    throw new WoopsaInvalidOperationException(String.Format(
-                        "Cannot write a read-only WoopsaProperty for path {0}", path));
-                }
-                property.Value = WoopsaValue.CreateUnchecked(value, property.Type);
-                return property.Value.Serialize();
-            }
-            else
-                throw new WoopsaInvalidOperationException(String.Format("Cannot write value of a non-WoopsaProperty for path {0}", path));
+            return WriteValue(path, (woopsaValueType) => WoopsaValue.CreateUnchecked(value, woopsaValueType));
         }
 
         internal string WriteValueDeserializedJson(string path, object deserializedJson)
         {
-            IWoopsaElement item = FindByPath(path);
-            if ((item is IWoopsaProperty))
-            {
-                IWoopsaProperty property = item as IWoopsaProperty;
-                if (property.IsReadOnly)
-                {
-                    throw new WoopsaInvalidOperationException(String.Format(
-                        "Cannot write a read-only WoopsaProperty for path {0}", path));
-                }
-                property.Value = WoopsaValue.DeserializedJsonToWoopsaValue(deserializedJson,
-                    property.Type);
-                return WoopsaValue.Null.Serialize();
-            }
-            else
-                throw new WoopsaInvalidOperationException(String.Format("Cannot write value of a non-WoopsaProperty for path {0}", path));
+            return WriteValue(path, (woopsaValueType) => WoopsaValue.DeserializedJsonToWoopsaValue(deserializedJson, woopsaValueType));
         }
+
+        static WoopsaValue[] NoArguments = new WoopsaValue[0];
 
         internal string GetMetadata(string path)
         {
             IWoopsaElement item = FindByPath(path);
-            if (item is IWoopsaObject)
-                return (item as IWoopsaObject).SerializeMetadata();
-            else if (item is IWoopsaContainer)
-                return (item as IWoopsaContainer).SerializeMetadata();
+            if (item is IWoopsaContainer)
+            {
+                string result;
+                if (item is IWoopsaObject)
+                    result = (item as IWoopsaObject).SerializeMetadata();
+                else
+                    result = (item as IWoopsaContainer).SerializeMetadata();
+                OnLog(WoopsaVerb.Meta, path, NoArguments, result, true);
+                return result;
+            }
             else
-                throw new WoopsaInvalidOperationException(String.Format("Cannot get metadata for a WoopsaElement of type {0}", item.GetType()));
+            {
+                string message = String.Format("Cannot get metadata for a WoopsaElement of type {0}", item.GetType());
+                OnLog(WoopsaVerb.Meta, path, NoArguments, message, false);
+                throw new WoopsaInvalidOperationException(message);
+            }
+        }
+
+        private string InvokeMethod(string path, int argumentsCount,
+            Func<string, WoopsaValueType, WoopsaValue> getArgumentByName)
+        {
+            IWoopsaElement item = FindByPath(path);
+            if (item is IWoopsaMethod)
+            {
+                IWoopsaMethod method = item as IWoopsaMethod;
+                if (argumentsCount == method.ArgumentInfos.Count())
+                {
+                    List<WoopsaValue> woopsaArguments = new List<WoopsaValue>();
+                    foreach (var argInfo in method.ArgumentInfos)
+                    {
+                        WoopsaValue argumentValue = getArgumentByName(argInfo.Name, argInfo.Type);
+                        if (argumentValue == null)
+                        {
+                            string message = String.Format("Missing argument {0} for method {1}", argInfo.Name, item.Name);
+                            OnLog(WoopsaVerb.Invoke, path, NoArguments, message, false);
+                            throw new WoopsaInvalidOperationException(message);
+                        }
+                        else
+                            woopsaArguments.Add(argumentValue);
+                    }
+                    WoopsaValue[] argumentsArray = woopsaArguments.ToArray();
+                    IWoopsaValue methodResult = method.Invoke(argumentsArray);
+                    string result = methodResult != null ? methodResult.Serialize() : WoopsaConst.WoopsaNull;
+                    OnLog(WoopsaVerb.Invoke, path, argumentsArray, result, true);
+                    return result;
+                }
+                else
+                {
+                    string message = String.Format("Wrong argument count for method {0}", item.Name);
+                    OnLog(WoopsaVerb.Invoke, path, NoArguments, message, false);
+                    throw new WoopsaInvalidOperationException(message);
+                }
+            }
+            else
+            {
+                string message = String.Format("Cannot invoke a {0}", item.GetType());
+                OnLog(WoopsaVerb.Invoke, path, NoArguments, message, false);
+                throw new WoopsaInvalidOperationException(message);
+            }
         }
 
         internal string InvokeMethodDeserializedJson(string path, Dictionary<string, object> arguments)
         {
-            IWoopsaElement item = FindByPath(path);
-            if (item is IWoopsaMethod)
-            {
-                int argumentsCount = arguments != null ? arguments.Count : 0;
-                IWoopsaMethod method = item as IWoopsaMethod;
-                if (argumentsCount == method.ArgumentInfos.Count())
+            int argumentsCount = arguments != null ? arguments.Count : 0;
+            return InvokeMethod(path, argumentsCount,
+                (argumentName, woopsaValueType) =>
                 {
-                    List<WoopsaValue> woopsaArguments = new List<WoopsaValue>();
-                    foreach (var argInfo in method.ArgumentInfos)
-                    {
-                        object argumentValue =  arguments[argInfo.Name];
-                        if (argumentValue == null)
-                            throw new WoopsaInvalidOperationException(String.Format("Missing argument {0} for method {1}", argInfo.Name, item.Name));
-                        woopsaArguments.Add(WoopsaValue.DeserializedJsonToWoopsaValue(
-                            argumentValue, argInfo.Type));
-                    }
-                    IWoopsaValue result = method.Invoke(woopsaArguments.ToArray());
-                    return result != null ? result.Serialize() : WoopsaConst.WoopsaNull;
-                }
-                else
-                    throw new WoopsaInvalidOperationException(String.Format(
-                        "Wrong argument count for method {0}", item.Name));
-            }
-            else
-                throw new WoopsaInvalidOperationException(String.Format(
-                    "Cannot invoke a {0}", item.GetType()));
+                    object argumentValue = arguments[argumentName];
+                    if (argumentValue != null)
+                        return WoopsaValue.DeserializedJsonToWoopsaValue(
+                            argumentValue, woopsaValueType);
+                    else
+                        return null;
+                });
         }
 
         internal string InvokeMethod(string path, NameValueCollection arguments)
         {
-            IWoopsaElement item = FindByPath(path);
-            if (item is IWoopsaMethod)
-            {
-                int argumentsCount = arguments != null ? arguments.Count : 0;
-                IWoopsaMethod method = item as IWoopsaMethod;
-                if (argumentsCount == method.ArgumentInfos.Count())
+            int argumentsCount = arguments != null ? arguments.Count : 0;
+            return InvokeMethod(path, argumentsCount,
+                (argumentName, woopsaValueType) =>
                 {
-                    List<WoopsaValue> woopsaArguments = new List<WoopsaValue>();
-                    foreach (var argInfo in method.ArgumentInfos)
-                    {
-                        string argumentValue = arguments[argInfo.Name];
-                        if (argumentValue == null)
-                            throw new WoopsaInvalidOperationException(String.Format(
-                                "Missing argument {0} for method {1}", argInfo.Name, item.Name));
-                        woopsaArguments.Add(WoopsaValue.CreateChecked(argumentValue, argInfo.Type));
-                    }
-                    IWoopsaValue result = method.Invoke(woopsaArguments.ToArray());
-                    return result != null ? result.Serialize() : WoopsaConst.WoopsaNull;
-                }
-                else
-                    throw new WoopsaInvalidOperationException(String.Format(
-                        "Wrong argument count for method {0}", item.Name));
-            }
-            else
-                throw new WoopsaInvalidOperationException(String.Format(
-                    "Cannot invoke a {0}", item.GetType()));
+                    string argumentValue = arguments[argumentName];
+                    if (argumentValue != null)
+                        return WoopsaValue.CreateChecked(argumentValue, woopsaValueType);
+                    else
+                        return null;
+                });
         }
         #endregion
 
@@ -513,5 +554,32 @@ namespace Woopsa
         }
 
         private WoopsaServer _server;
+    }
+
+    public class WoopsaLogEventArgs : EventArgs
+    {
+        public WoopsaLogEventArgs(WoopsaVerb verb, string path, WoopsaValue[] arguments,
+            string result, bool isSuccess)
+        {
+            Verb = verb;
+            Path = path;
+            Arguments = arguments;
+            Result = result;
+            IsSuccess = isSuccess;
+        }
+
+        public WoopsaVerb Verb { get; private set; }
+
+        public string Path { get; private set; }
+
+        public WoopsaValue[] Arguments { get; private set; }
+
+        /// <summary>
+        /// Result is valid only when IsSuccess is true. Otherwise, it contains the error message.
+        /// </summary>
+        public string Result { get; private set; }
+
+        public bool IsSuccess { get; private set; }
+
     }
 }
