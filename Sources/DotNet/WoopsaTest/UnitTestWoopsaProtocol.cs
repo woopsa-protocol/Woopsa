@@ -102,7 +102,11 @@ namespace WoopsaTest
                         Assert.AreEqual(result.ToInt64(), i);
                     }
                     TimeSpan duration = watch.Elapsed;
-                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200));
+#if NET4_5
+                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200), $"Duration takes ${duration.Milliseconds}ms, instead of 200ms");
+#elif NETCORE2
+                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(800), $"Duration takes ${duration.Milliseconds}ms, instead of 800ms");
+#endif
                 }
             }
         }
