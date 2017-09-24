@@ -102,6 +102,7 @@ namespace Woopsa
         {
             new WoopsaMultiRequestHandler(root, this);
             _subscriptionService = new WoopsaSubscriptionService(this, root);
+            _subscriptionService.CanReconnectSubscriptionToNewObject += OnCanWatch;
         }
 
         /// <summary>
@@ -205,6 +206,10 @@ namespace Woopsa
         {
             if (AfterWoopsaModelAccess != null)
                 AfterWoopsaModelAccess(this, new EventArgs());
+        }
+
+        protected virtual void OnCanWatch(object sender, CanWatchEventArgs e)
+        {
         }
 
         protected virtual void OnLog(WoopsaVerb verb, string path, WoopsaValue[] arguments,

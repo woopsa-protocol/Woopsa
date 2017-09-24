@@ -79,7 +79,25 @@ namespace Woopsa
             return TimeSpan.FromTicks(timeSpan.Ticks * n);
         }
 
-		#region Exceptions utilities
+        /// <summary>
+        /// Used to generate incremental numbers identifiers, user for example to uniquely
+        /// identify in an ordered way the subscriptions.
+        /// </summary>
+        /// <returns></returns>
+        public static UInt64 NextIncrementalObjectId()
+        {
+            lock (_instanceIndexLock)
+            {
+                _instanceIndex++;
+                return _instanceIndex;
+            }
+        }
+
+        private static UInt64 _instanceIndex;
+        private static object _instanceIndexLock = new object();
+
+
+        #region Exceptions utilities
         public static Exception RootException(this Exception e)
         {
             Exception ex = e;
@@ -99,7 +117,7 @@ namespace Woopsa
                     eMessage += " Inner exception: ";
             }
             return eMessage;
-        } 
+        }
         #endregion
     }
 }

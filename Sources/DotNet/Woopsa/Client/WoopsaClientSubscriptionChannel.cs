@@ -198,7 +198,8 @@ namespace Woopsa
                 catch (WoopsaNotFoundException)
                 {
                     // No subscription service available, create a local one
-                    _localSubscriptionService = new WoopsaSubscriptionServiceImplementation(_woopsaRoot, false);
+                    _localSubscriptionService = new WoopsaSubscriptionServiceImplementation(
+                         _woopsaRoot, false);
                     try
                     {
                         _subscriptionOpenChannel = CreateSubscriptionChannel(_notificationQueueSize);

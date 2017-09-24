@@ -21,7 +21,7 @@ namespace Woopsa
 
         private static int GetNextChannelId()
         {
-            lock(_lock)
+            lock (_lock)
             {
                 _lastChannelId++;
                 return _lastChannelId;
@@ -150,7 +150,7 @@ namespace Woopsa
                 result = true;
             }
             else
-                result =false;
+                result = false;
             _pendingNotifications.RemoveNotificationsForSubscription(subscriptionId);
             return result;
         }
@@ -231,6 +231,11 @@ namespace Woopsa
             }
             _watchClientActivity.Restart();
             return result;
+        }
+
+        internal bool OnCanWatch(BaseWoopsaSubscriptionServiceSubscription subscription, IWoopsaProperty itemProperty)
+        {
+            return ServiceImplementation.OnCanWatch(subscription, itemProperty);
         }
 
         private bool FindWoopsaClientAlongPath(WoopsaContainer root, string path,

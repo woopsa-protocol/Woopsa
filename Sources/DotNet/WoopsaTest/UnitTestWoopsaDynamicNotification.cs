@@ -37,8 +37,7 @@ namespace WoopsaTest
                     // Subscription for a valid variable
                     dynamicClient.SubscriptionService.RegisterSubscription(channel,
                        WoopsaValue.WoopsaRelativeLink("/Votes"), TimeSpan.FromMilliseconds(MONITOR_INTERVAL),
-                       TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));
-                                        
+                       TimeSpan.FromMilliseconds(PUBLISH_INTERVAL));                                      
 
                     Stopwatch watch = new Stopwatch();
                     WoopsaValue lastNotifications;

@@ -17,6 +17,7 @@ namespace Woopsa
             MonitorInterval = monitorInterval;
             PublishInterval = publishInterval;
             PropertyPath = propertyPath;
+            IncrementalObjectId = WoopsaUtils.NextIncrementalObjectId();
             _lock = new object();
             _notifications = new List<IWoopsaNotification>();
             if (monitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly &&
@@ -54,7 +55,10 @@ namespace Woopsa
 
         public string PropertyPath { get; private set; }
 
-
+        /// <summary>
+        /// A unique number to identifiy internally this object.
+        /// </summary>
+        public UInt64 IncrementalObjectId { get; private set; }
         protected void EnqueueNewMonitoredValue(IWoopsaValue newValue)
         {
             if (!newValue.IsSameValue(_oldValue))
@@ -221,24 +225,34 @@ namespace Woopsa
         {
             try
             {
+                IWoopsaProperty itemProperty;
                 if (_watchedProperty is WoopsaElement)
+                {
                     if (((WoopsaElement)_watchedProperty).IsDisposed)
                         _watchedProperty = null;
-                if (_watchedProperty == null)
-                {
-                    var item = Root.ByPathOrNull(PropertyPath);
-                    _watchedProperty = item as IWoopsaProperty;
                 }
                 if (_watchedProperty != null)
+                    itemProperty = _watchedProperty;
+                else
+                    itemProperty = Root.ByPathOrNull(PropertyPath) as IWoopsaProperty;
+                // We want to reconnect after the property disposal to the new object
+                if (itemProperty != null)
                 {
-                    value = _watchedProperty.Value;
-                    return true;
+                    var propertyValue = itemProperty.Value;
+                    if (OnCanWatch(this, itemProperty))
+                    {
+                        _watchedProperty = itemProperty;
+                        value = propertyValue;
+                    }
+                    else
+                    {
+                        value = WoopsaValue.Null;
+                        return false;
+                    }
                 }
                 else
-                {
                     value = WoopsaValue.Null;
-                    return true;
-                }
+                return true;
             }
             catch (Exception)
             {
@@ -246,6 +260,13 @@ namespace Woopsa
                 _watchedProperty = null;
                 throw;
             }
+        }
+
+        private bool OnCanWatch(
+            BaseWoopsaSubscriptionServiceSubscription subscription,
+            IWoopsaProperty itemProperty)
+        {
+            return Channel.OnCanWatch(subscription, itemProperty);
         }
 
         #region IDisposable
@@ -273,14 +294,14 @@ namespace Woopsa
                 publishInterval == WoopsaSubscriptionServiceConst.PublishIntervalOnce;
             EventHandler<WoopsaNotificationEventArgs> handler;
             if (isSingleNotification)
-                handler = 
-                    (sender, e) => 
+                handler =
+                    (sender, e) =>
                     {
                         EnqueueNewMonitoredValue(e.Notification.Value);
                         DoPublish(); // there is not publish timer, force publishing the unique notification
                     };
             else
-                handler = 
+                handler =
                     (sender, e) =>
                     {
                         EnqueueNewMonitoredValue(e.Notification.Value);
