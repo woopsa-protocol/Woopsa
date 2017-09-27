@@ -174,6 +174,11 @@ namespace Woopsa
         public event EventHandler AfterWoopsaModelAccess;
 
         /// <summary>
+        /// This event occurs when an exception is not caught.
+        /// </summary>
+        public event UnhandledExceptionEventHandler UnhandledException;
+
+        /// <summary>
         /// This method simply calls BeforeWoopsaModelAccess to trigger concurrent access 
         /// protection over the woopsa model.
         /// </summary>
@@ -203,6 +208,12 @@ namespace Woopsa
         {
             if (AfterWoopsaModelAccess != null)
                 AfterWoopsaModelAccess(this, new EventArgs());
+        }
+
+        protected virtual void OnUnhandledException(Exception e)
+        {
+            if (UnhandledException != null)
+                UnhandledException(this, new UnhandledExceptionEventArgs(e, false));
         }
 
         [ThreadStatic]
@@ -331,18 +342,22 @@ namespace Woopsa
             catch (WoopsaNotFoundException e)
             {
                 response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                OnUnhandledException(e);
             }
             catch (WoopsaInvalidOperationException e)
             {
                 response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                OnUnhandledException(e);
             }
             catch (WoopsaException e)
             {
                 response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                OnUnhandledException(e);
             }
             catch (Exception e)
             {
                 response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                OnUnhandledException(e);
             }
         }
 
