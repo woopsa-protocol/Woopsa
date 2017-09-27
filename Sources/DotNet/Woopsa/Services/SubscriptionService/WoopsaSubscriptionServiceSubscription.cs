@@ -225,24 +225,38 @@ namespace Woopsa
         {
             try
             {
-                IWoopsaProperty itemProperty;
-                if (_watchedProperty is WoopsaElement)
+                IWoopsaProperty currentlyWatchedProperty;
+                IWoopsaValue currentlyWatchedPropertyValue;
+
+                if ((_watchedProperty == null) ||
+                    (_watchedProperty is WoopsaElement && ((WoopsaElement)_watchedProperty).IsDisposed))
                 {
-                    if (((WoopsaElement)_watchedProperty).IsDisposed)
-                        _watchedProperty = null;
-                }
-                if (_watchedProperty != null)
-                    itemProperty = _watchedProperty;
-                else
-                    itemProperty = Root.ByPathOrNull(PropertyPath) as IWoopsaProperty;
-                // We want to reconnect after the property disposal to the new object
-                if (itemProperty != null)
-                {
-                    var propertyValue = itemProperty.Value;
-                    if (OnCanWatch(this, itemProperty))
+                    IWoopsaProperty newWatchedProperty;
+
+                    newWatchedProperty = Root.ByPathOrNull(PropertyPath) as IWoopsaProperty;
+                    if (newWatchedProperty != null)
                     {
-                        _watchedProperty = itemProperty;
-                        value = propertyValue;
+                        currentlyWatchedProperty = newWatchedProperty;
+                        currentlyWatchedPropertyValue = currentlyWatchedProperty.Value;
+                    }
+                    else
+                    {
+                        currentlyWatchedProperty = _watchedProperty;
+                        currentlyWatchedPropertyValue = WoopsaValue.Null;
+                    }
+                }
+                else
+                {
+                    currentlyWatchedProperty = _watchedProperty;
+                    currentlyWatchedPropertyValue = _watchedProperty.Value;
+                }
+                if (currentlyWatchedProperty != null)
+                {
+                    if (OnCanWatch(this, currentlyWatchedProperty))
+                    {
+                        value = currentlyWatchedPropertyValue;
+                        _watchedProperty = currentlyWatchedProperty;
+                        return true;
                     }
                     else
                     {
@@ -251,8 +265,10 @@ namespace Woopsa
                     }
                 }
                 else
+                {
                     value = WoopsaValue.Null;
-                return true;
+                    return true;
+                }
             }
             catch (Exception)
             {
