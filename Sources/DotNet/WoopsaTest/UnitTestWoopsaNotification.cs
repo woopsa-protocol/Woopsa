@@ -13,14 +13,20 @@ namespace WoopsaTest
     [TestClass]
     public class UnitTestWoopsaNotification
     {
+        #region Consts
+
+        public const int TestingPort = 9999;
+        public static string TestingUrl => $"http://localhost:{TestingPort}/woopsa";
+
+        #endregion
 
         [TestMethod]
         public void TestWoopsaWaitNotification()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     // Just to show how to see all items

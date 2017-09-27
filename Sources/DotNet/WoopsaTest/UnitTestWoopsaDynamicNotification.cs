@@ -13,18 +13,25 @@ namespace WoopsaTest
     [TestClass]
     public class UnitTestWoopsaDynamicNotification
     {
+        #region Consts
+
+        public const int TestingPort = 9999;
+        public static string TestingUrl => $"http://localhost:{TestingPort}/woopsa";
+
         const int QUEUE_SIZE = 1000;
         const int MONITOR_INTERVAL = 10;
         const int PUBLISH_INTERVAL = 10;
+
+        #endregion
 
         [TestMethod]
         public void TestWoopsaDynamicNotification()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
                 // Solution with dynamic client
-                using (dynamic dynamicClient = new WoopsaDynamicClient("http://localhost/woopsa"))
+                using (dynamic dynamicClient = new WoopsaDynamicClient(TestingUrl))
                 {
                     int channel = dynamicClient.SubscriptionService.CreateSubscriptionChannel(QUEUE_SIZE);
                     // Subscription for a valid variable
@@ -85,15 +92,14 @@ namespace WoopsaTest
             }
         } //end TestWoopsaDynamicNotification
 
-
         [TestMethod]
         public void TestWoopsaDynamicNotificationUnexistingProperty()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
                 // Solution with dynamic client
-                using (dynamic dynamicClient = new WoopsaDynamicClient("http://localhost/woopsa"))
+                using (dynamic dynamicClient = new WoopsaDynamicClient(TestingUrl))
                 {
                     int channel = dynamicClient.SubscriptionService.CreateSubscriptionChannel(QUEUE_SIZE);
                     // Subscription for an nonexistent variable (should work)
@@ -128,6 +134,5 @@ namespace WoopsaTest
                 }
             }
         } //end TestWoopsaDynamicNotification
-
     }
 }

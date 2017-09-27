@@ -7,22 +7,15 @@ using System.Collections.Specialized;
 
 namespace WoopsaTest
 {
-    public class TestObjectServer
-    {
-        public int Votes { get; set; }
-
-        public void IncrementVotes(int count)
-        {
-            Votes += count;
-        }
-
-    }
-
-
-
     [TestClass]
     public class UnitTestWoopsaProtocol
     {
+        #region Consts
+
+        public const int TestingPort = 9999;
+        public static string TestingUrl => $"http://localhost:{TestingPort}/woopsa";
+
+        #endregion
 
         [TestMethod]
         public void TestWoopsaProtocolRootContainer()
@@ -30,9 +23,9 @@ namespace WoopsaTest
             WoopsaRoot serverRoot = new WoopsaRoot();
             TestObjectServer objectServer = new TestObjectServer();
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer(serverRoot))
+            using (WoopsaServer server = new WoopsaServer(serverRoot, TestingPort))
             {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     (root.Items.ByName("TestObject") as WoopsaObject).Properties.ByName("Votes").Value = 17;
@@ -45,9 +38,9 @@ namespace WoopsaTest
         public void TestWoopsaProtocol()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     root.Properties.ByName("Votes").Value = new WoopsaValue(11);
@@ -72,11 +65,11 @@ namespace WoopsaTest
         public void TestWoopsaProtocolUnboundClient()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+            using (WoopsaClient client = new WoopsaClient(TestingUrl))
             {
                 WoopsaUnboundClientObject root = client.CreateUnboundRoot("root");
                 WoopsaProperty propertyVote = root.GetProperty("Votes", WoopsaValueType.Integer, false);
-                using (WoopsaServer server = new WoopsaServer(objectServer))
+                using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
                 {
                     propertyVote.Value = new WoopsaValue(123);
                     Assert.AreEqual(objectServer.Votes, 123);
@@ -90,9 +83,9 @@ namespace WoopsaTest
         public void TestWoopsaProtocolPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     IWoopsaProperty property = root.Properties.ByName("Votes");
@@ -109,7 +102,11 @@ namespace WoopsaTest
                         Assert.AreEqual(result.ToInt64(), i);
                     }
                     TimeSpan duration = watch.Elapsed;
-                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200));
+#if NET4_5
+                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200), $"Duration takes ${duration.Milliseconds}ms, instead of 200ms");
+#elif NETCORE2
+                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(800), $"Duration takes ${duration.Milliseconds}ms, instead of 800ms");
+#endif
                 }
             }
         }
@@ -118,9 +115,9 @@ namespace WoopsaTest
         public void TestWoopsaServerPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
-                using (dynamic dynamicClient = new WoopsaDynamicClient("http://localhost/woopsa"))
+                using (dynamic dynamicClient = new WoopsaDynamicClient(TestingUrl))
                 {
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
@@ -140,37 +137,23 @@ namespace WoopsaTest
                     //				dynamicClient.Votes.Change += new EventHandler<WoopsaNotificationEventArgs>((o, e) => Console.WriteLine("Value : {0}", e.Value.ToInt32()));
                     //		Thread.Sleep(100);
                     //	dynamicClient.Votes = 15;
-                    //			WoopsaClient client = new WoopsaClient("http://localhost/woopsa");
+                    //			WoopsaClient client = new WoopsaClient(TestingUrl);
                     //				int votes = client.Properties.ByName("Votes").Value.ToInt32();
                     //				client.Properties.ByName("Votes");
                 }
             }
         }
 
-        public class TestObjectServerAuthentification
-        {
-            public int Votes { get; set; }
-
-            public void IncrementVotes(int count)
-            {
-                Votes += count;
-            }
-
-            public string CurrentUserName { get { return BaseAuthenticator.CurrentUserName; } }
-
-        }
-
-
         [TestMethod]
         public void TestWoopsaServerAuthentication()
         {
             TestObjectServerAuthentification objectServer = new TestObjectServerAuthentification();
-            using (WoopsaServer server = new WoopsaServer(objectServer))
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
                 server.Authenticator = new SimpleAuthenticator("TestRealm",
                     (sender, e) => { e.IsAuthenticated = e.Username=="woopsa"; });
 
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     const string TestUserName ="woopsa";
                     client.Username = TestUserName;

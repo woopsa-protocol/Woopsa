@@ -289,7 +289,7 @@ namespace Woopsa
                             {
                                 requestString = reader.ReadLine();
                             }
-                            catch (Exception e)
+                            catch (Exception)
                             {
                                 requestString = null;
                                 leaveOpen = false;

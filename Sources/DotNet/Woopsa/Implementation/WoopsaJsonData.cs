@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
@@ -12,8 +11,7 @@ namespace Woopsa
     {
         public static WoopsaJsonData CreateFromText(string jsonText)
         {
-            JavaScriptSerializer deserializer = new JavaScriptSerializer();
-            object deserializedData = deserializer.Deserialize<object>(jsonText);
+            object deserializedData = JsonSerializer.Deserialize<object>(jsonText);
             return new WoopsaJsonData(deserializedData, jsonText);
         }
         public static WoopsaJsonData CreateFromDeserializedData(object deserializedJson)
@@ -25,8 +23,8 @@ namespace Woopsa
         {
             _data = deserializedData;
             _serializedData = serializedData;
-            _asDictionary = (_data as Dictionary<string, object>);
-            _asArray = _data as object[];
+            _asDictionary = JsonSerializer.ToDictionnary(_data);
+            _asArray = JsonSerializer.ToArray(_data);
         }
 
         public WoopsaJsonData this[string key]
@@ -45,8 +43,7 @@ namespace Woopsa
         {
             if (IsDictionary)
             {
-                var dic = (_data as Dictionary<string, object>);
-                value = CreateFromDeserializedData(dic[key]);
+                value = CreateFromDeserializedData(_asDictionary[key]);
                 return true;
             }
             else
@@ -61,7 +58,7 @@ namespace Woopsa
             get
             {
                 if (IsDictionary)
-                    return (_data as Dictionary<string, object>).Keys;
+                    return _asDictionary.Keys;
                 else
                     return new string[0];
             }
@@ -70,7 +67,7 @@ namespace Woopsa
         public bool ContainsKey(string key)
         {
             if (IsDictionary)
-                return (_data as Dictionary<string, object>).ContainsKey(key);
+                return _asDictionary.ContainsKey(key);
             else
                 return false;
         }
@@ -91,8 +88,7 @@ namespace Woopsa
         {
             if (IsArray)
             {
-                var arr = (_data as object[]);
-                result = CreateFromDeserializedData(arr[index]);
+                result = CreateFromDeserializedData(_asArray[index]);
                 return true;
             }
             else
@@ -107,7 +103,7 @@ namespace Woopsa
             get
             {
                 if (IsArray)
-                    return (_data as object[]).Length;
+                    return _asArray.Length;
                 else
                     throw new InvalidOperationException("Length is only available on WoopsaJsonData of type Array.");
             }
@@ -129,8 +125,7 @@ namespace Woopsa
                         _serializedData = WoopsaFormat.ToStringWoopsa(_data);
                     else
                     {
-                        JavaScriptSerializer serializer = new JavaScriptSerializer();
-                        _serializedData = serializer.Serialize(_data);
+                        _serializedData = JsonSerializer.Serialize(_data);
                     }
                 }
                 return _serializedData;
@@ -144,7 +139,7 @@ namespace Woopsa
 
         internal object InternalObject { get { return _data; } }
 
-        private object _data;
+        private readonly object _data;
         private Dictionary<string, object> _asDictionary;
         private object[] _asArray;
         private string _serializedData;
@@ -304,8 +299,7 @@ namespace Woopsa
 
         public static string Serialize(this WoopsaJsonData data)
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            return serializer.Serialize(data.InternalObject);
+            return JsonSerializer.Serialize(data.InternalObject);
         }
     }
 }

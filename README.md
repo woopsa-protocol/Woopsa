@@ -72,5 +72,7 @@ Our [Getting Started](http://www.woopsa.org/get-started/) tutorial allows you to
 ## Compatibility
 Woopsa has been tested and works on:
  * .NET Framework 4.0
+ * .NET Framework 4.5
+ * .NET Core 2.0
  * Mono 4.0+
  

@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
@@ -146,8 +145,7 @@ namespace Woopsa
 
         public static Exception DeserializeError(string jsonErrorText)
         {
-            var serializer = new JavaScriptSerializer();
-            var error = serializer.Deserialize<WoopsaErrorResult>(jsonErrorText);
+            var error = JsonSerializer.Deserialize<WoopsaErrorResult>(jsonErrorText);
 
             // Generate one of the possible Woopsa exceptions based
             // on the JSON-serialized error
@@ -445,15 +443,12 @@ namespace Woopsa
 
         public static WoopsaMetaResult DeserializeMeta(string jsonText)
         {
-            var serializer = new JavaScriptSerializer();
-            var result = serializer.Deserialize<WoopsaMetaResult>(jsonText);
-            return result;
+            return JsonSerializer.Deserialize<WoopsaMetaResult>(jsonText);
         }
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
-            var serializer = new JavaScriptSerializer { MaxJsonLength = int.MaxValue };
-            var result = serializer.Deserialize<WoopsaReadResult>(jsonText);
+            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
             if (result != null)
             {
                 var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);

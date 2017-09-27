@@ -5,34 +5,50 @@ using System.Collections.Generic;
 
 namespace WoopsaTest
 {
-    public class TestObjectMultiRequest
-    {
-        public double A { get; set; }
-        public double B { get; set; }
-        public string S { get; set; }
-
-        public double Sum { get { return A + B; } }
-
-        public void Set(double a, double b)
-        {
-            A = a;
-            B = b;
-        }
-
-        public void SetS(string value)
-        {
-            S = value;
-        }
-
-        public void Click() { IsClicked = true; }
-
-        public bool IsClicked { get; set; }
-    }
-
     [TestClass]
     public class UnitTestWoopsaMultiRequest
     {
-        public void ExecuteMultiRequestTestSerie(WoopsaClient client, TestObjectMultiRequest objectServer)
+        #region Consts
+
+        public const int TestingPort = 9999;
+        public static string TestingUrl => $"http://localhost:{TestingPort}/woopsa";
+        
+        #endregion
+
+        [TestMethod]
+        public void TestWoopsaMultiRequest()
+        {
+            WoopsaObject serverRoot = new WoopsaObject(null, "");
+            TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
+            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
+            using (WoopsaServer server = new WoopsaServer(serverRoot, TestingPort))
+            {
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
+                {
+                    ExecuteMultiRequestTestSerie(client, objectServer);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestWoopsaMultiRequestNoRemoteMultiRequestService()
+        {
+            WoopsaObject serverRoot = new WoopsaObject(null, "");
+            TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
+            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
+            using (WoopsaServer server = new WoopsaServer((IWoopsaContainer)serverRoot, TestingPort))
+            {
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
+                {
+                    ExecuteMultiRequestTestSerie(client, objectServer);
+                }
+            }
+
+        }
+
+        #region Private Members
+
+        private void ExecuteMultiRequestTestSerie(WoopsaClient client, TestObjectMultiRequest objectServer)
         {
             WoopsaClientMultiRequest multiRequest = new WoopsaClientMultiRequest();
 
@@ -44,8 +60,8 @@ namespace WoopsaTest
 
             WoopsaMethodArgumentInfo[] argumentInfosSet = new WoopsaMethodArgumentInfo[]
             {
-                        new WoopsaMethodArgumentInfo("a", WoopsaValueType.Real),
-                        new WoopsaMethodArgumentInfo("b", WoopsaValueType.Real)
+                new WoopsaMethodArgumentInfo("a", WoopsaValueType.Real),
+                new WoopsaMethodArgumentInfo("b", WoopsaValueType.Real)
             };
             WoopsaClientRequest request6 = multiRequest.Invoke("TestObject/Set",
                 argumentInfosSet, 4, 5);
@@ -58,7 +74,7 @@ namespace WoopsaTest
 
             WoopsaMethodArgumentInfo[] argumentInfosSetS = new WoopsaMethodArgumentInfo[]
             {
-                        new WoopsaMethodArgumentInfo("value", WoopsaValueType.Text)
+                new WoopsaMethodArgumentInfo("value", WoopsaValueType.Text)
             };
             WoopsaClientRequest request12 = multiRequest.Invoke("TestObject/SetS",
                 argumentInfosSetS, "Hello");
@@ -98,35 +114,34 @@ namespace WoopsaTest
 
         }
 
-        [TestMethod]
-        public void TestWoopsaMultiRequest()
-        {
-            WoopsaObject serverRoot = new WoopsaObject(null, "");
-            TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
-            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer(serverRoot))
-            {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
-                {
-                    ExecuteMultiRequestTestSerie(client, objectServer);
-                }
-            }
-        }
+        #endregion
 
-        [TestMethod]
-        public void TestWoopsaMultiRequestNoRemoteMultiRequestService()
+        #region Inner classes
+
+        public class TestObjectMultiRequest
         {
-            WoopsaObject serverRoot = new WoopsaObject(null, "");
-            TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
-            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer((IWoopsaContainer)serverRoot))
+            public double A { get; set; }
+            public double B { get; set; }
+            public string S { get; set; }
+
+            public double Sum { get { return A + B; } }
+
+            public void Set(double a, double b)
             {
-                using (WoopsaClient client = new WoopsaClient("http://localhost/woopsa"))
-                {
-                    ExecuteMultiRequestTestSerie(client, objectServer);
-                }
+                A = a;
+                B = b;
             }
 
+            public void SetS(string value)
+            {
+                S = value;
+            }
+
+            public void Click() { IsClicked = true; }
+
+            public bool IsClicked { get; set; }
         }
+
+        #endregion
     }
 }

@@ -13,5 +13,4 @@ Debug
 /Sources/Embedded/Server/Release/*
 node_modules
 
-# Visual Studio 2015 cache/options directory
 .vs/
