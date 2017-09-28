@@ -1,4 +1,42 @@
+version: 1.2.{build}
+image: Visual Studio 2017
+configuration:
+- Debug
+- Release
+
+platform: Any CPU
+build_script:
+- ps: "# restore and builds all projects as release.\n# creates NuGet package at \\artifacts\ndotnet --version\n\ndotnet restore .\\Sources\\DotNet\\Woopsa\\\ndotnet build .\\Sources\\DotNet\\Woopsa\\\ndotnet build .\\Sources\\DotNet\\WoopsaDemoClient\\ \ndotnet build .\\Sources\\DotNet\\WoopsaDemoServer\\"
+
 test:
   categories:
     except:
       - Performance
+      
+test_script:
+- ps: >-
+    # restore and builds all projects as release.
+    # creates NuGet package at \artifacts
+    dotnet --version
+    dotnet restore .\Sources\DotNet\WoopsaTest\
+    dotnet build .\Sources\DotNet\WoopsaTest\
+    dotnet test .\Sources\DotNet\WoopsaTest\
+    
+artifacts:
+- path: Sources\DotNet\**\*.nupkg
+  name: Woopsa
+  
+deploy:
+- provider: NuGet
+  api_key:
+    secure: iBA4bAdnjK1R7CFklqdbW+8Uhl4RdriOHhBB7jpnNongiddK1YXCKdi00mzz5fPJ
+  skip_symbols: true
+  artifact: Woopsa
+  
+notifications:
+- provider: Email
+  to:
+- fabien.chevalley@objectis.ch
+  on_build_success: false
+  on_build_failure: true
+  on_build_status_changed: false
