@@ -1,5 +1,7 @@
 # Woopsa
-[![Build status](https://ci.appveyor.com/api/projects/status/b1rp8yg8nsub1h1i/branch/master?svg=true)](https://ci.appveyor.com/project/fabien-chevalley/woopsa/branch/master)
+[![AppVeyor](https://img.shields.io/appveyor/ci/fabien-chevalley/woopsa.svg)](https://ci.appveyor.com/project/fabien-chevalley/woopsa)
+[![npm](https://img.shields.io/npm/v/woopsa.svg)](https://www.npmjs.com/package/woopsa)
+[![NuGet](https://img.shields.io/nuget/v/Woopsa.svg)](https://www.nuget.org/packages/Woopsa/)
  
 Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things.
 
