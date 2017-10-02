@@ -1,18 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Description>Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things.</Description>
     <Authors>Objectis SA</Authors>
-	<AssemblyName>WoopsaTest</AssemblyName>
-	<Version>1.2.0</Version>
-	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
-	<IsPackable>false</IsPackable>
-	<Copyright>Copyright © Objectis SA 2017</Copyright>
-	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
-	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
+  	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
+  	<IsPackable>false</IsPackable>
+  	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
+  	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
+  	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
+  	<RepositoryType>git</RepositoryType>
+  	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
   </PropertyGroup>
   
   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
@@ -25,6 +28,10 @@
     <PackageReference Include="MSTest.TestAdapter" Version="1.1.18" />
     <PackageReference Include="MSTest.TestFramework" Version="1.1.18" />
     <Reference Include="Microsoft.CSharp" />
+  </ItemGroup>
+    
+  <ItemGroup>
+    <Compile Include="..\AssemblyVersionInfo.cs" Link="Properties\AssemblyVersionInfo.cs" />
   </ItemGroup>
   
   <ItemGroup>

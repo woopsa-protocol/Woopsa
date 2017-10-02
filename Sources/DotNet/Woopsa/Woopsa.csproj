@@ -1,11 +1,8 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-	<Description>Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things.</Description>
-    <Authors>Objectis SA</Authors>
-	<TargetFrameworks>net40;net45;netcoreapp2.0</TargetFrameworks>
-	<AssemblyName>Woopsa</AssemblyName>
-	<Version>1.2.0</Version>
+	<Authors>Objectis SA</Authors>
+	<TargetFrameworks>net40;net45;netcoreapp2.0;netstandard2.0</TargetFrameworks>
 	<PackageId>Woopsa</PackageId>
 	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
@@ -13,6 +10,15 @@
 	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
 	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
 	<GeneratePackageOnBuild>true</GeneratePackageOnBuild>
+    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <Version>1.2.0</Version>
   </PropertyGroup>
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
@@ -25,6 +31,10 @@
 
   <ItemGroup>
     <None Remove="HTTPServer\HTML\ErrorPage.html" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <Compile Include="..\AssemblyVersionInfo.cs" Link="Properties\AssemblyVersionInfo.cs" />
   </ItemGroup>
 
   <ItemGroup>
@@ -50,5 +60,5 @@
   <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
     <DefineConstants>$(DefineConstants);NETCORE2</DefineConstants>
   </PropertyGroup>
-  
+
 </Project>
