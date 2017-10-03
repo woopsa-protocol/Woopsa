@@ -6,6 +6,9 @@ using System.Reflection;
 
 namespace Woopsa
 {
+    /// <summary>
+    /// Note : To use RouteHandlerEmbeddedResources the assembly default namespace must correspond to the assembly name.
+    /// </summary>
     public class RouteHandlerEmbeddedResources : IHTTPRouteHandler
     {
         /// <summary>
@@ -27,8 +30,6 @@ namespace Woopsa
             else
                 _baseDirectory = "";
             _assembly = assembly;
-            _resourceNameByStrippedResourceNameByAssembly =
-                new Dictionary<Assembly, Dictionary<string, string>>();
         }
 
         #region IHTTPRouteHandler
@@ -122,31 +123,7 @@ namespace Woopsa
 
         private string FullResourceName(Assembly assembly, string strippedResourceName)
         {
-            Dictionary<string, string> resourceNameByStrippedResourceName;
-            string result;
-            if (!_resourceNameByStrippedResourceNameByAssembly.TryGetValue(
-                    assembly, out resourceNameByStrippedResourceName))
-            {
-                resourceNameByStrippedResourceName = new Dictionary<string, string>();
-                _resourceNameByStrippedResourceNameByAssembly[assembly] =
-                    resourceNameByStrippedResourceName;
-            }
-            if (!resourceNameByStrippedResourceName.TryGetValue(strippedResourceName, out result))
-            {
-                if (resourceNameByStrippedResourceName.Count == 0)
-                    // Populate the dictionary
-                    foreach (var item in assembly.GetManifestResourceNames())
-                    {
-                        string[] resourceNameParts = item.Split(new char[] { ResourcePathSeparator }, 2);
-                        if (resourceNameParts.Length == 2)
-                        {
-                            resourceNameByStrippedResourceName[resourceNameParts[1]] = item;
-                            if (resourceNameParts[1] == strippedResourceName)
-                                result = item;
-                        }
-                    }
-            }
-            return result;
+            return string.Format("{0}.{1}", assembly.GetName().Name, strippedResourceName);
         }
 
         private Assembly AssemblyByName(string name)
@@ -173,8 +150,6 @@ namespace Woopsa
         private string _baseDirectory;
         private Assembly _assembly;
         private Dictionary<string, Assembly> _assemblyByName;
-        private Dictionary<Assembly, Dictionary<string, string>>
-            _resourceNameByStrippedResourceNameByAssembly;
     }
 
 }

@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 14
-VisualStudioVersion = 14.0.23107.0
+VisualStudioVersion = 14.0.25420.1
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Woopsa", "Woopsa\Woopsa.csproj", "{B6D4DB14-CD89-4211-8238-A8988DFB9B81}"
 EndProject
@@ -10,6 +10,12 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoopsaDemoServer", "WoopsaDemoServer\WoopsaDemoServer.csproj", "{92C7F35C-15F0-4BF1-BEF5-83032DFB4B10}"
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "WoopsaDemoClient", "WoopsaDemoClient\WoopsaDemoClient.csproj", "{7DCE84B1-1A2D-44AE-A875-FB6DABEF55D8}"
+EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Tests", "Tests", "{522A6CC9-D434-4902-980C-63BC310A18D2}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "EmbeddedResource", "WoopsaTest\TestResources\EmbeddedResource\EmbeddedResource.csproj", "{B30437A0-BA1C-42AA-A40D-60DC3689016A}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Woopsa.EmbeddedddResource", "WoopsaTest\TestResources\Woopsa.EmbeddedResource\Woopsa.EmbeddedddResource.csproj", "{512E7B24-3D31-4DD5-A7E9-BF644A6DC06F}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -33,8 +39,21 @@ Global
 		{7DCE84B1-1A2D-44AE-A875-FB6DABEF55D8}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7DCE84B1-1A2D-44AE-A875-FB6DABEF55D8}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7DCE84B1-1A2D-44AE-A875-FB6DABEF55D8}.Release|Any CPU.Build.0 = Release|Any CPU
+		{B30437A0-BA1C-42AA-A40D-60DC3689016A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{B30437A0-BA1C-42AA-A40D-60DC3689016A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{B30437A0-BA1C-42AA-A40D-60DC3689016A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{B30437A0-BA1C-42AA-A40D-60DC3689016A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{512E7B24-3D31-4DD5-A7E9-BF644A6DC06F}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{512E7B24-3D31-4DD5-A7E9-BF644A6DC06F}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{512E7B24-3D31-4DD5-A7E9-BF644A6DC06F}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{512E7B24-3D31-4DD5-A7E9-BF644A6DC06F}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{8CB57ED5-1B97-4467-9887-AD34488DBBC6} = {522A6CC9-D434-4902-980C-63BC310A18D2}
+		{B30437A0-BA1C-42AA-A40D-60DC3689016A} = {522A6CC9-D434-4902-980C-63BC310A18D2}
+		{512E7B24-3D31-4DD5-A7E9-BF644A6DC06F} = {522A6CC9-D434-4902-980C-63BC310A18D2}
 	EndGlobalSection
 EndGlobal
