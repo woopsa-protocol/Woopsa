@@ -1,10 +1,9 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-using System.IO;
+﻿using System.Collections.Generic;
+
+#if NETCORE2
+        
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
-using System.Runtime.Serialization.Json;
 
 namespace Woopsa
 {
@@ -39,3 +38,37 @@ namespace Woopsa
         }
     }
 }
+
+#else
+
+using System.Web.Script.Serialization;
+
+namespace Woopsa
+{
+    public static class JsonSerializer
+    {
+        public static string Serialize(object obj)
+        {
+            JavaScriptSerializer serializer = new JavaScriptSerializer();
+            return serializer.Serialize(obj);
+        }
+
+        public static Dictionary<string, object> ToDictionnary(object obj)
+        {
+            return (obj as Dictionary<string, object>);
+        }
+
+        public static object[] ToArray(object obj)
+        {
+            return obj as object[];
+        }
+
+        public static T Deserialize<T>(string json)
+        {
+            JavaScriptSerializer deserializer = new JavaScriptSerializer();
+            return deserializer.Deserialize<T>(json);
+        }
+    }
+}
+
+#endif

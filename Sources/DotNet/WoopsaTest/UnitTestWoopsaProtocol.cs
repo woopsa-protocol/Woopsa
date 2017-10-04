@@ -79,7 +79,7 @@ namespace WoopsaTest
             }
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("Performance")]
         public void TestWoopsaProtocolPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();
@@ -102,16 +102,12 @@ namespace WoopsaTest
                         Assert.AreEqual(result.ToInt64(), i);
                     }
                     TimeSpan duration = watch.Elapsed;
-#if NET4_5
                     Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200), $"Duration takes ${duration.Milliseconds}ms, instead of 200ms");
-#elif NETCORE2
-                    Assert.IsTrue(duration < TimeSpan.FromMilliseconds(800), $"Duration takes ${duration.Milliseconds}ms, instead of 800ms");
-#endif
                 }
             }
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("Performance")]
         public void TestWoopsaServerPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();

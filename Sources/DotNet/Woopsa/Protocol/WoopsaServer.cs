@@ -174,6 +174,11 @@ namespace Woopsa
         public event EventHandler AfterWoopsaModelAccess;
 
         /// <summary>
+        /// This event occurs when an exception is caught.
+        /// </summary>
+        public event EventHandler<ExceptionEventArgs> HandledException;
+
+        /// <summary>
         /// This method simply calls BeforeWoopsaModelAccess to trigger concurrent access 
         /// protection over the woopsa model.
         /// </summary>
@@ -205,17 +210,23 @@ namespace Woopsa
                 AfterWoopsaModelAccess(this, new EventArgs());
         }
 
+        protected virtual void OnHandledException(Exception e)
+        {
+            if (HandledException != null)
+                HandledException(this, new ExceptionEventArgs(e));
+        }
+
         [ThreadStatic]
         private static int _woopsaModelAccessCounter;
 
-        internal protected void ExecuteBeforeWoopsaModelAccess()
+        protected internal void ExecuteBeforeWoopsaModelAccess()
         {
             _woopsaModelAccessCounter++;
             if (_woopsaModelAccessCounter == 1)
                 OnBeforeWoopsaModelAccess();
         }
 
-        internal protected void ExecuteAfterWoopsaModelAccess()
+        protected internal void ExecuteAfterWoopsaModelAccess()
         {
             _woopsaModelAccessCounter--;
             if (_woopsaModelAccessCounter == 0)
@@ -288,6 +299,7 @@ namespace Woopsa
             WebServer.Routes.Remove(_writeRouteMapper);
             WebServer.Routes.Remove(_invokeRouteMapper);
         }
+
         private void HandleRequest(WoopsaVerb verb, HTTPRequest request, HTTPResponse response)
         {
             try
@@ -330,19 +342,23 @@ namespace Woopsa
             }
             catch (WoopsaNotFoundException e)
             {
-                response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                OnHandledException(e);
             }
             catch (WoopsaInvalidOperationException e)
             {
-                response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                OnHandledException(e);
             }
             catch (WoopsaException e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                OnHandledException(e);
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), WoopsaFormat.Serialize(e), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                OnHandledException(e);
             }
         }
 
@@ -473,6 +489,7 @@ namespace Woopsa
         {
             return _root.ByPath(searchPath);
         }
+     
         #endregion
 
         [ThreadStatic]
@@ -489,6 +506,7 @@ namespace Woopsa
             _metaRouteMapper, _invokeRouteMapper;
 
     }
+
     internal class AccessControlProcessor : PostRouteProcessor, IRequestProcessor
     {
         public bool Process(HTTPRequest request, HTTPResponse response)

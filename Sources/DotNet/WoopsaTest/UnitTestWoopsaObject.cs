@@ -50,7 +50,7 @@ namespace WoopsaTest
             Assert.AreEqual(_maxLevel, 5.5);
         }
 
-        [TestMethod]
+        [TestMethod, TestCategory("Performance")]
         public void TestWoopsaObjectPerformance()
         {
             const int objectCount = 5000;

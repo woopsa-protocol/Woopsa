@@ -1,16 +1,48 @@
-bin
-obj
-Debug
+# DotNet sources
+# User-specific files
 *.suo
-*.suo
-*.sdf
-*.suo
-*.filters
 *.user
+*.userosscache
+*.sln.docstates
+
+# Build results
+[Dd]ebug/
+[Dd]ebugPublic/
+[Rr]elease/
+[Rr]eleases/
+x64/
+x86/
+bld/
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+
+# .NET Core
+project.lock.json
+project.fragment.lock.json
+artifacts/
+**/Properties/launchSettings.json
+
+# Visual Studio 2015 cache/options directory
+.vs/
+
+# NuGet Packages
+*.nupkg
+# The packages folder can be ignored because of Package Restore
+**/packages/*
+# except build/, which is used as an MSBuild target.
+!**/packages/build/
+# Uncomment if necessary however generally it will be regenerated when needed
+#!**/packages/repositories.config
+# NuGet v3's project.json files produces more ignorable files
+*.nuget.props
+*.nuget.targets
+
+# Others
+*.sdf
+*.filters
 *.log
 /Sources/Embedded/Release/*
 /Sources/Embedded/DemoServer/Release/*
 /Sources/Embedded/Server/Release/*
 node_modules
-
-.vs/
