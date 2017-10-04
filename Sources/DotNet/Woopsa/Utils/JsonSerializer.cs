@@ -1,6 +1,6 @@
 ﻿using System.Collections.Generic;
 
-#if NETCORE2
+#if NETCORE2 || NETSTANDARD2
         
 using Newtonsoft.Json;
 using Newtonsoft.Json.Linq;
