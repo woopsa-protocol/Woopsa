@@ -17,6 +17,7 @@ namespace Woopsa
             MonitorInterval = monitorInterval;
             PublishInterval = publishInterval;
             PropertyPath = propertyPath;
+            IncrementalObjectId = WoopsaUtils.NextIncrementalObjectId();
             _lock = new object();
             _notifications = new List<IWoopsaNotification>();
             if (monitorInterval == WoopsaSubscriptionServiceConst.MonitorIntervalLastPublishedValueOnly &&
@@ -54,7 +55,10 @@ namespace Woopsa
 
         public string PropertyPath { get; private set; }
 
-
+        /// <summary>
+        /// A unique number to identifiy internally this object.
+        /// </summary>
+        public UInt64 IncrementalObjectId { get; private set; }
         protected void EnqueueNewMonitoredValue(IWoopsaValue newValue)
         {
             if (!newValue.IsSameValue(_oldValue))
@@ -221,18 +225,44 @@ namespace Woopsa
         {
             try
             {
-                if (_watchedProperty is WoopsaElement)
-                    if (((WoopsaElement)_watchedProperty).IsDisposed)
-                        _watchedProperty = null;
-                if (_watchedProperty == null)
+                IWoopsaProperty currentlyWatchedProperty;
+                IWoopsaValue currentlyWatchedPropertyValue;
+
+                if ((_watchedProperty == null) ||
+                    (_watchedProperty is WoopsaElement && ((WoopsaElement)_watchedProperty).IsDisposed))
                 {
-                    var item = Root.ByPathOrNull(PropertyPath);
-                    _watchedProperty = item as IWoopsaProperty;
+                    IWoopsaProperty newWatchedProperty;
+
+                    newWatchedProperty = Root.ByPathOrNull(PropertyPath) as IWoopsaProperty;
+                    if (newWatchedProperty != null)
+                    {
+                        currentlyWatchedProperty = newWatchedProperty;
+                        currentlyWatchedPropertyValue = currentlyWatchedProperty.Value;
+                    }
+                    else
+                    {
+                        currentlyWatchedProperty = _watchedProperty;
+                        currentlyWatchedPropertyValue = WoopsaValue.Null;
+                    }
                 }
-                if (_watchedProperty != null)
+                else
                 {
-                    value = _watchedProperty.Value;
-                    return true;
+                    currentlyWatchedProperty = _watchedProperty;
+                    currentlyWatchedPropertyValue = _watchedProperty.Value;
+                }
+                if (currentlyWatchedProperty != null)
+                {
+                    if (OnCanWatch(this, currentlyWatchedProperty))
+                    {
+                        value = currentlyWatchedPropertyValue;
+                        _watchedProperty = currentlyWatchedProperty;
+                        return true;
+                    }
+                    else
+                    {
+                        value = WoopsaValue.Null;
+                        return false;
+                    }
                 }
                 else
                 {
@@ -246,6 +276,13 @@ namespace Woopsa
                 _watchedProperty = null;
                 throw;
             }
+        }
+
+        private bool OnCanWatch(
+            BaseWoopsaSubscriptionServiceSubscription subscription,
+            IWoopsaProperty itemProperty)
+        {
+            return Channel.OnCanWatch(subscription, itemProperty);
         }
 
         #region IDisposable
@@ -273,14 +310,14 @@ namespace Woopsa
                 publishInterval == WoopsaSubscriptionServiceConst.PublishIntervalOnce;
             EventHandler<WoopsaNotificationEventArgs> handler;
             if (isSingleNotification)
-                handler = 
-                    (sender, e) => 
+                handler =
+                    (sender, e) =>
                     {
                         EnqueueNewMonitoredValue(e.Notification.Value);
                         DoPublish(); // there is not publish timer, force publishing the unique notification
                     };
             else
-                handler = 
+                handler =
                     (sender, e) =>
                     {
                         EnqueueNewMonitoredValue(e.Notification.Value);

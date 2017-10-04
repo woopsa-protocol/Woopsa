@@ -36,6 +36,8 @@ namespace Woopsa
         /// </summary>
         public event EventHandler AfterWoopsaModelAccess;
 
+        public event EventHandler<CanWatchEventArgs> CanWatch;
+
         public static WoopsaSubscriptionServiceImplementation CurrentService { get { return _currentService; } }
 
         public void Terminate()
@@ -172,6 +174,8 @@ namespace Woopsa
         internal LightWeightTimerScheduler TimerScheduler { get; private set; }
         public bool Terminated { get { return TimerScheduler.Terminated; } }
 
+        public const bool CanWatchDefaultValue = true;
+
         private Dictionary<int, WoopsaSubscriptionChannel> _channels;
         private LightWeightTimer _timerCheckChannelTimedOut;
         private WoopsaContainer _root;
@@ -179,7 +183,36 @@ namespace Woopsa
 
         [ThreadStatic]
         private static WoopsaSubscriptionServiceImplementation _currentService;
-        
+
+        internal bool OnCanWatch(BaseWoopsaSubscriptionServiceSubscription subscription, IWoopsaProperty itemProperty)
+        {
+            if (CanWatch != null)
+            {
+                CanWatchEventArgs e = new
+                    CanWatchEventArgs(subscription, itemProperty);
+                CanWatch(this, e);
+                return e.CanWatch;
+            }
+            else
+                return CanWatchDefaultValue; 
+        }
+
         #endregion
+    }
+
+    public class CanWatchEventArgs: EventArgs
+    {
+        public CanWatchEventArgs(
+            BaseWoopsaSubscriptionServiceSubscription subscription, IWoopsaProperty itemProperty)
+        {
+            Subscription = subscription;
+            ItemProperty = itemProperty;
+            CanWatch =  WoopsaSubscriptionServiceImplementation.
+                CanWatchDefaultValue;
+        }
+
+        public BaseWoopsaSubscriptionServiceSubscription Subscription { get; private set; }
+        public IWoopsaProperty ItemProperty { get;  private set;}
+        public bool CanWatch { get; set; }
     }
 }

@@ -191,7 +191,7 @@ namespace Woopsa
         {
             get
             {
-                object newTargetObject;
+                object newTargetObject, previousTargetObject;
                 try
                 {
                     newTargetObject = TargetObjectGetter();
@@ -206,7 +206,7 @@ namespace Woopsa
                 {
                     lock (_lock)
                     {
-                        UnsubscribeCollectionChanged();
+                        UnsubscribeCollectionChanged();                        
                         object currentTargetObjectType = _targetObject != null ? ExposedType(_targetObject) : null;
                         object newTargetObjectType = newTargetObject != null ? ExposedType(newTargetObject) : null;
                         if (newTargetObjectType != currentTargetObjectType)
@@ -216,10 +216,11 @@ namespace Woopsa
                         }
                         else
                         {
-                            _targetObject = newTargetObject;
                             Type exposedType;
-                            exposedType = GetExposedType(_targetObject);
-                            OnTargetObjectChange(_targetObject, exposedType);
+                            exposedType = GetExposedType(newTargetObject);
+                            previousTargetObject = _targetObject;
+                            _targetObject = newTargetObject;
+                            OnTargetObjectChange(previousTargetObject, newTargetObject, exposedType);
                         }
                     }
                 }
@@ -287,22 +288,21 @@ namespace Woopsa
         protected override void PopulateObject()
         {
             TypeDescription typeDescription = null;
-            object targetObject;
+            object newTargetObject, previousTargetObject;
             try
             {
-                targetObject = TargetObjectGetter();
+                newTargetObject = TargetObjectGetter();
             }
             catch (Exception)
             {
-                targetObject = null;
+                newTargetObject = null;
                 // Items from property getters that throw exceptions are not added to the object hierarchy
                 // Ignore silently
             }
-            _targetObject = targetObject;
-            if (targetObject != null)
+            if (newTargetObject != null)
             {
                 WoopsaVisibilityAttribute woopsaVisibilityAttribute =
-                    WoopsaReflection.GetCustomAttribute<WoopsaVisibilityAttribute>(targetObject.GetType());
+                    WoopsaReflection.GetCustomAttribute<WoopsaVisibilityAttribute>(newTargetObject.GetType());
                 if (woopsaVisibilityAttribute != null)
                     Visibility = woopsaVisibilityAttribute.Visibility;
                 else
@@ -311,18 +311,20 @@ namespace Woopsa
             else
                 Visibility = DefaultVisibility;
             Type exposedType;
-            exposedType = GetExposedType(targetObject);
-            OnTargetObjectChange(targetObject, exposedType);
+            exposedType = GetExposedType(newTargetObject);
+            previousTargetObject = _targetObject;
+            _targetObject = newTargetObject;
+            OnTargetObjectChange(previousTargetObject, newTargetObject, exposedType);
             base.PopulateObject();
-            if (targetObject != null)
+            if (newTargetObject != null)
             {
                 typeDescription = GetTypeDescription(exposedType);
-                PopulateProperties(targetObject, exposedType, typeDescription.Properties);
-                PopulateMethods(targetObject, exposedType, typeDescription.Methods);
-                PopulateItems(targetObject, exposedType, typeDescription.Items);
+                PopulateProperties(newTargetObject, exposedType, typeDescription.Properties);
+                PopulateMethods(newTargetObject, exposedType, typeDescription.Methods);
+                PopulateItems(newTargetObject, exposedType, typeDescription.Items);
                 if (typeof(IEnumerable<object>).IsAssignableFrom(exposedType) && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 {
-                    IEnumerable enumerable = (IEnumerable)targetObject;
+                    IEnumerable enumerable = (IEnumerable)newTargetObject;
                     PopulateEnumerableItems(enumerable, DeclaredExposedType);
                 }
             }
@@ -338,7 +340,7 @@ namespace Woopsa
             return exposedType;
         }
 
-        protected virtual void OnTargetObjectChange(object targetObject, Type exposedType)
+        protected virtual void OnTargetObjectChange(object previousTargetObject, object newTargetObject, Type exposedType)
         {
         }
 

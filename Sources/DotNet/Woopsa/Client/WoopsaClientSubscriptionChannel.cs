@@ -199,7 +199,8 @@ namespace Woopsa
                 catch (WoopsaNotFoundException)
                 {
                     // No subscription service available, create a local one
-                    _localSubscriptionService = new WoopsaSubscriptionServiceImplementation(_woopsaRoot, false);
+                    _localSubscriptionService = new WoopsaSubscriptionServiceImplementation(
+                         _woopsaRoot, false);
                     try
                     {
                         _subscriptionOpenChannel = CreateSubscriptionChannel(_notificationQueueSize);
@@ -234,29 +235,13 @@ namespace Woopsa
 
         private void ManageSubscriptions()
         {
-            // New subscriptions
-            List<WoopsaClientSubscription> newSubscriptions;
-            SubscriptionsChanged = false;
-            do
-            {
-                if (_terminated)
-                    break;
-                newSubscriptions = null;
-                lock (_subscriptions)
-                    foreach (var item in _subscriptions)
-                        if (item.SubscriptionId == null)
-                        {
-                            if (newSubscriptions == null)
-                                newSubscriptions = new List<WoopsaClientSubscription>();
-                            newSubscriptions.Add(item);
-                            if (newSubscriptions.Count >= MaxSubscriptionsPerMultiRequest)
-                                break;
-                        }
-                if (newSubscriptions != null)
-                    if (!RegisterSubscriptions(newSubscriptions))
-                        break;
-            }
-            while (newSubscriptions != null);
+            ManageNewUnsubscriptions();
+            ManageNewSubscriptions();
+            ManageLostSubscriptions();
+        }
+
+        private void ManageNewUnsubscriptions()
+        {
             // New unsubscriptions
             List<WoopsaClientSubscription> newUnsubscriptions;
             // Unsubscription can be unsuccessful (for example when the server is down)
@@ -288,6 +273,37 @@ namespace Woopsa
                         break;
             }
             while (newUnsubscriptions != null);
+        }
+
+        private void ManageNewSubscriptions()
+        {
+            // New subscriptions
+            List<WoopsaClientSubscription> newSubscriptions;
+            SubscriptionsChanged = false;
+            do
+            {
+                if (_terminated)
+                    break;
+                newSubscriptions = null;
+                lock (_subscriptions)
+                    foreach (var item in _subscriptions)
+                        if (item.SubscriptionId == null)
+                        {
+                            if (newSubscriptions == null)
+                                newSubscriptions = new List<WoopsaClientSubscription>();
+                            newSubscriptions.Add(item);
+                            if (newSubscriptions.Count >= MaxSubscriptionsPerMultiRequest)
+                                break;
+                        }
+                if (newSubscriptions != null)
+                    if (!RegisterSubscriptions(newSubscriptions))
+                        break;
+            }
+            while (newSubscriptions != null);
+        }
+
+        private void ManageLostSubscriptions()
+        {
             // Unsubscribe lost subscriptions
             List<int> newLostUnsubscriptions;
             HashSet<int> processedLostSubscriptions = null;

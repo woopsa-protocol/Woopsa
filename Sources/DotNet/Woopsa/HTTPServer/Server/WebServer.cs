@@ -133,6 +133,7 @@ namespace Woopsa
         /// </summary>
         public void Start()
         {
+            _listener.Server.SetSocketOption(SocketOptionLevel.Socket, SocketOptionName.ReuseAddress, true);
             _listener.Start();
             _started = true;
             _listenerThread.Start();

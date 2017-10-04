@@ -15,6 +15,8 @@ namespace Woopsa
                 (sender, e) => { server.ExecuteBeforeWoopsaModelAccess(); };
             _subscriptionServiceImplementation.AfterWoopsaModelAccess +=
                 (sender, e) => { server.ExecuteAfterWoopsaModelAccess(); };
+            _subscriptionServiceImplementation.CanWatch += 
+                OnCanReconnectSubscriptionToNewObject;
             MethodCreateSubscriptionChannel = new WoopsaMethod(
                 this,
                 WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannel,
@@ -69,7 +71,9 @@ namespace Woopsa
                             arguments[0].ToInt32(), arguments[1].ToInt32()));
                 });
         }
-                
+
+        public event EventHandler<CanWatchEventArgs> CanReconnectSubscriptionToNewObject;
+
         public void Terminate()
         {
             if (_subscriptionServiceImplementation != null)
@@ -96,6 +100,11 @@ namespace Woopsa
         public WoopsaMethod MethodWaitNotification { get; private set; }
 
         #region Private Members
+
+        private void OnCanReconnectSubscriptionToNewObject(object sender, CanWatchEventArgs e)
+        {
+            CanReconnectSubscriptionToNewObject?.Invoke(this, e);
+        }
 
         WoopsaServer _server;
         WoopsaSubscriptionServiceImplementation _subscriptionServiceImplementation;
