@@ -48,7 +48,7 @@
   <ItemGroup>
     <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
     <ProjectReference Include="TestResources\EmbeddedResource\EmbeddedResource.csproj" />
-    <ProjectReference Include="TestResources\Woopsa.EmbeddedResource\Woopsa.EmbeddedddResource.csproj" />
+    <ProjectReference Include="TestResources\Woopsa.EmbeddedResource\Woopsa.EmbeddedResource.csproj" />
   </ItemGroup>
     
   <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
