@@ -163,14 +163,12 @@ namespace Woopsa
 
         internal protected virtual void OnBeforeWoopsaModelAccess()
         {
-            if (BeforeWoopsaModelAccess != null)
-                BeforeWoopsaModelAccess(this, new EventArgs());
+            BeforeWoopsaModelAccess?.Invoke(this, new EventArgs());
         }
 
         internal protected virtual void OnAfterWoopsaModelAccess()
         {
-            if (AfterWoopsaModelAccess != null)
-                AfterWoopsaModelAccess(this, new EventArgs());
+            AfterWoopsaModelAccess?.Invoke(this, new EventArgs());
         }
 
         #region IDisposable

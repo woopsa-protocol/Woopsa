@@ -28,11 +28,7 @@ namespace Woopsa
             return Client.SubscriptionChannel.Subscribe(
                         WoopsaUtils.CombinePath(this.GetPath(), relativePath),
                         relativePath,
-                        (sender, e) =>
-                            {
-                                if (propertyChangedHandler != null)
-                                    propertyChangedHandler(this, e);
-                            },
+                        (sender, e) => propertyChangedHandler?.Invoke(this, e),
                         monitorInterval,
                         publishInterval
                         );
