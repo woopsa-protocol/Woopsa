@@ -1,4 +1,8 @@
 # Woopsa
+[![AppVeyor](https://img.shields.io/appveyor/ci/fabien-chevalley/woopsa.svg)](https://ci.appveyor.com/project/fabien-chevalley/woopsa)
+[![npm](https://img.shields.io/npm/v/woopsa.svg)](https://www.npmjs.com/package/woopsa)
+[![NuGet](https://img.shields.io/nuget/v/Woopsa.svg)](https://www.nuget.org/packages/Woopsa/)
+ 
 Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things.
 
 Woopsa allows you to share the complete object model of your application in a way that's similar to OPC-UA. It's based on rock-solid foundations such as HTTP and JSON, which makes it work on the web out-of-the-box. Our mission is to get Woopsa on as many platforms as possible. Today, C# and JavaScript implementations exist, but there are much more to come!
@@ -72,5 +76,7 @@ Our [Getting Started](http://www.woopsa.org/get-started/) tutorial allows you to
 ## Compatibility
 Woopsa has been tested and works on:
  * .NET Framework 4.0
+ * .NET Framework 4.5
+ * .NET Core 2.0
  * Mono 4.0+
  

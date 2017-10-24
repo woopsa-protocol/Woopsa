@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Globalization;
 using System.Net;
 using System.Threading;
 
@@ -366,7 +367,8 @@ namespace Woopsa
                 var notificationSubscriptionId = notification["SubscriptionId"];
                 var notificationId = notification["Id"];
                 WoopsaValueType type = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), notificationValue["Type"]);
-                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue["Value"], type, DateTime.Parse(notificationValue["TimeStamp"]));
+                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue["Value"], 
+                    type, DateTime.Parse(notificationValue["TimeStamp"].AsText, CultureInfo.InvariantCulture));
                 WoopsaClientNotification newNotification = new WoopsaClientNotification(value, notificationSubscriptionId);
                 newNotification.Id = notificationId;
                 notificationsList.Add(newNotification);

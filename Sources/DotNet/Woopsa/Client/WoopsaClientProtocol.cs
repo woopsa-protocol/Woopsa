@@ -7,7 +7,6 @@ using System.Net;
 using System.Net.Cache;
 using System.Text;
 using System.Web;
-using System.Web.Script.Serialization;
 
 namespace Woopsa
 {

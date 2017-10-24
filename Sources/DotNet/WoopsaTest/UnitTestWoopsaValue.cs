@@ -90,8 +90,8 @@ namespace WoopsaTest
             Assert.AreEqual(v.Type, WoopsaValueType.JsonData);
 		}
 
-		[TestMethod]
-		public void TestWoopsaValuePerfo()
+		[TestMethod, TestCategory("Performance")]
+		public void TestWoopsaValuePerformance()
 		{
 			Stopwatch watch = new Stopwatch();
 			watch.Start();
@@ -133,8 +133,8 @@ namespace WoopsaTest
         }
 
 
-        [TestMethod]
-        public void TestWoopsaSerializationPerfo()
+        [TestMethod, TestCategory("Performance")]
+        public void TestWoopsaSerializationPerformance()
         {
             Stopwatch watch = new Stopwatch();
             WoopsaValue v = 3.14;

@@ -4,7 +4,6 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
-using System.Web.Script.Serialization;
 
 namespace Woopsa
 {
@@ -12,8 +11,7 @@ namespace Woopsa
     {
         public static WoopsaJsonData CreateFromText(string jsonText)
         {
-            JavaScriptSerializer deserializer = new JavaScriptSerializer();
-            object deserializedData = deserializer.Deserialize<object>(jsonText);
+            object deserializedData = JsonSerializer.Deserialize<object>(jsonText);
             return new WoopsaJsonData(deserializedData, jsonText);
         }
         public static WoopsaJsonData CreateFromDeserializedData(object deserializedJson)
@@ -25,8 +23,8 @@ namespace Woopsa
         {
             _data = deserializedData;
             _serializedData = serializedData;
-            _asDictionary = (_data as Dictionary<string, object>);
-            _asArray = _data as object[];
+            _asDictionary = JsonSerializer.ToDictionnary(_data);
+            _asArray = JsonSerializer.ToArray(_data);
         }
 
         public WoopsaJsonData this[string key]
@@ -45,17 +43,8 @@ namespace Woopsa
         {
             if (IsDictionary)
             {
-                object dictionnaryEntry;
-                if (_asDictionary.TryGetValue(key, out dictionnaryEntry))
-                {
-                    value = CreateFromDeserializedData(dictionnaryEntry);
-                    return true;
-                }
-                else
-                {
-                    value = null;
-                    return false;
-                }
+                value = CreateFromDeserializedData(_asDictionary[key]);
+                return true;
             }
             else
             {
@@ -136,8 +125,7 @@ namespace Woopsa
                         _serializedData = WoopsaFormat.ToStringWoopsa(_data);
                     else
                     {
-                        JavaScriptSerializer serializer = new JavaScriptSerializer();
-                        _serializedData = serializer.Serialize(_data);
+                        _serializedData = JsonSerializer.Serialize(_data);
                     }
                 }
                 return _serializedData;
@@ -151,7 +139,7 @@ namespace Woopsa
 
         internal object InternalObject { get { return _data; } }
 
-        private object _data;
+        private readonly object _data;
         private Dictionary<string, object> _asDictionary;
         private object[] _asArray;
         private string _serializedData;
@@ -311,8 +299,7 @@ namespace Woopsa
 
         public static string Serialize(this WoopsaJsonData data)
         {
-            JavaScriptSerializer serializer = new JavaScriptSerializer();
-            return serializer.Serialize(data.InternalObject);
+            return JsonSerializer.Serialize(data.InternalObject);
         }
     }
 }

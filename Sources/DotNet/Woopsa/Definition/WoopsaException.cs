@@ -6,7 +6,6 @@ using System.Threading.Tasks;
 
 namespace Woopsa
 {
-
     public static class WoopsaExceptionMessage
     {
         public static string WoopsaCastTypeMessage(string destinationType, string sourceType)
@@ -102,5 +101,15 @@ namespace Woopsa
             : base(message, innerException)
         {
         }
+    }
+
+    public sealed class ExceptionEventArgs : EventArgs
+    {
+        public ExceptionEventArgs(Exception exception)
+        {
+            Exception = exception;
+        }
+
+        public Exception Exception { get; private set; }
     }
 }
