@@ -130,6 +130,7 @@ namespace Woopsa
         {
             CheckDisposed();
             lock (Lock)
+            {
                 if (!_populated)
                 {
                     PopulateContainer(_items);
@@ -137,6 +138,7 @@ namespace Woopsa
                 }
                 else
                     UpdateItems();
+            }
         }
 
         /// <summary>
@@ -598,10 +600,12 @@ namespace Woopsa
         public T ByNameOrNull(string name)
         {
             lock (_itemsByName)
+            {
                 if (Contains(name))
                     return ByName(name);
                 else
                     return null;
+            }
         }
 
         private Dictionary<string, T> _itemsByName;
