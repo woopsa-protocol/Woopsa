@@ -7,61 +7,96 @@ namespace Woopsa
 {
     public class WoopsaDynamicClientObject : DynamicObject
     {
+
+        public Action BeforeProtocolRequest { get; set; }
+
+        public Action AfterProtocolRequest { get; set; }
+
         #region Public Override Methods
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
         {
-            result = null;
-            foreach (var property in InnerObject.Properties)
+            BeforeProtocolRequest?.Invoke();
+            try
             {
-                if (binder.Name.Equals(property.Name))
+                result = null;
+                foreach (var property in InnerObject.Properties)
                 {
-                    result = property.Value;
-                    return true;
-                }
-            }
-            foreach (var item in InnerObject.Items)
-            {
-                if (binder.Name.Equals(item.Name))
-                    if (item is WoopsaBoundClientObject)
+                    if (binder.Name.Equals(property.Name))
                     {
-                        result = new WoopsaDynamicClientObject() { InnerObject = (WoopsaBoundClientObject)item };
+                        result = property.Value;
                         return true;
                     }
+                }
+                foreach (var item in InnerObject.Items)
+                {
+                    if (binder.Name.Equals(item.Name))
+                        if (item is WoopsaBoundClientObject)
+                        {
+                            result = new WoopsaDynamicClientObject()
+                            {
+                                InnerObject = (WoopsaBoundClientObject)item,
+                                BeforeProtocolRequest = BeforeProtocolRequest,
+                                AfterProtocolRequest = AfterProtocolRequest
+                            };
+                            return true;
+                        }
+                }
+                return false;
             }
-            return false;
+            finally
+            {
+                AfterProtocolRequest?.Invoke();
+            }
         }
 
         public override bool TrySetMember(SetMemberBinder binder, object value)
         {
-            foreach (var property in InnerObject.Properties)
+            BeforeProtocolRequest?.Invoke();
+            try
             {
-                if (binder.Name.Equals(property.Name))
+                foreach (var property in InnerObject.Properties)
                 {
-                    property.Value = WoopsaValue.ToWoopsaValue(value, property.Type);
-                    return true;
+                    if (binder.Name.Equals(property.Name))
+                    {
+                        property.Value = WoopsaValue.ToWoopsaValue(value, property.Type);
+                        return true;
+                    }
                 }
+                return false;
             }
-            return false;
+            finally
+            {
+                AfterProtocolRequest?.Invoke();
+            }
         }
 
         public override bool TryInvokeMember(InvokeMemberBinder binder, object[] args, out object result)
         {
-            result = null;
-            foreach (var method in InnerObject.Methods)
+            BeforeProtocolRequest?.Invoke();
+            try
             {
-                if (method.Name.Equals(binder.Name))
+                result = null;
+                foreach (var method in InnerObject.Methods)
                 {
-                    var argumentInfos = method.ArgumentInfos.ToArray();
-                    var arguments = new IWoopsaValue[argumentInfos.Length];
-                    for (int i = 0; i < argumentInfos.Length; i++)
-                        arguments[i] = WoopsaValue.ToWoopsaValue(args[i], argumentInfos[i].Type);
-                    result = method.Invoke(arguments);
-                    return true;
+                    if (method.Name.Equals(binder.Name))
+                    {
+                        var argumentInfos = method.ArgumentInfos.ToArray();
+                        var arguments = new IWoopsaValue[argumentInfos.Length];
+                        for (int i = 0; i < argumentInfos.Length; i++)
+                            arguments[i] = WoopsaValue.ToWoopsaValue(args[i], argumentInfos[i].Type);
+                        result = method.Invoke(arguments);
+                        return true;
+                    }
                 }
+                return false;
+
             }
-            return false;
-        }
+            finally
+            {
+                AfterProtocolRequest?.Invoke();
+            }
+}
 
         #endregion
 
@@ -74,9 +109,12 @@ namespace Woopsa
 
     public class WoopsaDynamicClient : WoopsaDynamicClientObject, IDisposable
     {
-        public WoopsaDynamicClient(string url)
+        public WoopsaDynamicClient(string url) : this (new WoopsaClient(url))
+        { }
+
+        public WoopsaDynamicClient(WoopsaClient client)
         {
-            _client = new WoopsaClient(url);
+            _client = client;
             Refresh();
         }
 
