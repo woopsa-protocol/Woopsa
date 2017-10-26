@@ -43,14 +43,17 @@ namespace Woopsa
         {
             if (IsDictionary)
             {
-                value = CreateFromDeserializedData(_asDictionary[key]);
-                return true;
+                object dictionnaryEntry;
+                if (_asDictionary.TryGetValue(key, out dictionnaryEntry))
+                {
+                    value = CreateFromDeserializedData(_asDictionary[key]);
+                    return true;
+                }
             }
-            else
-            {
-                value = null;
-                return false;
-            }
+
+            // else
+            value = null;
+            return false;
         }
 
         public IEnumerable<string> Keys
