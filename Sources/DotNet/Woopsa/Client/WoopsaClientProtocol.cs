@@ -71,16 +71,15 @@ namespace Woopsa
             AbortPendingRequests();
         }
 
-        public bool IsLastCommunicationSuccessful
+        public bool IsLastCommunicationSuccessful => _isLastCommunicationSuccessFul;
+
+        private void SetLastCommunicationSuccessful(bool value)
         {
-            get { return _isLastCommunicationSuccessFul; }
-            private set
+            if (value != _isLastCommunicationSuccessFul || !_hasValueIsLastCommunicationSuccessFul)
             {
-                if (value != _isLastCommunicationSuccessFul)
-                {
-                    _isLastCommunicationSuccessFul = value;
-                    OnIsLastCommunicationSuccessfulChange();
-                }
+                _isLastCommunicationSuccessFul = value;
+                _hasValueIsLastCommunicationSuccessFul = true;
+                OnIsLastCommunicationSuccessfulChange();
             }
         }
 
@@ -88,11 +87,11 @@ namespace Woopsa
 
         protected virtual void OnIsLastCommunicationSuccessfulChange()
         {
-            if (IsLastCommunicationSuccessfulChange != null)
-                IsLastCommunicationSuccessfulChange(this, new EventArgs());
+            IsLastCommunicationSuccessfulChange?.Invoke(this, new EventArgs());
         }
 
         private volatile bool _isLastCommunicationSuccessFul;
+        private volatile bool _hasValueIsLastCommunicationSuccessFul;
 
         #endregion
 
@@ -152,7 +151,7 @@ namespace Woopsa
                         }
 
                         response = (HttpWebResponse)request.GetResponse();
-                        IsLastCommunicationSuccessful = true;
+                        SetLastCommunicationSuccessful(true);
                     }
                     catch (WebException exception)
                     {
@@ -162,7 +161,7 @@ namespace Woopsa
                         response = (HttpWebResponse)exception.Response;
                         if (response == null)
                         {
-                            IsLastCommunicationSuccessful = false;
+                            SetLastCommunicationSuccessful(false);
                             // Sometimes, we can make the request, but the server dies
                             // before we get a reply - in that case the Response
                             // is null, so we re-throw the exception
@@ -171,7 +170,7 @@ namespace Woopsa
                     }
                     catch (Exception)
                     {
-                        IsLastCommunicationSuccessful = false;
+                        SetLastCommunicationSuccessful(false);
                         throw;
                     }
 
