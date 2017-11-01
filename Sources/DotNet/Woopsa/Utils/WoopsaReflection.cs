@@ -38,7 +38,7 @@ namespace Woopsa
                 WoopsaValueType woopsaPropertyType;
                 WoopsaConverter converter;
                 bool isValidWoopsaProperty = false;
-                isValidWoopsaProperty = customValueTypeConverters.InferWoopsaType(propertyInfo.PropertyType, out woopsaPropertyType, out converter);
+                isValidWoopsaProperty = InferWoopsaType(customValueTypeConverters, propertyInfo.PropertyType, out woopsaPropertyType, out converter);
                 if (attribute != null)
                 {
                     woopsaPropertyType = attribute.ValueType;
@@ -67,7 +67,7 @@ namespace Woopsa
             MethodDescriptions methodDescriptions,
             WoopsaConverters customValueTypeConverters = null)
         {
-            const BindingFlags flags = BindingFlags.Public |  BindingFlags.Instance;
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.Instance;
 
             List<MethodInfo> methods = new List<MethodInfo>(targetType.GetMethods(flags));
             foreach (Type inter in targetType.GetInterfaces())
@@ -82,7 +82,7 @@ namespace Woopsa
                 WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
                 WoopsaValueType woopsaReturnType;
                 bool isValidWoopsaMethod = false;
-                isValidWoopsaMethod = customValueTypeConverters.InferWoopsaType(methodInfo.ReturnType, out woopsaReturnType, out converter);
+                isValidWoopsaMethod = InferWoopsaType(customValueTypeConverters, methodInfo.ReturnType, out woopsaReturnType, out converter);
                 if (attribute != null)
                 {
                     woopsaReturnType = attribute.ValueType;
@@ -97,7 +97,7 @@ namespace Woopsa
                     {
                         WoopsaConverter argumentConverter;
                         WoopsaValueType argumentType;
-                        if (customValueTypeConverters.InferWoopsaType(parameter.ParameterType, out argumentType, out argumentConverter))
+                        if (InferWoopsaType(customValueTypeConverters, parameter.ParameterType, out argumentType, out argumentConverter))
                         {
                             string parameterName;
                             parameterName = parameter.Name;
@@ -136,6 +136,17 @@ namespace Woopsa
                         methodDescriptions.Add(newMethod);
                     }
                 }
+            }
+        }
+
+        private static bool InferWoopsaType(WoopsaConverters customValueTypeConverters, Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
+        {
+            if (customValueTypeConverters != null)
+                return customValueTypeConverters.InferWoopsaType(type, out woopsaValueType, out converter);
+            else
+            {
+                converter = WoopsaConverterDefault.Default;
+                return WoopsaTypeUtils.InferWoopsaType(type, out woopsaValueType);
             }
         }
 
@@ -300,7 +311,7 @@ namespace Woopsa
         public TypeDescriptions(WoopsaConverters customValueTypeConverters)
         {
             _typeDescriptions = new Dictionary<Type, TypeDescription>();
-            CustomTypeConverters = new WoopsaConverters(customValueTypeConverters);
+            CustomTypeConverters = customValueTypeConverters;
         }
 
         public TypeDescription GetTypeDescription(Type type)
@@ -364,13 +375,9 @@ namespace Woopsa
 
     public class WoopsaConverters
     {
-        public WoopsaConverters(WoopsaConverters converters = null)
+        public WoopsaConverters()
         {
-            if (converters != null)
-                _converterDescriptions = new Dictionary<Type, WoopsaConverterDescription>(
-                    converters._converterDescriptions);
-            else
-                _converterDescriptions = new Dictionary<Type, WoopsaConverterDescription>();
+            _converterDescriptions = new Dictionary<Type, WoopsaConverterDescription>();
         }
 
         public bool IsWoopsaValueType(Type type)
