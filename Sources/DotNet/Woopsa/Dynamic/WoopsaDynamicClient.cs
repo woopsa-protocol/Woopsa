@@ -12,6 +12,8 @@ namespace Woopsa
 
         public Action AfterProtocolRequest { get; set; }
 
+        public WoopsaConverters CustomTypeConverters { get; set; }
+
         #region Public Override Methods
 
         public override bool TryGetMember(GetMemberBinder binder, out object result)
@@ -37,7 +39,8 @@ namespace Woopsa
                             {
                                 InnerObject = (WoopsaBoundClientObject)item,
                                 BeforeProtocolRequest = BeforeProtocolRequest,
-                                AfterProtocolRequest = AfterProtocolRequest
+                                AfterProtocolRequest = AfterProtocolRequest,
+                                CustomTypeConverters = CustomTypeConverters
                             };
                             return true;
                         }
@@ -82,9 +85,20 @@ namespace Woopsa
                     if (method.Name.Equals(binder.Name))
                     {
                         var argumentInfos = method.ArgumentInfos.ToArray();
+                       
                         var arguments = new IWoopsaValue[argumentInfos.Length];
                         for (int i = 0; i < argumentInfos.Length; i++)
-                            arguments[i] = WoopsaValue.ToWoopsaValue(args[i], argumentInfos[i].Type);
+                        {
+                            WoopsaValueType woopsaValueType;
+                            WoopsaConverter woopsaConverter;
+                            if (CustomTypeConverters != null)
+                            {
+                                CustomTypeConverters.InferWoopsaType(args[i].GetType(), out woopsaValueType, out woopsaConverter);
+                                arguments[i] = woopsaConverter.ToWoopsaValue(args[i], woopsaValueType, null);
+                            }
+                            else
+                                arguments[i] = WoopsaValue.ToWoopsaValue(args[i], argumentInfos[i].Type);
+                        }
                         result = method.Invoke(arguments);
                         return true;
                     }
