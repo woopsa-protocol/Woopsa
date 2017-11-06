@@ -10,6 +10,18 @@ using System.Web;
 
 namespace Woopsa
 {
+    public class EventArgClientRequest : EventArgs
+    {
+        public EventArgClientRequest(string path, NameValueCollection postData)
+        {
+            Path = path;
+            PostData = postData;
+        }
+
+        public string Path { get; set; }
+        public NameValueCollection PostData { get; set; }
+    }
+
     public class WoopsaClientProtocol : IDisposable
     {
         #region Constructors
@@ -93,6 +105,9 @@ namespace Woopsa
         private volatile bool _isLastCommunicationSuccessFul;
         private volatile bool _hasValueIsLastCommunicationSuccessFul;
 
+        public event EventHandler<EventArgClientRequest> BeforeClientRequest;
+        public event EventHandler AfterClientRequest;
+
         #endregion
 
         #region Private Helpers
@@ -107,98 +122,106 @@ namespace Woopsa
         {
             if (!_terminating)
             {
-                var request = (HttpWebRequest)WebRequest.Create(Url + path);
-                request.CachePolicy = _cachePolicy;
-
-                // TODO : affiner l'optimisation de performance
-                request.ServicePoint.UseNagleAlgorithm = false;
-                request.ServicePoint.Expect100Continue = false;
-
-                HttpWebResponse response = null;
-
-                lock (_pendingRequests)
-                    _pendingRequests.Add(request);
+                BeforeClientRequest?.Invoke(this, new EventArgClientRequest(path, postData));
                 try
                 {
+                    var request = (HttpWebRequest)WebRequest.Create(Url + path);
+                    request.CachePolicy = _cachePolicy;
+
+                    // TODO : affiner l'optimisation de performance
+                    request.ServicePoint.UseNagleAlgorithm = false;
+                    request.ServicePoint.Expect100Continue = false;
+
+                    HttpWebResponse response = null;
+
+                    lock (_pendingRequests)
+                        _pendingRequests.Add(request);
                     try
                     {
-                        if (Username != null)
-                            request.Credentials = new NetworkCredential(Username, Password);
-
-                        request.Timeout = (int)timeout.TotalMilliseconds;
-
-                        if (postData != null)
+                        try
                         {
-                            request.Method = "POST";
-                            request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
-                        }
-                        else
-                            request.Method = "GET";
+                            if (Username != null)
+                                request.Credentials = new NetworkCredential(Username, Password);
 
-                        request.Accept = "*/*";
+                            request.Timeout = (int)timeout.TotalMilliseconds;
 
-                        if (postData != null)
-                        {
-                            StringBuilder stringBuilder = new StringBuilder();
-                            for (var i = 0; i < postData.Count; i++)
+                            if (postData != null)
                             {
-                                string key = postData.AllKeys[i];
-                                stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&",
-                                    HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                                request.Method = "POST";
+                                request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
                             }
-                            using (var writer = new StreamWriter(request.GetRequestStream()))
-                                writer.Write(stringBuilder.ToString());
-                        }
+                            else
+                                request.Method = "GET";
 
-                        response = (HttpWebResponse)request.GetResponse();
-                        SetLastCommunicationSuccessful(true);
-                    }
-                    catch (WebException exception)
-                    {
-                        // This could be an HTTP error, in which case
-                        // we actually have a response (with the HTTP 
-                        // status and error)
-                        response = (HttpWebResponse)exception.Response;
-                        if (response == null)
+                            request.Accept = "*/*";
+
+                            if (postData != null)
+                            {
+                                StringBuilder stringBuilder = new StringBuilder();
+                                for (var i = 0; i < postData.Count; i++)
+                                {
+                                    string key = postData.AllKeys[i];
+                                    stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&",
+                                        HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                                }
+                                using (var writer = new StreamWriter(request.GetRequestStream()))
+                                    writer.Write(stringBuilder.ToString());
+                            }
+
+                            response = (HttpWebResponse)request.GetResponse();
+                            SetLastCommunicationSuccessful(true);
+                        }
+                        catch (WebException exception)
+                        {
+                            // This could be an HTTP error, in which case
+                            // we actually have a response (with the HTTP 
+                            // status and error)
+                            response = (HttpWebResponse)exception.Response;
+                            if (response == null)
+                            {
+                                SetLastCommunicationSuccessful(false);
+                                // Sometimes, we can make the request, but the server dies
+                                // before we get a reply - in that case the Response
+                                // is null, so we re-throw the exception
+                                throw;
+                            }
+                        }
+                        catch (Exception)
                         {
                             SetLastCommunicationSuccessful(false);
-                            // Sometimes, we can make the request, but the server dies
-                            // before we get a reply - in that case the Response
-                            // is null, so we re-throw the exception
                             throw;
                         }
-                    }
-                    catch (Exception)
-                    {
-                        SetLastCommunicationSuccessful(false);
-                        throw;
-                    }
 
-                    string resultString;
-                    using (var reader = new StreamReader(response.GetResponseStream()))
-                    {
-                        resultString = reader.ReadToEnd();
-                    }
-
-                    if (response.StatusCode != HttpStatusCode.OK)
-                    {
-                        if (response.ContentType == MIMETypes.Application.JSON)
+                        string resultString;
+                        using (var reader = new StreamReader(response.GetResponseStream()))
                         {
-                            var exception = WoopsaFormat.DeserializeError(resultString);
-                            throw exception;
+                            resultString = reader.ReadToEnd();
                         }
 
-                        throw new WoopsaException(response.StatusDescription);
-                    }
+                        if (response.StatusCode != HttpStatusCode.OK)
+                        {
+                            if (response.ContentType == MIMETypes.Application.JSON)
+                            {
+                                var exception = WoopsaFormat.DeserializeError(resultString);
+                                throw exception;
+                            }
 
-                    return resultString;
+                            throw new WoopsaException(response.StatusDescription);
+                        }
+
+                        return resultString;
+                    }
+                    finally
+                    {
+                        lock (_pendingRequests)
+                            _pendingRequests.Remove(request);
+                        if (response != null)
+                            response.Close();
+                    }
                 }
                 finally
                 {
-                    lock (_pendingRequests)
-                        _pendingRequests.Remove(request);
-                    if (response != null)
-                        response.Close();
+                    AfterClientRequest?.Invoke(this, EventArgs.Empty);
                 }
             }
             else
