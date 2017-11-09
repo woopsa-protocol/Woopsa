@@ -6,7 +6,12 @@ namespace Woopsa
 {
     public class WoopsaDynamicClientObject : DynamicObject
     {
-        public WoopsaConverters CustomTypeConverters { get; set; }
+        #region Constructor
+        public WoopsaDynamicClientObject(WoopsaConverters customTypeConverters = null)
+        {
+            CustomTypeConverters = customTypeConverters;
+        } 
+        #endregion
 
         #region Public Override Methods
 
@@ -26,7 +31,7 @@ namespace Woopsa
                 if (binder.Name.Equals(item.Name))
                     if (item is WoopsaBoundClientObject)
                     {
-                        result = CreateObject((WoopsaBoundClientObject)item);
+                        result = CreateChildObject((WoopsaBoundClientObject)item);
                         return true;
                     }
             }
@@ -79,8 +84,12 @@ namespace Woopsa
 
         #endregion
 
+        #region Properties
+        public WoopsaConverters CustomTypeConverters { get; private set; }
+        #endregion
+
         #region protected 
-        protected virtual WoopsaDynamicClientObject CreateObject(WoopsaBoundClientObject item)
+        protected virtual WoopsaDynamicClientObject CreateChildObject(WoopsaBoundClientObject item)
         {
             return new WoopsaDynamicClientObject()
             {
@@ -88,17 +97,17 @@ namespace Woopsa
                 CustomTypeConverters = CustomTypeConverters
             };
         }
-        protected WoopsaBoundClientObject InnerObject { get; set; }
 
+        protected WoopsaBoundClientObject InnerObject { get; set; }
         #endregion
     }
 
     public class WoopsaDynamicClient : WoopsaDynamicClientObject, IDisposable
     {
-        public WoopsaDynamicClient(string url) : this (new WoopsaClient(url))
+        public WoopsaDynamicClient(string url, WoopsaConverters customTypeConverters = null) : this (new WoopsaClient(url))
         { }
 
-        public WoopsaDynamicClient(WoopsaClient client)
+        public WoopsaDynamicClient(WoopsaClient client, WoopsaConverters customTypeConverters = null) : base (customTypeConverters)
         {
             _client = client;
             Refresh();
