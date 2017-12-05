@@ -58,14 +58,38 @@ namespace Woopsa
         /// <remarks>
         /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
         /// </remarks>
-        public WebServer(int port = DefaultPortHttp, int threadPoolSize = CustomThreadPool.DefaultThreadPoolSize, ThreadPriority priority = DefaultThreadPriority)
+        public WebServer(int port = DefaultPortHttp, int threadPoolSize = CustomThreadPool.DefaultThreadPoolSize, ThreadPriority priority = DefaultThreadPriority) : 
+            this(IPAddress.IPv6Any, port, threadPoolSize, priority)
+        {
+        }
+
+        /// <summary>
+        /// Creates a WebServer that runs on the specified ip and port and can be multithreaded
+        /// </summary>
+        /// /// <param name="ipAddress">
+        /// The id on which to run the server
+        /// </param>
+        /// <param name="port">
+        /// The port on which to run the server (default 80)
+        /// </param>
+        /// <param name="threadPoolSize">
+        /// The maximum number of threads to be created. 
+        /// CustomThreadPool.DefaultThreadPoolSize means use default operating system value.
+        /// </param>
+        /// <param name="priority">
+        /// The priority of the web server threads.
+        /// </param>
+        /// <remarks>
+        /// A server must be multithreaded in order to use the Keep-Alive HTTP mechanism.
+        /// </remarks>
+        public WebServer(IPAddress ipAdresse, int port = DefaultPortHttp, int threadPoolSize = CustomThreadPool.DefaultThreadPoolSize, ThreadPriority priority = DefaultThreadPriority)
         {
             Port = port;
             PreRouteProcessors = new List<PreRouteProcessor>();
             Routes = new RouteSolver();
             Routes.Error += _routeSolver_Error;
             _openTcpClients = new List<TcpClient>();
-            _listener = new TcpListener(IPAddress.IPv6Any, port);
+            _listener = new TcpListener(ipAdresse, port);
             _listener.Server.SetSocketOption(SocketOptionLevel.IPv6, SocketOptionName.IPv6Only, false);
             if (threadPoolSize == CustomThreadPool.DefaultThreadPoolSize || threadPoolSize > 1)
                 _threadPool = new CustomThreadPool("WoopsaWebServer", threadPoolSize, priority);
