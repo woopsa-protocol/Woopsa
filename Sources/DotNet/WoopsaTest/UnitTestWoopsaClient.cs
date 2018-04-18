@@ -49,18 +49,34 @@ namespace WoopsaTest
         public void TestWoopsaIsLastCommunicationSuccessful()
         {
             bool isSuccessfull = false;
+            int counter = 0;
             TestObjectServer objectServer = new TestObjectServer();
             using (WoopsaClient client = new WoopsaClient(TestingUrl))
             {
+                Assert.IsFalse(client.ClientProtocol.IsLastCommunicationSuccessful);
+
+                client.ClientProtocol.IsLastCommunicationSuccessfulChange +=
+                (sender, e) =>
+                {
+                    isSuccessfull = client.ClientProtocol.IsLastCommunicationSuccessful;
+                    counter++;
+                };
+                // Initial & unsuccessful 
+                try
+                {
+                    client.ClientProtocol.Read("Not existing");
+                }
+                catch
+                { }
+                Assert.IsFalse(isSuccessfull);
+                Assert.AreEqual(1, counter);
+
+
                 WoopsaUnboundClientObject root = client.CreateUnboundRoot("root");
                 WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
                     (sender, e) => {  },
                     TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
-                client.ClientProtocol.IsLastCommunicationSuccessfulChange +=
-                    (sender, e) =>
-                    {
-                        isSuccessfull = client.ClientProtocol.IsLastCommunicationSuccessful;
-                    };
+
                 Stopwatch watch = new Stopwatch();
                 using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
                 {                    

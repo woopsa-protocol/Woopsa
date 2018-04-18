@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Cache;
@@ -10,6 +9,19 @@ using System.Web;
 
 namespace Woopsa
 {
+    public class ClientRequestEventArgs : EventArgs
+    {
+        public ClientRequestEventArgs(string path, NameValueCollection postData)
+        {
+            Path = path;
+            PostData = postData;
+        }
+
+        public string Path { get; private set; }
+
+        public NameValueCollection PostData { get; private set; }
+    }
+
     public class WoopsaClientProtocol : IDisposable
     {
         #region Constructors
@@ -36,21 +48,18 @@ namespace Woopsa
 
         public WoopsaValue Read(string path)
         {
-            string response = Request(WoopsaFormat.VerbRead + path);
-            return WoopsaFormat.DeserializeWoopsaValue(response);
+            return RequestAndDeserialize(WoopsaFormat.VerbRead + path, WoopsaFormat.DeserializeWoopsaValue);
         }
 
         public WoopsaValue Write(string path, string value)
         {
             var arguments = new NameValueCollection { { WoopsaFormat.KeyValue, value } };
-            string response = Request(WoopsaFormat.VerbWrite + path, arguments);
-            return WoopsaFormat.DeserializeWoopsaValue(response);
+            return RequestAndDeserialize(WoopsaFormat.VerbWrite + path, WoopsaFormat.DeserializeWoopsaValue, arguments);
         }
 
         public WoopsaValue Invoke(string path, NameValueCollection arguments, TimeSpan timeout)
         {
-            string response = Request(WoopsaFormat.VerbInvoke + path, arguments, timeout);
-            return WoopsaFormat.DeserializeWoopsaValue(response);
+            return RequestAndDeserialize(WoopsaFormat.VerbInvoke + path, WoopsaFormat.DeserializeWoopsaValue, arguments, timeout);
         }
 
         public WoopsaValue Invoke(string path, NameValueCollection arguments)
@@ -60,9 +69,7 @@ namespace Woopsa
 
         public WoopsaMetaResult Meta(string path)
         {
-            string response = Request(WoopsaFormat.VerbMeta + path);
-            var result = WoopsaFormat.DeserializeMeta(response);
-            return result;
+            return RequestAndDeserialize(WoopsaFormat.VerbMeta + path, WoopsaFormat.DeserializeMeta);
         }
 
         public void Terminate()
@@ -70,17 +77,18 @@ namespace Woopsa
             _terminating = true;
             AbortPendingRequests();
         }
+        #endregion
 
-        public bool IsLastCommunicationSuccessful
+        #region Is Last Communication successfull
+        public bool IsLastCommunicationSuccessful => _isLastCommunicationSuccessful;
+
+        private void SetLastCommunicationSuccessful(bool value)
         {
-            get { return _isLastCommunicationSuccessFul; }
-            private set
+            if (value != _isLastCommunicationSuccessful || !_hasValueIsLastCommunicationSuccessful)
             {
-                if (value != _isLastCommunicationSuccessFul)
-                {
-                    _isLastCommunicationSuccessFul = value;
-                    OnIsLastCommunicationSuccessfulChange();
-                }
+                _isLastCommunicationSuccessful = value;
+                _hasValueIsLastCommunicationSuccessful = true;
+                OnIsLastCommunicationSuccessfulChange();
             }
         }
 
@@ -88,20 +96,49 @@ namespace Woopsa
 
         protected virtual void OnIsLastCommunicationSuccessfulChange()
         {
-            if (IsLastCommunicationSuccessfulChange != null)
-                IsLastCommunicationSuccessfulChange(this, new EventArgs());
+            IsLastCommunicationSuccessfulChange?.Invoke(this, new EventArgs());
         }
 
-        private volatile bool _isLastCommunicationSuccessFul;
+        private volatile bool _isLastCommunicationSuccessful;
+        private volatile bool _hasValueIsLastCommunicationSuccessful;
+        #endregion
+
+        #region Before / After client request event
+
+        public event EventHandler<ClientRequestEventArgs> BeforeClientRequest;
+        public event EventHandler<ClientRequestEventArgs> AfterClientRequest;
+
+        protected virtual void OnBeforeClientRequest(ClientRequestEventArgs args)
+        {
+            BeforeClientRequest?.Invoke(this, args);
+        }
+
+        protected virtual void OnAfterClientRequest(ClientRequestEventArgs args)
+        {
+            AfterClientRequest?.Invoke(this, args);
+        }
 
         #endregion
 
         #region Private Helpers
-
-
-        private string Request(string path, NameValueCollection postData = null)
+        private T RequestAndDeserialize<T>(string path, Func<string, T> deserializer, NameValueCollection postData = null)
         {
-            return Request(path, postData, _defaultRequestTimeout);
+            return RequestAndDeserialize(path, deserializer, postData, _defaultRequestTimeout);
+        }
+
+        private T RequestAndDeserialize<T>(string path, Func<string, T> deserializer, NameValueCollection postData, TimeSpan timeout)
+        {
+            var eventArgs = new ClientRequestEventArgs(path, postData);
+            OnBeforeClientRequest(eventArgs);
+            try
+            {
+                string response = Request(path, postData, timeout);
+                return deserializer(response);
+            }
+            finally
+            {
+                OnAfterClientRequest(eventArgs);
+            }
         }
 
         private string Request(string path, NameValueCollection postData, TimeSpan timeout)
@@ -152,7 +189,7 @@ namespace Woopsa
                         }
 
                         response = (HttpWebResponse)request.GetResponse();
-                        IsLastCommunicationSuccessful = true;
+                        SetLastCommunicationSuccessful(true);
                     }
                     catch (WebException exception)
                     {
@@ -162,7 +199,7 @@ namespace Woopsa
                         response = (HttpWebResponse)exception.Response;
                         if (response == null)
                         {
-                            IsLastCommunicationSuccessful = false;
+                            SetLastCommunicationSuccessful(false);
                             // Sometimes, we can make the request, but the server dies
                             // before we get a reply - in that case the Response
                             // is null, so we re-throw the exception
@@ -171,7 +208,7 @@ namespace Woopsa
                     }
                     catch (Exception)
                     {
-                        IsLastCommunicationSuccessful = false;
+                        SetLastCommunicationSuccessful(false);
                         throw;
                     }
 
@@ -201,6 +238,7 @@ namespace Woopsa
                     if (response != null)
                         response.Close();
                 }
+               
             }
             else
                 throw new ObjectDisposedException(GetType().Name);
