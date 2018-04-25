@@ -112,6 +112,12 @@ namespace Woopsa
 
         public event EventHandler<LogEventArgs> Log;
 
+        /// <summary>
+        /// This event is called for preflight CORS requests.
+        /// By default, all the headers in CorsRequestArgs are prefilled with
+        /// values to provide full access to any origin.
+        /// Values have to be overwritten with differents settings only to restrict the access.
+        /// </summary>
         public event EventHandler<CorsRequestArgs> CorsRequest;
 
         /// <summary>

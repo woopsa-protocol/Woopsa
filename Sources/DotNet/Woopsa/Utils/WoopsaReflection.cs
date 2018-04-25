@@ -139,7 +139,7 @@ namespace Woopsa
             }
         }
 
-        private static bool InferWoopsaType(WoopsaConverters customValueTypeConverters, Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
+        public static bool InferWoopsaType(WoopsaConverters customValueTypeConverters, Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
         {
             if (customValueTypeConverters != null)
                 return customValueTypeConverters.InferWoopsaType(type, out woopsaValueType, out converter);
@@ -148,6 +148,14 @@ namespace Woopsa
                 converter = WoopsaConverterDefault.Default;
                 return WoopsaTypeUtils.InferWoopsaType(type, out woopsaValueType);
             }
+        }
+
+        public static bool IsWoopsaValueType(WoopsaConverters customValueTypeConverters, Type type)
+        {
+            WoopsaValueType woopsaValueType;
+            WoopsaConverter converter;
+            return InferWoopsaType(customValueTypeConverters, type, 
+                out woopsaValueType, out converter);
         }
 
         public static T GetCustomAttribute<T>(MemberInfo element) where T : Attribute
