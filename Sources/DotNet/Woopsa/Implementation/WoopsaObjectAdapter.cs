@@ -599,32 +599,19 @@ namespace Woopsa
         {
             return (args) =>
             {
-                try
+                var typedArguments = new object[methodDescription.Arguments.Count];
+                for (var i = 0; i < methodDescription.Arguments.Count; i++)
+                    typedArguments[i] = methodDescription.Arguments[i].Converter.FromWoopsaValue(
+                        (IWoopsaValue)args[i], methodDescription.Arguments[i].Type);
+                if (methodDescription.MethodInfo.ReturnType == typeof(void))
                 {
-                    var typedArguments = new object[methodDescription.Arguments.Count];
-                    for (var i = 0; i < methodDescription.Arguments.Count; i++)
-                        typedArguments[i] = methodDescription.Arguments[i].Converter.FromWoopsaValue(
-                            (IWoopsaValue)args[i], methodDescription.Arguments[i].Type);
-                    if (methodDescription.MethodInfo.ReturnType == typeof(void))
-                    {
-                        methodDescription.MethodInfo.Invoke(TargetObject, typedArguments);
-                        return null;
-                    }
-                    else
-                        return methodDescription.Converter.ToWoopsaValue(
-                            methodDescription.MethodInfo.Invoke(TargetObject, typedArguments), methodDescription.WoopsaReturnType,
-                            GetTimeStamp());
+                    methodDescription.MethodInfo.Invoke(TargetObject, typedArguments);
+                    return null;
                 }
-                catch (TargetInvocationException e)
-                {
-                    // Because we are invoking using reflection, the 
-                    // exception that is actually thrown is a TargetInvocationException
-                    // containing the actual exception
-                    if (e.InnerException != null)
-                        throw e.InnerException;
-                    else
-                        throw;
-                }
+                else
+                    return methodDescription.Converter.ToWoopsaValue(
+                        methodDescription.MethodInfo.Invoke(TargetObject, typedArguments), methodDescription.WoopsaReturnType,
+                        GetTimeStamp());
             };
         }
 
