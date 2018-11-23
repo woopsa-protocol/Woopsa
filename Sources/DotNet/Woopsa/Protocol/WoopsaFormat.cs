@@ -126,6 +126,9 @@ namespace Woopsa
 
         public static string ToStringWoopsa(object o)
         {
+            if (o != null && o.GetType() == typeof(bool))
+                return Convert.ToString(o, CultureInfo.InvariantCulture).ToLower();
+
             return Convert.ToString(o, CultureInfo.InvariantCulture);
         }
 
