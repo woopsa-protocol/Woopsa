@@ -128,15 +128,20 @@
                                     this.subscriptions[i].register()
                                 }
                             }.bind(this));
+                            if (retryTimeout !== null) {
+                                clearTimeout(retryTimeout);
+                            }
                             setTimeout((function (){
-                                waitNotification.call(this, channelLastNotificationId);
+                                // We had to create a new subscription channel, reset last notification id
+                                channelLastNotificationId = 0;
+                                waitNotification.call(this, 0);
                             }).bind(this), retryFrequency);
                         }else if (woopsaException.Type == "WoopsaNotificationsLostException"){
                             waitNotification.call(this, 0);
                         }               
                     }
                 }else{                  
-                    setTimeout((function (){
+                    retryTimeout = setTimeout((function (){
                         waitNotification.call(this, channelLastNotificationId);
                     }).bind(this), retryFrequency);
                 }
