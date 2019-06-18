@@ -128,15 +128,20 @@
                                     this.subscriptions[i].register()
                                 }
                             }.bind(this));
+                            if (retryTimeout !== null) {
+                                clearTimeout(retryTimeout);
+                            }
                             setTimeout((function (){
-                                waitNotification.call(this, channelLastNotificationId);
+                                // We had to create a new subscription channel, reset last notification id
+                                channelLastNotificationId = 0;
+                                waitNotification.call(this, 0);
                             }).bind(this), retryFrequency);
                         }else if (woopsaException.Type == "WoopsaNotificationsLostException"){
                             waitNotification.call(this, 0);
                         }               
                     }
                 }else{                  
-                    setTimeout((function (){
+                    retryTimeout = setTimeout((function (){
                         waitNotification.call(this, channelLastNotificationId);
                     }).bind(this), retryFrequency);
                 }
@@ -151,7 +156,7 @@
         
         var WoopsaXHR = function (options){
             var innerXHR = $.ajax(options);
-			return innerXHR;
+            return innerXHR;
         }
         
         var WoopsaDeferredXHR = function (options){
@@ -161,50 +166,50 @@
             var options = options || {};
             var innerXHR = null;
             this.done = function (callback){
-				if ( innerXHR != null )
-					innerXHR.done(callback);
-				else
-					doneCallbacks.push(callback);
+                if ( innerXHR != null )
+                    innerXHR.done(callback);
+                else
+                    doneCallbacks.push(callback);
                 return this;
             }
             this.fail = function (callback){
-				if ( innerXHR != null )
-					innerXHR.fail(callback);
-				else
-					failCallbacks.push(callback);
+                if ( innerXHR != null )
+                    innerXHR.fail(callback);
+                else
+                    failCallbacks.push(callback);
                 return this;
             }
             this.then = function (done, fail){
-				if ( innerXHR != null ){
-					innerXHR.done(callback);
-					innerXHR.fail(callback);
-				}else{
-					doneCallbacks.push(done);
-					failCallbacks.push(fail);
-				}
+                if ( innerXHR != null ){
+                    innerXHR.done(callback);
+                    innerXHR.fail(callback);
+                }else{
+                    doneCallbacks.push(done);
+                    failCallbacks.push(fail);
+                }
                 return this;
             }
             this.always = function (callback){
-				if ( innerXHR != null )
-					innerXHR.always(callback);
-				else
-					alwaysCallbacks.push(callback);
+                if ( innerXHR != null )
+                    innerXHR.always(callback);
+                else
+                    alwaysCallbacks.push(callback);
                 return this;
             }
             this.execute = function (){
                 innerXHR = new WoopsaXHR(options);
-				innerXHR.done(function (data, textStatus, jqXHR){
-					isDone = true;
-					doneData = data;
-					doneTextStatus = textStatus;
-					donejqXHR = jqXHR;
-				});
-				innerXHR.fail(function (jqXHR, textStatus, errorThrown){
-					isFail = true;
-					donejqXHR = jqXHR;
-					doneTextStatus = textStatus;
-					failErrorThrown = errorThrown;
-				});
+                innerXHR.done(function (data, textStatus, jqXHR){
+                    isDone = true;
+                    doneData = data;
+                    doneTextStatus = textStatus;
+                    donejqXHR = jqXHR;
+                });
+                innerXHR.fail(function (jqXHR, textStatus, errorThrown){
+                    isFail = true;
+                    donejqXHR = jqXHR;
+                    doneTextStatus = textStatus;
+                    failErrorThrown = errorThrown;
+                });
                 for(var i = 0; i < doneCallbacks.length; i++){
                     innerXHR.done(doneCallbacks[i]);
                 }for(var i = 0; i < failCallbacks.length; i++)
