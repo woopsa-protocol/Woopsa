@@ -321,8 +321,7 @@ namespace Woopsa
                 try
                 {
                     string result = null;
-                    ExecuteBeforeWoopsaModelAccess();
-                    try
+                    using (new WoopsaServerModelAccessLockedSection(this))
                     {
                         switch (verb)
                         {
@@ -339,10 +338,6 @@ namespace Woopsa
                                 result = InvokeMethod(request.Subroute, request.Body);
                                 break;
                         }
-                    }
-                    finally
-                    {
-                        ExecuteAfterWoopsaModelAccess();
                     }
                     response.SetHeader(HTTPHeader.ContentType, MIMETypes.Application.JSON);
                     if (result != null)
@@ -535,7 +530,7 @@ namespace Woopsa
         {
             return _root.ByPath(searchPath);
         }
-     
+
         #endregion
 
         [ThreadStatic]
@@ -561,6 +556,22 @@ namespace Woopsa
             response.SetHeader("Cache-Control", "no-cache, no-store");
             return true;
         }
+    }
+
+    public sealed class WoopsaServerModelAccessLockedSection : IDisposable
+    {
+        internal WoopsaServerModelAccessLockedSection(WoopsaServer server)
+        {
+            _server = server;
+            server.ExecuteBeforeWoopsaModelAccess();
+        }
+
+        public void Dispose()
+        {
+            _server.ExecuteAfterWoopsaModelAccess();
+        }
+
+        private WoopsaServer _server;
     }
 
     public sealed class WoopsaServerModelAccessFreeSection : IDisposable

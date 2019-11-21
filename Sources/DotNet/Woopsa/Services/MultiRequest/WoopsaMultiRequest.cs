@@ -31,33 +31,39 @@ namespace Woopsa
 
         private WoopsaValue HandleCall(IWoopsaValue requestsArgument)
         {
-            ServerRequest[] requestsList = JsonSerializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
-            List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
-            foreach (var request in requestsList)
+            using (new WoopsaServerModelAccessFreeSection(_server))
             {
-                string result = null;
-                try
+                ServerRequest[] requestsList = JsonSerializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
+                List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
+                foreach (var request in requestsList)
                 {
-                    if (request.Verb.Equals(WoopsaFormat.VerbRead))
-                        result = _server.ReadValue(request.Path);
-                    else if (request.Verb.Equals(WoopsaFormat.VerbMeta))
-                        result = _server.GetMetadata(request.Path);
-                    else if (request.Verb.Equals(WoopsaFormat.VerbWrite))
-                        result = _server.WriteValueDeserializedJson(request.Path, request.Value);
-                    else if (request.Verb.Equals(WoopsaFormat.VerbInvoke))
-                        result = _server.InvokeMethodDeserializedJson(request.Path,
-                            request.Arguments);
+                    string result = null;
+                    try
+                    {
+                        using (new WoopsaServerModelAccessLockedSection(_server))
+                        {
+                            if (request.Verb.Equals(WoopsaFormat.VerbRead))
+                                result = _server.ReadValue(request.Path);
+                            else if (request.Verb.Equals(WoopsaFormat.VerbMeta))
+                                result = _server.GetMetadata(request.Path);
+                            else if (request.Verb.Equals(WoopsaFormat.VerbWrite))
+                                result = _server.WriteValueDeserializedJson(request.Path, request.Value);
+                            else if (request.Verb.Equals(WoopsaFormat.VerbInvoke))
+                                result = _server.InvokeMethodDeserializedJson(request.Path,
+                                    request.Arguments);
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        result = WoopsaFormat.Serialize(e);
+                    }
+                    MultipleRequestResponse response = new MultipleRequestResponse();
+                    response.Id = request.Id;
+                    response.Result = result;
+                    responses.Add(response);
                 }
-                catch (Exception e)
-                {
-                    result = WoopsaFormat.Serialize(e);
-                }
-                MultipleRequestResponse response = new MultipleRequestResponse();
-                response.Id = request.Id;
-                response.Result = result;
-                responses.Add(response);
+                return WoopsaValue.CreateUnchecked(responses.Serialize(), WoopsaValueType.JsonData);
             }
-            return WoopsaValue.CreateUnchecked(responses.Serialize(), WoopsaValueType.JsonData);
         }
 
         private WoopsaServer _server;
