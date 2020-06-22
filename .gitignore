@@ -46,3 +46,4 @@ artifacts/
 /Sources/Embedded/DemoServer/Release/*
 /Sources/Embedded/Server/Release/*
 node_modules
+Sources/DotNet/Woopsa/Properties/PublishProfiles
