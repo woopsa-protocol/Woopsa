@@ -15,7 +15,7 @@ namespace Woopsa
         public const string VerbInvoke = "invoke";
         public const string VerbMeta = "meta";
 
-#region Helpers
+        #region Helpers
 
         public static bool ToBool(string text)
         {
@@ -129,7 +129,7 @@ namespace Woopsa
             return Convert.ToString(o, CultureInfo.InvariantCulture);
         }
 
-#endregion
+        #endregion
 
 
         public static string Serialize(this Exception e)
