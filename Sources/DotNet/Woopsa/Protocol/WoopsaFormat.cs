@@ -451,7 +451,12 @@ namespace Woopsa
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
+#if NETCORE2 || NETSTANDARD2
+            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, new WoopsaReadResultConverter());
+#else
             var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
+#endif
+
             if (result != null)
             {
                 var valueType = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), result.Type);
@@ -478,6 +483,38 @@ namespace Woopsa
             public string Type { get; set; }
             public string TimeStamp { get; set; }
         }
+
+#if NETCORE2 || NETSTANDARD2
+        private class WoopsaReadResultConverter : Newtonsoft.Json.JsonConverter
+        {
+            public override bool CanConvert(Type objectType)
+            {
+                return (objectType == typeof(WoopsaReadResult));
+            }
+
+            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
+            {
+                Newtonsoft.Json.Linq.JObject jo = Newtonsoft.Json.Linq.JObject.Load(reader);   
+        
+                WoopsaReadResult woopsaReadResult = new WoopsaReadResult(); 
+                woopsaReadResult.Value = jo["Value"];
+                woopsaReadResult.Type = (string)jo["Type"];
+                woopsaReadResult.TimeStamp = (string)jo["TimeStamp"];
+        
+                return woopsaReadResult;
+            }
+
+            public override bool CanWrite
+            {
+                get { return false; }
+            }
+
+            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
+            {
+                throw new NotImplementedException();
+            }
+        }
+#endif
 
         public const string KeyValue = "Value";
         public const string KeyType = "Type";
