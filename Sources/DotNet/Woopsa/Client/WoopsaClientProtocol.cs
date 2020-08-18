@@ -193,6 +193,11 @@ namespace Woopsa
                     }
                     catch (WebException exception)
                     {
+                        if (response != null)
+                        {
+                            ((IDisposable)response).Dispose();
+                            response = null;
+                        }
                         // This could be an HTTP error, in which case
                         // we actually have a response (with the HTTP 
                         // status and error)
@@ -213,7 +218,8 @@ namespace Woopsa
                     }
 
                     string resultString;
-                    using (var reader = new StreamReader(response.GetResponseStream()))
+                    using (var stream = response.GetResponseStream())
+                    using (var reader = new StreamReader(stream))
                     {
                         resultString = reader.ReadToEnd();
                     }
@@ -235,10 +241,13 @@ namespace Woopsa
                 {
                     lock (_pendingRequests)
                         _pendingRequests.Remove(request);
+                    // Note : HTTPWebResponse does not implement IDisposable in all .Net versions
                     if (response != null)
-                        response.Close();
+                    {
+                        ((IDisposable)response).Dispose();
+                        response = null;
+                    }
                 }
-               
             }
             else
                 throw new ObjectDisposedException(GetType().Name);
