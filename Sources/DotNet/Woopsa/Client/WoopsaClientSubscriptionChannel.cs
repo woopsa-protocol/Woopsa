@@ -501,6 +501,15 @@ namespace Woopsa
                         foreach (var item in subscriptions)
                         {
                             WoopsaClientRequest request = requests[item];
+
+                            // Detect if the channel (_subscriptionOpenChannel.Value) is obsolete and close it in order to open a new channel.
+                            // Can occurs when server restarts
+                            if (request.Result.Error != null && request.Result.Error is WoopsaInvalidSubscriptionChannelException)
+                            {
+                                CloseChannel();
+                                return false;
+                            }
+
                             if (request.Result.ResultType == WoopsaClientRequestResultType.Value)
                                 item.SubscriptionId = request.Result.Value;
                             item.FailedSubscription = item.SubscriptionId == null;
@@ -649,9 +658,30 @@ namespace Woopsa
 
         private int _notificationQueueSize;
         private List<WoopsaClientSubscription> _subscriptions;
+        internal int SubscriptionsCount
+        {
+            get
+            {
+                lock (_subscriptions)
+                {
+                    return _subscriptions.Count;
+                }
+            }
+        }
         internal bool SubscriptionsChanged { get; set; }
 
         private Dictionary<int, WoopsaClientSubscription> _registeredSubscriptions;
+
+        internal int RegisteredSubscriptionCount
+        {
+            get
+            {
+                lock(_subscriptionLock)
+                {
+                    return _registeredSubscriptions.Count;
+                }
+            }
+        }
         private Thread _threadNotifications, _threadSubscriptions;
         private bool _terminated;
 
@@ -700,7 +730,10 @@ namespace Woopsa
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
+            {
                 Unsubscribe();
+                Handler = null;
+            }
         }
 
         public void Dispose()
