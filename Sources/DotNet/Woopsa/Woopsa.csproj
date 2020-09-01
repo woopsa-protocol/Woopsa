@@ -12,7 +12,7 @@
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
     <VersionSuffix>$(VersionSuffix)</VersionSuffix>
-    <Version>1.2.4</Version>
+    <VersionPrefix>1.2.4</VersionPrefix>
     <Copyright></Copyright>
   </PropertyGroup>	
 
