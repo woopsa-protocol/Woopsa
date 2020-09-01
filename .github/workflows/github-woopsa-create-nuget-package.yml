@@ -18,7 +18,7 @@ jobs:
           dotnet-version: 2.2.207
       
       - name: Generate Nuget Package
-        run: dotnet pack ./Woopsa.sln --configuration Release --version-suffix preview.$GITHUB_RUN_NUMBER
+        run: dotnet pack ./Woopsa.sln --configuration Release --version-suffix preview.${env:GITHUB_RUN_NUMBER}
         working-directory: ./Sources/DotNet
     
       - name: Create artifacts directory
