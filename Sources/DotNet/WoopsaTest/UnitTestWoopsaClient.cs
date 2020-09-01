@@ -46,6 +46,65 @@ namespace WoopsaTest
         }
 
         [TestMethod]
+        public void TestWoopsaSubscriptionRemovedWhenServerRestart()
+        {
+            bool isValueChanged = false;
+            TestObjectServer objectServer = new TestObjectServer();
+
+            using (WoopsaClient client = new WoopsaClient(TestingUrl))
+            {
+
+                using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+                using (WoopsaBoundClientObject root = client.CreateBoundRoot())
+                {
+                    using (WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
+                        (sender, e) => { isValueChanged = true; },
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20)))
+                    {
+                        Stopwatch watch = new Stopwatch();
+                        watch.Start();
+                        while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(10)))
+                            Thread.Sleep(10);
+
+                        Assert.AreEqual(1, client.SubscriptionChannel.RegisteredSubscriptionCount);
+                        if (isValueChanged)
+                            Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                        else
+                            Console.WriteLine("No notification received");
+                    }
+                }
+
+                Assert.IsTrue(isValueChanged);
+                Assert.AreEqual(1, client.SubscriptionChannel.SubscriptionsCount);
+                Assert.AreEqual(1, client.SubscriptionChannel.RegisteredSubscriptionCount);
+
+                isValueChanged = false;
+                using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+                using (WoopsaBoundClientObject root = client.CreateBoundRoot())
+                {
+                    using (WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
+                        (sender, e) => { isValueChanged = true; },
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20)))
+                    {
+                        Stopwatch watch = new Stopwatch();
+                        watch.Start();
+                        while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(10)))
+                            Thread.Sleep(10);
+
+                        Assert.AreEqual(1, client.SubscriptionChannel.RegisteredSubscriptionCount);
+                        if (isValueChanged)
+                            Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
+                        else
+                            Console.WriteLine("No notification received");
+                    }
+                }
+                Assert.IsTrue(isValueChanged);
+                Assert.AreEqual(1, client.SubscriptionChannel.SubscriptionsCount);
+                Assert.AreEqual(1, client.SubscriptionChannel.RegisteredSubscriptionCount);
+            }
+        }
+
+        [TestMethod]
         public void TestWoopsaIsLastCommunicationSuccessful()
         {
             bool isSuccessfull = false;

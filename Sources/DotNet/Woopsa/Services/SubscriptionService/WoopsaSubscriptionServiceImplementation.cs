@@ -107,7 +107,7 @@ namespace Woopsa
                     return _channels[channelId].RegisterSubscription(_root, _isServerSide,
                         woopsaPropertyPath, monitorInterval, publishInterval);
                 else
-                    throw new WoopsaException(string.Format("Tried to register a subscription on channel with id={0} that does not exist", subscriptionChannelId));
+                    throw new WoopsaInvalidSubscriptionChannelException(string.Format("Tried to register a subscription on channel with id={0} that does not exist", subscriptionChannelId));
         }
 
         // Logical, true if the subscription has been found and successfully unregistered
