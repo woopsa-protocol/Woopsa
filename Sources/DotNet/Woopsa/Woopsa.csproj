@@ -11,7 +11,7 @@
 	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
 	<PackageLicenseExpression>MIT</PackageLicenseExpression>
     <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
-    <VersionPrefix>1.2.3</VersionPrefix>
+    <VersionSuffix>$(VersionSuffix)</VersionSuffix>
     <Version>1.2.4</Version>
     <Copyright></Copyright>
   </PropertyGroup>	
