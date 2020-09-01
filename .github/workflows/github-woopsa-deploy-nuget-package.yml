@@ -46,7 +46,7 @@ jobs:
         name: Woopsa Nuget Package
         path: './artifacts/*.nupkg' 
 
-#      - name: Deploy Nuget Package
-#        env:
-#          WOOPSA_NUGET_API_KEY: ${{ secrets.WOOPSA_NUGET_API_KEY }}
-#        run: dotnet nuget push '**/*.nupkg' --api-key $env:WOOPSA_NUGET_API_KEY --source https://api.nuget.org/v3/index.json
+    - name: Deploy Nuget Package
+      env:
+        WOOPSA_NUGET_API_KEY: ${{ secrets.WOOPSA_NUGET_API_KEY }}
+      run: dotnet nuget push '**/*.nupkg' --api-key $env:WOOPSA_NUGET_API_KEY --source https://api.nuget.org/v3/index.json
