@@ -451,7 +451,9 @@ namespace Woopsa
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
-#if NETCORE2 || NETSTANDARD2
+#if NETSTANDARD2_0
+            if (jsonText == WoopsaConst.WoopsaNull)
+                return WoopsaValue.Null;
             var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, new WoopsaReadResultConverter());
 #else
             var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
@@ -484,7 +486,7 @@ namespace Woopsa
             public string TimeStamp { get; set; }
         }
 
-#if NETCORE2 || NETSTANDARD2
+#if NETSTANDARD2_0
         private class WoopsaReadResultConverter : Newtonsoft.Json.JsonConverter
         {
             public override bool CanConvert(Type objectType)

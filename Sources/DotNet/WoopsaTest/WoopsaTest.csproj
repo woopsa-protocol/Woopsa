@@ -1,52 +1,26 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <Authors>Objectis SA</Authors>
-  	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
-  	<IsPackable>false</IsPackable>
-  	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
-  	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
-  	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
-  	<RepositoryType>git</RepositoryType>
-  	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <TargetFrameworks>net45;netcoreapp2.2</TargetFrameworks>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
-  
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="15.3.0-preview-20170628-02" />
-    <PackageReference Include="MSTest.TestAdapter" Version="1.1.18" />
-    <PackageReference Include="MSTest.TestFramework" Version="1.1.18" />
-  </ItemGroup>
-    
-  <ItemGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <PackageReference Include="MSTest.TestAdapter" Version="2.1.2" />
-    <PackageReference Include="MSTest.TestFramework" Version="2.1.2" />
-    <Reference Include="Microsoft.CSharp" />
-    <Reference Include="System.Net.Http" />
-  </ItemGroup>
-    
+
   <ItemGroup>
     <Compile Remove="TestResources\**" />
     <EmbeddedResource Remove="TestResources\**" />
     <None Remove="TestResources\**" />
   </ItemGroup>
-    
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.2.0" />
+    <PackageReference Include="MSTest.TestAdapter" Version="1.4.0" />
+    <PackageReference Include="MSTest.TestFramework" Version="1.4.0" />
+	<Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Net.Http" />
+  </ItemGroup>
+
+   <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.2' ">
     <Compile Remove="UnitTestHttpServer.cs" />
-  </ItemGroup>
-        
-  <ItemGroup>
-    <Compile Include="..\AssemblyVersionInfo.cs" Link="Properties\AssemblyVersionInfo.cs" />
-  </ItemGroup>
-        
-  <ItemGroup>
-    <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.6.1" />
   </ItemGroup>
   
   <ItemGroup>
@@ -54,16 +28,5 @@
     <ProjectReference Include="TestResources\EmbeddedResource\EmbeddedResource.csproj" />
     <ProjectReference Include="TestResources\Woopsa.EmbeddedResource\Woopsa.EmbeddedResource.csproj" />
   </ItemGroup>
-  
-  <ItemGroup>
-    <Service Include="{82a7f48d-3b50-4b1e-b82e-3ada8210c358}" />
-  </ItemGroup>
-    
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <DefineConstants>$(DefineConstants);NET4_5;ASYNC_SUPPORTED</DefineConstants>
-  </PropertyGroup>
 
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <DefineConstants>$(DefineConstants);NETCORE2</DefineConstants>
-  </PropertyGroup>
 </Project>

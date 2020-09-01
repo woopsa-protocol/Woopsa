@@ -3,7 +3,7 @@
   <PropertyGroup>
 	<Description>Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things</Description>
 	<Authors>Objectis SA</Authors>
-	<TargetFrameworks>net40;net45;netcoreapp2.0;netstandard2.0</TargetFrameworks>
+	<TargetFrameworks>net40;net45;netstandard2.0</TargetFrameworks>
 	<PackageId>Woopsa</PackageId>
 	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
 	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
@@ -26,7 +26,7 @@
     <Reference Include="System.Web.Extensions" />
   </ItemGroup>
 
-  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
+  <ItemGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.2' ">
     <PackageReference Include="Newtonsoft.Json" Version="10.0.3" />
   </ItemGroup>
 
@@ -47,21 +47,6 @@
   <ItemGroup>
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
   </ItemGroup>
-  
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net40' ">
-    <DefineConstants>$(DefineConstants);NET4_0</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <DefineConstants>$(DefineConstants);NET4_5;ASYNC_SUPPORTED</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <DefineConstants>$(DefineConstants);NETCORE2</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netstandard2.0' ">
-    <DefineConstants>$(DefineConstants);NETSTANDARD2</DefineConstants>
-  </PropertyGroup>
+ 
 
 </Project>

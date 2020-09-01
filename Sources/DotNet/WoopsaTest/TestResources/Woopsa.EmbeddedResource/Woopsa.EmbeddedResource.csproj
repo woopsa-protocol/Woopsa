@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <Authors>Objectis SA</Authors>
-    <TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
+    <TargetFrameworks>net45;netcoreapp2.2</TargetFrameworks>
     <IsPackable>false</IsPackable>
     <PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
     <PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
@@ -29,12 +29,5 @@
     <EmbeddedResource Include="Images\woopsa-logo.png" />
   </ItemGroup>
   
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'net45' ">
-    <DefineConstants>$(DefineConstants);NET4_5;ASYNC_SUPPORTED</DefineConstants>
-  </PropertyGroup>
-
-  <PropertyGroup Condition=" '$(TargetFramework)' == 'netcoreapp2.0' ">
-    <DefineConstants>$(DefineConstants);NETCORE2</DefineConstants>
-  </PropertyGroup>
  
 </Project>
