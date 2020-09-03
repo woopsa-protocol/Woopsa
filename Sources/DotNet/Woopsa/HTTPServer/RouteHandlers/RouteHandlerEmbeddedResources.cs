@@ -123,7 +123,8 @@ namespace Woopsa
 
         private string FullResourceName(Assembly assembly, string strippedResourceName)
         {
-            return string.Format("{0}.{1}", assembly.GetName().Name, strippedResourceName);
+            string safeDefaultNamesapceFromAssemblyName = assembly.GetName().Name.Replace(" ", "_");
+            return string.Format("{0}.{1}", safeDefaultNamesapceFromAssemblyName, strippedResourceName);
         }
 
         private Assembly AssemblyByName(string name)
