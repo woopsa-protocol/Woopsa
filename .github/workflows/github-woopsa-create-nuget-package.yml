@@ -18,17 +18,12 @@ jobs:
           dotnet-version: 2.2.207
       
       - name: Generate Nuget Package
-        run: dotnet pack ./Woopsa.sln --configuration Release --version-suffix preview.${env:GITHUB_RUN_NUMBER}
+        run: dotnet pack ./Woopsa.sln --configuration Release --version-suffix preview.${env:GITHUB_RUN_NUMBER} -o '${{ github.workspace }}/Sources/DotNet/artifacts'
         working-directory: ./Sources/DotNet
     
-      - name: Create artifacts directory
-        run: New-Item -ItemType Directory -Force -Path './artifacts'
-
-      - name: Copy Woopsa Nuget Packages
-        run: Get-ChildItem -Path '*' -Recurse | Where-Object {$_.FullName -Like "**\Woopsa\bin\Release\*.nupkg"} | Copy-Item -Destination './artifacts'
-      
       - name: Upload a Build Artifact
         uses: actions/upload-artifact@v2.1.4
         with:
           name: Woopsa Nuget Package
-          path: './artifacts/*.nupkg' 
+          path: '${{ github.workspace }}/Sources/DotNet/artifacts/*.nupkg'
+          if-no-files-found: error
