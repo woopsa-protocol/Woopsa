@@ -104,7 +104,7 @@ namespace Woopsa
 
     public class WoopsaDynamicClient : WoopsaDynamicClientObject, IDisposable
     {
-        public WoopsaDynamicClient(string url, WoopsaConverters customTypeConverters = null) : this (new WoopsaClient(url))
+        public WoopsaDynamicClient(string url, WoopsaConverters customTypeConverters = null) : this (new WoopsaClient(url), customTypeConverters)
         { }
 
         public WoopsaDynamicClient(WoopsaClient client, WoopsaConverters customTypeConverters = null) : base (customTypeConverters)
