@@ -14,6 +14,7 @@
     <VersionSuffix>$(VersionSuffix)</VersionSuffix>
     <VersionPrefix>1.2.5</VersionPrefix>
     <Copyright></Copyright>
+    <Version>1.2.6</Version>
   </PropertyGroup>	
 
   <ItemGroup Condition=" '$(TargetFramework)' == 'net40' ">
