@@ -368,7 +368,7 @@ namespace Woopsa
                 var notificationSubscriptionId = notification.GetProperty("SubscriptionId");
                 var notificationId = notification.GetProperty("Id");
                 WoopsaValueType type = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), notificationValue.GetProperty("Type").GetString());
-                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue.GetProperty("Value").GetString(), 
+                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue.GetProperty("Value").GetRawText(), 
                     type, DateTime.Parse(notificationValue.GetProperty("TimeStamp").GetString(), CultureInfo.InvariantCulture));
                 WoopsaClientNotification newNotification = new WoopsaClientNotification(value, notificationSubscriptionId.GetInt32());
                 newNotification.Id = notificationId.GetInt32();
