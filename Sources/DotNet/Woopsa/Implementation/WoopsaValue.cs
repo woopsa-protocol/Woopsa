@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Globalization;
 using System.Text;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -12,7 +13,10 @@ namespace Woopsa
             _type = type;
             _timestamp = timestamp;
             if (type == WoopsaValueType.JsonData)
-                _jsonData = Woopsa.WoopsaJsonData.CreateFromText(text);
+            {
+                var doc = JsonDocument.Parse(text);
+                _jsonData = doc.RootElement;
+            }
         }
 
         internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null)
@@ -51,7 +55,7 @@ namespace Woopsa
             }
             catch (Exception)
             {
-                throw new WoopsaException(String.Format("Cannot create a WoopsaValue of type {0} from string \"{1}\"", type.ToString(), text));
+                throw new WoopsaException($"Cannot create a WoopsaValue of type {type} from string \"{text}\"");
             }
             return CreateUnchecked(text, type, timestamp);
         }
@@ -91,7 +95,7 @@ namespace Woopsa
             }
             catch (InvalidCastException)
             {
-                throw new WoopsaException(String.Format("Cannot typecast object of type {0} to Woopsa Type {1}", value.GetType(), type.ToString()));
+                throw new WoopsaException($"Cannot typecast object of type {value.GetType()} to Woopsa Type {type}");
             }
         }
 
@@ -99,7 +103,10 @@ namespace Woopsa
             WoopsaValueType type, DateTime? timeStamp = null)
         {
             if (type == WoopsaValueType.JsonData)
-                return new WoopsaValue(Woopsa.WoopsaJsonData.CreateFromDeserializedData(deserializedJson));
+            {
+                var doc = JsonDocument.Parse(JsonSerializer.Serialize(deserializedJson));
+                return new WoopsaValue(doc.RootElement);
+            }
             else
                 return ToWoopsaValue(deserializedJson, type, timeStamp);
         }
@@ -109,7 +116,7 @@ namespace Woopsa
         {
         }
 
-        public WoopsaValue(WoopsaJsonData jsonData, DateTime? timestamp = null)
+        public WoopsaValue(JsonElement jsonData, DateTime? timestamp = null)
         {
             _jsonData = jsonData;
             _type = WoopsaValueType.JsonData;
@@ -121,7 +128,7 @@ namespace Woopsa
         {
         }
 
-        public WoopsaValue(Int64 value, DateTime? timestamp = null)
+        public WoopsaValue(long value, DateTime? timestamp = null)
             : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Integer, timestamp)
         {
         }
@@ -188,19 +195,18 @@ namespace Woopsa
         }
 
         #region IWoopsaValue
-
         public string AsText
         {
             get
             {
-                if (_jsonData != null)
+                if (_jsonData.ValueKind != JsonValueKind.Undefined)
                     if (_text == null)
-                        _text = _jsonData.Serialize();
+                        _text =_jsonData.GetRawText();
                 return _text;
             }
         }
 
-        public WoopsaValueType Type
+    public WoopsaValueType Type
         {
             get { return _type; }
         }
@@ -213,16 +219,7 @@ namespace Woopsa
 
         #endregion IWoopsaValue
 
-        public WoopsaJsonData JsonData
-        {
-            get
-            {
-                if (_jsonData == null)
-                    throw new InvalidOperationException("JsonData is only available on WoopsaValue of type JsonData");
-                else
-                    return _jsonData;
-            }
-        }
+        public JsonElement JsonData => _jsonData;
 
         public static implicit operator bool (WoopsaValue value)
         {
@@ -368,7 +365,7 @@ namespace Woopsa
         private string _text;
         private WoopsaValueType _type;
         private DateTime? _timestamp;
-        private WoopsaJsonData _jsonData = null;
+        private JsonElement _jsonData;
 
         private static readonly WoopsaValue _null = new WoopsaValue(string.Empty, WoopsaValueType.Null);
 
