@@ -61,18 +61,24 @@ namespace Woopsa
         }
 
         public static bool TryParseWoopsa(string value, out Int16 result)
+        public static bool TryParseWoopsa(string value, out short result)
         {
             return Int16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            return short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
 
         public static bool TryParseWoopsa(string value, out Int32 result)
+        public static bool TryParseWoopsa(string value, out int result)
         {
             return Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            return int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
 
         public static bool TryParseWoopsa(string value, out Int64 result)
+        public static bool TryParseWoopsa(string value, out long result)
         {
             return Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            return long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
 
         public static bool TryParseWoopsa(string value, out byte result)
@@ -81,17 +87,23 @@ namespace Woopsa
         }
 
         public static bool TryParseWoopsa(string value, out UInt16 result)
+        public static bool TryParseWoopsa(string value, out ushort result)
         {
             return UInt16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            return ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
 
         public static bool TryParseWoopsa(string value, out UInt32 result)
+        public static bool TryParseWoopsa(string value, out uint result)
         {
             return UInt32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            return uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
         public static bool TryParseWoopsa(string value, out UInt64 result)
+        public static bool TryParseWoopsa(string value, out ulong result)
         {
             return UInt64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+            return ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
         }
 
         public static string ToStringWoopsa(double value)
@@ -100,6 +112,7 @@ namespace Woopsa
         }
 
         public static string ToStringWoopsa(Int64 value)
+        public static string ToStringWoopsa(long value)
         {
             return value.ToString(CultureInfo.InvariantCulture);
         }
@@ -138,6 +151,7 @@ namespace Woopsa
         public static string Serialize(this Exception e)
         {
             return String.Format(ErrorFormat, JsonEscape(e.GetFullMessage()), e.GetType().Name);
+            return string.Format(ErrorFormat, JsonEscape(e.GetFullMessage()), e.GetType().Name);
         }
 
         private class WoopsaErrorResult
@@ -267,11 +281,13 @@ namespace Woopsa
                 builder.Append(response.Serialize());
             }
             return String.Format(MultipleElementsFormat, builder.ToString());
+            return string.Format(MultipleElementsFormat, builder.ToString());
         }
 
         public static string Serialize(this MultipleRequestResponse response)
         {
             return String.Format(MultipleRequestResponseFormat, response.Id, response.Result);
+            return string.Format(MultipleRequestResponseFormat, response.Id, response.Result);
         }
 
         public static string Serialize(this IWoopsaNotifications notifications)
@@ -287,11 +303,13 @@ namespace Woopsa
                 builder.Append(notification.Serialize());
             }
             return String.Format(MultipleElementsFormat, builder.ToString());
+            return string.Format(MultipleElementsFormat, builder.ToString());
         }
 
         public static string Serialize(this IWoopsaNotification notification)
         {
             return String.Format(NotificationFormat, notification.Value.Serialize(), notification.SubscriptionId, notification.Id);
+            return string.Format(NotificationFormat, notification.Value.Serialize(), notification.SubscriptionId, notification.Id);
         }
 
         public static void SerializeKeyValuePrefix(StringBuilder stringBuilder, string key)
@@ -350,6 +368,7 @@ namespace Woopsa
                 stringBuilder.Append(ElementSeparator);
                 SerializeKeyValue(stringBuilder, KeyTimeStamp,
                         WoopsaFormat.ToStringWoopsa(value.TimeStamp.Value), true, false);
+                        ToStringWoopsa(value.TimeStamp.Value), true, false);
             }
             stringBuilder.Append(ElementClose);
         }
@@ -366,6 +385,7 @@ namespace Woopsa
             if (justName)
             {
                 return String.Format(StringFormat, JsonEscape(container.Name));
+                return string.Format(StringFormat, JsonEscape(container.Name));
             }
             if (container is IWoopsaObject)
             {
@@ -375,6 +395,7 @@ namespace Woopsa
             {
                 string items = container.Items.SerializeMetadata();
                 return String.Format(MetadataContainer, container.Name, items);
+                return string.Format(MetadataContainer, container.Name, items);
             }
         }
 
@@ -384,6 +405,7 @@ namespace Woopsa
             string properties = obj.Properties.SerializeMetadata();
             string methods = obj.Methods.SerializeMetadata();
             return String.Format(MetadataObject, obj.Name, items, properties, methods);
+            return string.Format(MetadataObject, obj.Name, items, properties, methods);
         }
 
         private static string SerializeMetadata(this IEnumerable<IWoopsaElement> elements)
@@ -410,18 +432,21 @@ namespace Woopsa
                 }
             }
             return String.Format(MultipleElementsFormat, builder.ToString());
+            return string.Format(MultipleElementsFormat, builder.ToString());
         }
 
         // TODO : optimize performances
         private static string SerializeMetadata(this IWoopsaProperty property)
         {
             return String.Format(MetadataProperty, JsonEscape(property.Name), property.Type, property.IsReadOnly.ToString().ToLower());
+            return string.Format(MetadataProperty, JsonEscape(property.Name), property.Type, property.IsReadOnly.ToString().ToLower());
         }
 
         private static string SerializeMetadata(this IWoopsaMethod method)
         {
             string arguments = method.ArgumentInfos.SerializeMetadata();
             return String.Format(MetadataMethod, JsonEscape(method.Name), method.ReturnType, arguments);
+            return string.Format(MetadataMethod, JsonEscape(method.Name), method.ReturnType, arguments);
         }
 
         private static string SerializeMetadata(this IEnumerable<IWoopsaMethodArgumentInfo> argumentInfos)
@@ -437,11 +462,13 @@ namespace Woopsa
                 builder.Append(arg.SerializeMetadata());
             }
             return String.Format(MultipleElementsFormat, builder.ToString());
+            return string.Format(MultipleElementsFormat, builder.ToString());
         }
 
         private static string SerializeMetadata(this IWoopsaMethodArgumentInfo argumentInfo)
         {
             return String.Format(MetadataArgumentInfo, JsonEscape(argumentInfo.Name), argumentInfo.Type);
+            return string.Format(MetadataArgumentInfo, JsonEscape(argumentInfo.Name), argumentInfo.Type);
         }
 
         public static WoopsaMetaResult DeserializeMeta(string jsonText)
