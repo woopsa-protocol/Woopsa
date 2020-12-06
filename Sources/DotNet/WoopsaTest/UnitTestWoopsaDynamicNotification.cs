@@ -60,9 +60,9 @@ namespace WoopsaTest
                     lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
                     jsonData = lastNotifications.JsonData;
                     Assert.IsTrue(jsonData.ValueKind == JsonValueKind.Array);
-                    Assert.AreEqual(jsonData.Length, 1);
-                    Assert.IsTrue(jsonData[0].IsDictionary);
-                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(jsonData.GetArrayLength(), 1);
+                    Assert.IsTrue(jsonData[0].ValueKind == JsonValueKind.Object);
+                    lastNotificationId = jsonData[jsonData.GetArrayLength() - 1].GetProperty("Id").GetInt32();
                     Assert.AreEqual(lastNotificationId, 1);
                     // Generate a new notification
                     objectServer.Votes++;
@@ -70,16 +70,16 @@ namespace WoopsaTest
                     // Check we have now 2
                     lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
                     jsonData = lastNotifications.JsonData;
-                    Assert.IsTrue(jsonData.IsArray);
-                    Assert.AreEqual(jsonData.Length, 2);
-                    Assert.IsTrue(jsonData[0].IsDictionary);
-                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.IsTrue(jsonData.ValueKind == JsonValueKind.Array);
+                    Assert.AreEqual(jsonData.GetArrayLength(), 2);
+                    Assert.IsTrue(jsonData[0].ValueKind == JsonValueKind.Object);
+                    lastNotificationId = jsonData[jsonData.GetArrayLength() - 1].GetProperty("Id").GetInt32();
                     Assert.AreEqual(lastNotificationId, 2);
                     // Check we can remove 1 and still have 1
                     lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 1);
                     jsonData = lastNotifications.JsonData;
-                    Assert.AreEqual(jsonData.Length, 1);
-                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.AreEqual(jsonData.GetArrayLength(), 1);
+                    lastNotificationId = jsonData[jsonData.GetArrayLength() - 1].GetProperty("Id").GetInt32();
                     Assert.AreEqual(lastNotificationId, 2);
                     // Enable the code below to test the wait of the timeout when they are 0 notifications pending
                     /*
@@ -109,7 +109,7 @@ namespace WoopsaTest
 
                     Stopwatch watch = new Stopwatch();
                     WoopsaValue lastNotifications;
-                    WoopsaJsonData jsonData;
+                    JsonElement jsonData;
                     int lastNotificationId;
                     watch.Start();
                     do
@@ -120,16 +120,16 @@ namespace WoopsaTest
                         if (watch.ElapsedMilliseconds > 1000)
                             Assert.Fail("Timeout without receveiving any notification");
                     }
-                    while (jsonData.Length == 0);
-                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    while (jsonData.GetArrayLength() == 0);
+                    lastNotificationId = jsonData[jsonData.GetArrayLength() - 1].GetProperty("Id").GetInt32();
                     Assert.AreEqual(lastNotificationId, 1);
                     // Get again the same notification
                     lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
                     jsonData = lastNotifications.JsonData;
-                    Assert.IsTrue(jsonData.IsArray);
-                    Assert.AreEqual(jsonData.Length, 1);
-                    Assert.IsTrue(jsonData[0].IsDictionary);
-                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    Assert.IsTrue(jsonData.ValueKind == JsonValueKind.Array);
+                    Assert.AreEqual(jsonData.GetArrayLength(), 1);
+                    Assert.IsTrue(jsonData[0].ValueKind == JsonValueKind.Object);
+                    lastNotificationId = jsonData[jsonData.GetArrayLength() - 1].GetProperty("Id").GetInt32();
                     Assert.AreEqual(lastNotificationId, 1);
                 }
             }

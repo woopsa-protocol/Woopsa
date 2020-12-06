@@ -164,11 +164,11 @@ namespace Woopsa
                     if (_clientRequestsById.TryGetValue(id, out request))
                     {
                         JsonElement result = item.GetProperty(WoopsaFormat.KeyResult);
-                        if (result.TryGetProperty(WoopsaFormat.KeyError, out _))
+                        if (result.ValueKind != JsonValueKind.Null && result.TryGetProperty(WoopsaFormat.KeyError, out _))
                         {
                             request.Result = new WoopsaClientRequestResult()
                             {
-                                Error = WoopsaFormat.DeserializeError(result.GetString()),
+                                Error = WoopsaFormat.DeserializeError(result.GetRawText()),
                                 ResultType = WoopsaClientRequestResultType.Error
                             };
                         }
@@ -176,7 +176,7 @@ namespace Woopsa
                         {
                             request.Result = new WoopsaClientRequestResult()
                             {
-                                Meta = WoopsaFormat.DeserializeMeta(result.GetString()),
+                                Meta = WoopsaFormat.DeserializeMeta(result.GetRawText()),
                                 ResultType = WoopsaClientRequestResultType.Meta
                             };
                         }
@@ -184,7 +184,7 @@ namespace Woopsa
                         {
                             request.Result = new WoopsaClientRequestResult()
                             {
-                                Value = WoopsaFormat.DeserializeWoopsaValue(result.GetString()),
+                                Value = WoopsaFormat.DeserializeWoopsaValue(result.GetRawText()),
                                 ResultType = WoopsaClientRequestResultType.Value
                             };
                         }

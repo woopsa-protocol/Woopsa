@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace WoopsaTest
 {
@@ -54,7 +55,7 @@ namespace WoopsaTest
                             result = methodRegisterScubscription.Invoke(channel, WoopsaValue.WoopsaRelativeLink("/Votes"), 0.01, 0.01);
                         int subscriptionNbr = result;
 
-                        WoopsaJsonData jData;
+                        JsonElement jData;
                         WoopsaMethod methodWaitNotification = subscription.Methods.ByNameOrNull("WaitNotification");
                         if (methodWaitNotification != null)
                         {
@@ -63,15 +64,15 @@ namespace WoopsaTest
                             // call the method "WaitNotification" on the server
                             Thread.Sleep(100);
                             jData = methodWaitNotification.Invoke(channel, 0).JsonData;
-                            Assert.IsTrue(jData.Length > 0);
+                            Assert.IsTrue(jData.GetArrayLength() > 0);
                             int lastNotification;
-                            lastNotification = jData[0]["Id"];
+                            lastNotification = jData[0].GetProperty("Id").GetInt32();
                             Assert.AreEqual(lastNotification, 1);
                             // Get notifications again
                             Thread.Sleep(100);
                             jData = methodWaitNotification.Invoke(channel, 0).JsonData;
-                            Assert.IsTrue(jData.Length > 0);
-                            lastNotification = jData[0]["Id"];
+                            Assert.IsTrue(jData.GetArrayLength() > 0);
+                            lastNotification = jData[0].GetProperty("Id").GetInt32();
                             Assert.AreEqual(lastNotification, 1);
                         }
                     }

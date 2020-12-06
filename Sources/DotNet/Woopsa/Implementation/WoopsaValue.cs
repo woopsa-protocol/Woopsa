@@ -64,33 +64,40 @@ namespace Woopsa
         {
             try
             {
-                switch (type)
+                if (value is JsonElement jsonElement)
                 {
-                    case WoopsaValueType.Logical:
-                        return new WoopsaValue((bool)value, timeStamp);
-                    case WoopsaValueType.Integer:
-                        return new WoopsaValue(Convert.ToInt64(value), timeStamp);
-                    case WoopsaValueType.Real:
-                        return new WoopsaValue(Convert.ToDouble(value), timeStamp);
-                    case WoopsaValueType.DateTime:
-                        return new WoopsaValue((DateTime)value, timeStamp);
-                    case WoopsaValueType.TimeSpan:
-                        if (value is TimeSpan)
-                            return new WoopsaValue((TimeSpan)value, timeStamp);
-                        else
-                            return new WoopsaValue(TimeSpan.FromSeconds(Convert.ToDouble(value)),
-                                timeStamp);
-                    case WoopsaValueType.Text:
-                        if (value == null)
-                            return new WoopsaValue(string.Empty, timeStamp);
-                        else if (value.GetType().IsEnum)
-                            return new WoopsaValue(value.ToString(), timeStamp);
-                        else if (string.IsNullOrEmpty((string)value))
-                            return new WoopsaValue(string.Empty, timeStamp);
-                        else
-                            return new WoopsaValue(WoopsaFormat.ToStringWoopsa(value), timeStamp);
-                    default:
-                        return WoopsaValue.CreateUnchecked(WoopsaFormat.ToStringWoopsa(value), type, timeStamp);
+                    return new WoopsaValue(jsonElement);
+                }
+                else
+                {
+                    switch (type)
+                    {
+                        case WoopsaValueType.Logical:
+                            return new WoopsaValue((bool)value, timeStamp);
+                        case WoopsaValueType.Integer:
+                            return new WoopsaValue(Convert.ToInt64(value), timeStamp);
+                        case WoopsaValueType.Real:
+                            return new WoopsaValue(Convert.ToDouble(value), timeStamp);
+                        case WoopsaValueType.DateTime:
+                            return new WoopsaValue((DateTime)value, timeStamp);
+                        case WoopsaValueType.TimeSpan:
+                            if (value is TimeSpan)
+                                return new WoopsaValue((TimeSpan)value, timeStamp);
+                            else
+                                return new WoopsaValue(TimeSpan.FromSeconds(Convert.ToDouble(value)),
+                                    timeStamp);
+                        case WoopsaValueType.Text:
+                            if (value == null)
+                                return new WoopsaValue(string.Empty, timeStamp);
+                            else if (value.GetType().IsEnum)
+                                return new WoopsaValue(value.ToString(), timeStamp);
+                            else if (string.IsNullOrEmpty((string)value))
+                                return new WoopsaValue(string.Empty, timeStamp);
+                            else
+                                return new WoopsaValue(WoopsaFormat.ToStringWoopsa(value), timeStamp);
+                        default:
+                            return WoopsaValue.CreateUnchecked(WoopsaFormat.ToStringWoopsa(value), type, timeStamp);
+                    }
                 }
             }
             catch (InvalidCastException)

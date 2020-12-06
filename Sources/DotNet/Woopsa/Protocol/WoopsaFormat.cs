@@ -450,7 +450,14 @@ namespace Woopsa
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
-            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
+            var deserializeOptions = new JsonSerializerOptions
+            {
+                Converters =
+                    {
+                        new ObjectToInferredTypesConverter()
+                    }
+            };
+            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, deserializeOptions);
 
             if (result != null)
             {

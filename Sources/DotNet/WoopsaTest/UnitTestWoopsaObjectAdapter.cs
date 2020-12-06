@@ -87,16 +87,16 @@ namespace WoopsaTest
             Assert.IsTrue(propertyJson.Value is WoopsaValue);
             WoopsaValue jsonValue = (WoopsaValue)propertyJson.Value;
             Assert.IsNotNull(jsonValue.JsonData);
-            Assert.AreEqual(jsonValue.JsonData["x"].ToInt64(), 8);
-            Assert.AreEqual(jsonValue.JsonData["y"].ToInt64(), 9);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("x").GetInt64(), 8);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("y").GetInt64(), 9);
             // JSon array
             c.APropertyJson = "{ \"a\" : [11, 12, 13] }";
             Assert.IsTrue(propertyJson.Value is WoopsaValue);
             jsonValue = (WoopsaValue)propertyJson.Value;
             Assert.IsNotNull(jsonValue.JsonData);
-            Assert.AreEqual(jsonValue.JsonData["a"][0].ToInt64(), 11);
-            Assert.AreEqual(jsonValue.JsonData["a"][1].ToInt64(), 12);
-            Assert.AreEqual(jsonValue.JsonData["a"][2].ToInt64(), 13);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("a")[0].GetInt64(), 11);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("a")[1].GetInt64(), 12);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("a")[2].GetInt64(), 13);
 
             ClassD[] array = new ClassD[] { new ClassD(4), new ClassD(3), new ClassD(2) };
             WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
@@ -289,16 +289,16 @@ namespace WoopsaTest
             Assert.IsTrue(propertyJson.Value is WoopsaValue);
             WoopsaValue jsonValue = (WoopsaValue)propertyJson.Value;
             Assert.IsNotNull(jsonValue.JsonData);
-            Assert.AreEqual(jsonValue.JsonData["x"].ToInt64(), 8);
-            Assert.AreEqual(jsonValue.JsonData["y"].ToInt64(), 9);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("x").GetInt64(), 8);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("y").GetInt64(), 9);
             // JSon array
             c.APropertyJson = "{ \"a\" : [11, 12, 13] }";
             Assert.IsTrue(propertyJson.Value is WoopsaValue);
             jsonValue = (WoopsaValue)propertyJson.Value;
             Assert.IsNotNull(jsonValue.JsonData);
-            Assert.AreEqual(jsonValue.JsonData["a"][0].ToInt64(), 11);
-            Assert.AreEqual(jsonValue.JsonData["a"][1].ToInt64(), 12);
-            Assert.AreEqual(jsonValue.JsonData["a"][2].ToInt64(), 13);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("a")[0].GetInt64(), 11);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("a")[1].GetInt64(), 12);
+            Assert.AreEqual(jsonValue.JsonData.GetProperty("a")[2].GetInt64(), 13);
 
             ClassD[] array = new ClassD[] { new ClassD(4), new ClassD(3), new ClassD(2) };
             WoopsaObjectAdapter adapterArrayObject = new WoopsaObjectAdapter(null, "array", array, null, null,
