@@ -1,4 +1,4 @@
-name: Launch unit tests Woopsa
+name: Launch unit tests
 
 on:
   workflow_dispatch:
@@ -16,7 +16,7 @@ jobs:
     steps:
     - uses: actions/checkout@v2
       
-    - name: Setup .NET Core
+    - name: Setup .NET Core 2.2
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 2.2.207      
