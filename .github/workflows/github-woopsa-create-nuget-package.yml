@@ -2,7 +2,7 @@ name: Create Woopsa Nuget Package
   
 on:
   workflow_dispatch:
-    branches: [ master ]  
+    branches: [ master, support/*, develop]
 
 jobs:
   build:
