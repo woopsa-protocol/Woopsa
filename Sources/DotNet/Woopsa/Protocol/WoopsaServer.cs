@@ -383,7 +383,7 @@ namespace Woopsa
             }
             else
             {
-                string message = String.Format("Cannot read value of a non-WoopsaProperty for path {0}", path);
+                string message = $"Cannot read value of a non-WoopsaProperty for path {path}";
                 OnLog(WoopsaVerb.Read, path, NoArguments, message, false);
                 throw new WoopsaInvalidOperationException(message);
             }
@@ -405,8 +405,7 @@ namespace Woopsa
                 }
                 else
                 {
-                    string message = String.Format(
-                        "Cannot write a read-only WoopsaProperty for path {0}", path);
+                    string message = $"Cannot write a read-only WoopsaProperty for path {path}";
                     OnLog(WoopsaVerb.Write, path, new WoopsaValue[] { argument }, message, false);
                     throw new WoopsaInvalidOperationException(message);
                 }
@@ -414,7 +413,7 @@ namespace Woopsa
             else
             {
                 WoopsaValue argument = getValue(WoopsaValueType.Text);
-                string message = String.Format("Cannot write value of a non-WoopsaProperty for path {0}", path);
+                string message = $"Cannot write value of a non-WoopsaProperty for path {path}";
                 OnLog(WoopsaVerb.Write, path, new WoopsaValue[] { argument }, message, false);
                 throw new WoopsaInvalidOperationException(message);
             }
@@ -447,7 +446,7 @@ namespace Woopsa
             }
             else
             {
-                string message = String.Format("Cannot get metadata for a WoopsaElement of type {0}", item.GetType());
+                string message = $"Cannot get metadata for a WoopsaElement of type {item.GetType()}";
                 OnLog(WoopsaVerb.Meta, path, NoArguments, message, false);
                 throw new WoopsaInvalidOperationException(message);
             }
@@ -468,7 +467,7 @@ namespace Woopsa
                         WoopsaValue argumentValue = getArgumentByName(argInfo.Name, argInfo.Type);
                         if (argumentValue == null)
                         {
-                            string message = String.Format("Missing argument {0} for method {1}", argInfo.Name, item.Name);
+                            string message = $"Missing argument {argInfo.Name} for method {item.Name}";
                             OnLog(WoopsaVerb.Invoke, path, NoArguments, message, false);
                             throw new WoopsaInvalidOperationException(message);
                         }
@@ -483,14 +482,14 @@ namespace Woopsa
                 }
                 else
                 {
-                    string message = String.Format("Wrong argument count for method {0}", item.Name);
+                    string message = $"Wrong argument count for method {item.Name}";
                     OnLog(WoopsaVerb.Invoke, path, NoArguments, message, false);
                     throw new WoopsaInvalidOperationException(message);
                 }
             }
             else
             {
-                string message = String.Format("Cannot invoke a {0}", item.GetType());
+                string message = $"Cannot invoke a {item.GetType()}";
                 OnLog(WoopsaVerb.Invoke, path, NoArguments, message, false);
                 throw new WoopsaInvalidOperationException(message);
             }

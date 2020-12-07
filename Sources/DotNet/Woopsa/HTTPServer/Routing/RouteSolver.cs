@@ -169,7 +169,7 @@ namespace Woopsa
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, String.Format("Internal Server Error {0}", e.Message));
+                response.WriteError(HTTPStatusCode.InternalServerError, $"Internal Server Error {e.Message}");
                 OnError(RoutingErrorType.INTERNAL, "A RouteHandler threw an exception.", request);
             }
         }

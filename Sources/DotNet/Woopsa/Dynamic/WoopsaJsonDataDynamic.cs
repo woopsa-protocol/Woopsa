@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Dynamic;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -7,7 +8,7 @@ namespace Woopsa
     {
         #region Constructors
 
-        public WoopsaJsonDataDynamic(WoopsaJsonData data)
+        public WoopsaJsonDataDynamic(JsonElement data)
         {
             _data = data;
         }
@@ -20,10 +21,11 @@ namespace Woopsa
         {
             try
             {
-                if (_data[binder.Name].IsSimple)
-                    result = _data[binder.Name];
+                var property = _data.GetProperty(binder.Name);
+                if (property.ValueKind != JsonValueKind.Object)
+                    result = property;
                 else
-                    result = new WoopsaJsonDataDynamic(_data[binder.Name]);
+                    result = new WoopsaJsonDataDynamic(property);
                 return true;
             }
             catch (Exception)
@@ -37,10 +39,11 @@ namespace Woopsa
         {
             try
             {
-                if (_data[(int)indexes[0]].IsSimple)
-                    result = _data[(int)indexes[0]];
+                var property = _data[(int)indexes[0]];
+                if (property.ValueKind != JsonValueKind.String)
+                    result = property;
                 else
-                    result = new WoopsaJsonDataDynamic(_data[(int)indexes[0]]);
+                    result = new WoopsaJsonDataDynamic(property);
                 return true;
             }
             catch (Exception)
@@ -54,14 +57,14 @@ namespace Woopsa
 
         #region Private Members
 
-        private readonly WoopsaJsonData _data;
+        private readonly JsonElement _data;
 
         #endregion
     }
 
     public static class WoopsaJsonDataDynamicExtensions
     {
-        public static WoopsaJsonDataDynamic ToDynamic(this WoopsaJsonData data)
+        public static WoopsaJsonDataDynamic ToDynamic(this JsonElement data)
         {
             return new WoopsaJsonDataDynamic(data);
         }

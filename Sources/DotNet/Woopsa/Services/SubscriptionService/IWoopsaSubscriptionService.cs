@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -95,7 +96,7 @@ namespace Woopsa
         /// Set to 0 to acknowledge a notification queue overflow.
         /// </param>
         /// <returns>JsonData. Json serialization of the IWoopsaNotifications. throws an exception if the channel is not valid</returns>
-        WoopsaJsonData WaitNotification(int subscriptionChannel, int lastNotificationId);
+        JsonElement WaitNotification(int subscriptionChannel, int lastNotificationId);
     }
 
     public interface IWoopsaNotification
