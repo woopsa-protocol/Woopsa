@@ -2,11 +2,11 @@ name: Launch unit tests Woopsa
 
 on:
   workflow_dispatch:
-    branches: [ master ]    
+    branches: [ master, support/*, develop]   
   push:
-    branches: [ master ]    
+    branches: [ master, support/*, develop]   
   pull_request:
-    branches: [ master ]
+    branches: [ master, support/*, develop]  
 
 jobs:
   build:
