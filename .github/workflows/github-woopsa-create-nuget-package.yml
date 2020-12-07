@@ -1,4 +1,4 @@
-name: Create Nuget Package
+name: Create Nuget Package Preview
   
 on:
   workflow_dispatch:
