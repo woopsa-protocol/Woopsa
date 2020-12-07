@@ -1,0 +1,52 @@
+name: Deploy Nuget Package Preview
+  
+on:
+  workflow_dispatch:
+    branches: [ master, support/*, develop]  
+
+jobs:
+  build:
+
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v2
+      
+    - name: Setup .NET Core 2.2
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 2.2.207      
+
+    - name: Setup .NET Core 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.404       
+      
+    - name: Install dependencies
+      run: dotnet restore ./Woopsa.sln
+      working-directory: ./Sources/DotNet
+      
+    - name: Build
+      run: dotnet build ./Woopsa.sln --configuration Release --no-restore
+      working-directory: ./Sources/DotNet
+      
+    - name: Test
+      run: dotnet test ./Woopsa.sln --no-restore --configuration Release --filter TestCategory!=Performance --verbosity normal
+      working-directory: ./Sources/DotNet
+      
+    - name: Generate Nuget Package
+      run: dotnet pack ./Woopsa.sln --configuration Release --version-suffix preview.${{ github.run_number }} -o '${{ github.workspace }}/Sources/DotNet/artifacts'
+      working-directory: ./Sources/DotNet
+    
+    - name: Upload a Build Artifact
+      uses: actions/upload-artifact@v2.1.4
+      with:
+        name: Woopsa Nuget Package
+        path: '${{ github.workspace }}/Sources/DotNet/artifacts/*.nupkg'
+        if-no-files-found: error         
+
+    - name: Deploy Nuget Package
+      env:
+        WOOPSA_NUGET_API_KEY: ${{ secrets.WOOPSA_NUGET_API_KEY }}
+      run: dotnet nuget push '${{ github.workspace }}/Sources/DotNet/artifacts/**/*.nupkg' --api-key $env:WOOPSA_NUGET_API_KEY --source https://api.nuget.org/v3/index.json --no-symbols true
+      working-directory: ./Sources/DotNet
