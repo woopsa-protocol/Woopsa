@@ -136,7 +136,7 @@ namespace Woopsa
             if (channel != null)
             {
                 IWoopsaNotifications notifications = channel.WaitNotification(WoopsaSubscriptionServiceConst.WaitNotificationTimeout, notificationId);
-                return JsonDocument.Parse(notifications.Serialize()).RootElement;
+                return WoopsaUtils.JsonElementFrom(notifications.Serialize());
             }
             else
                 throw new WoopsaInvalidSubscriptionChannelException(string.Format("Tried to call WaitNotification on channel with id={0} that does not exist", channelId));

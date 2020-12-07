@@ -26,9 +26,13 @@ namespace Woopsa
                 JsonTokenType.Number => reader.GetDouble(),
                 JsonTokenType.String when reader.TryGetDateTime(out DateTime datetime) => datetime,
                 JsonTokenType.String => reader.GetString(),
-                _ => JsonDocument.ParseValue(ref reader).RootElement.Clone()
+                _ => DefaultContent(ref reader)
             };
-
+        private JsonElement DefaultContent(ref Utf8JsonReader reader)
+        {
+            using (var document = JsonDocument.ParseValue(ref reader))
+                return document.RootElement.Clone();
+        }
         public override void Write(
             Utf8JsonWriter writer,
             object objectToWrite,

@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Collections.Specialized;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -119,5 +120,12 @@ namespace Woopsa
             return eMessage;
         }
         #endregion
+
+
+        internal static JsonElement JsonElementFrom(string json)
+        {
+            using (var document = JsonDocument.Parse(json))
+                return document.RootElement.Clone();
+        }
     }
 }

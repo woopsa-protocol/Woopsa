@@ -13,10 +13,7 @@ namespace Woopsa
             _type = type;
             _timestamp = timestamp;
             if (type == WoopsaValueType.JsonData)
-            {
-                var doc = JsonDocument.Parse(text);
-                _jsonData = doc.RootElement;
-            }
+                _jsonData = WoopsaUtils.JsonElementFrom(text);
         }
 
         internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null)
@@ -110,10 +107,7 @@ namespace Woopsa
             WoopsaValueType type, DateTime? timeStamp = null)
         {
             if (type == WoopsaValueType.JsonData)
-            {
-                var doc = JsonDocument.Parse(JsonSerializer.Serialize(deserializedJson));
-                return new WoopsaValue(doc.RootElement);
-            }
+                return new WoopsaValue(WoopsaUtils.JsonElementFrom(JsonSerializer.Serialize(deserializedJson)));
             else
                 return ToWoopsaValue(deserializedJson, type, timeStamp);
         }

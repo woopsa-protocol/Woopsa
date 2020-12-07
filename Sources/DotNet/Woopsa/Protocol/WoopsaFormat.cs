@@ -469,10 +469,7 @@ namespace Woopsa
                 else
                     timeStamp = null;
                 if (valueType == WoopsaValueType.JsonData)
-                {
-
-                    resultWoopsaValue = new WoopsaValue(JsonDocument.Parse(JsonSerializer.Serialize(result.Value)).RootElement, timeStamp);
-                }
+                    resultWoopsaValue = new WoopsaValue(WoopsaUtils.JsonElementFrom(JsonSerializer.Serialize(result.Value)), timeStamp);
                 else
                     resultWoopsaValue = WoopsaValue.CreateChecked(WoopsaFormat.ToStringWoopsa(result.Value),
                         valueType, timeStamp);
