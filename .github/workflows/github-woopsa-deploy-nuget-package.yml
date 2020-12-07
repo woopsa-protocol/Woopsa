@@ -2,7 +2,7 @@ name: Deploy Woopsa Nuget Package (Full)
   
 on:
   workflow_dispatch:
-    branches: [ master ]  
+    branches: [ master, support/*, develop]
 
 jobs:
   build:
