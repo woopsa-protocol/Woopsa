@@ -1,4 +1,4 @@
-name: Create Woopsa Nuget Package
+name: Create Woopsa Nuget Package Preview
   
 on:
   workflow_dispatch:
@@ -12,10 +12,15 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         
-      - name: Setup .NET Core
+      - name: Setup .NET Core 2.2
         uses: actions/setup-dotnet@v1
         with:
-          dotnet-version: 2.2.207
+          dotnet-version: 2.2.207      
+
+      - name: Setup .NET Core 3.1
+        uses: actions/setup-dotnet@v1
+        with:
+          dotnet-version: 3.1.404      
       
       - name: Generate Nuget Package
         run: dotnet pack ./Woopsa.sln --configuration Release --version-suffix preview.${env:GITHUB_RUN_NUMBER} -o '${{ github.workspace }}/Sources/DotNet/artifacts'
