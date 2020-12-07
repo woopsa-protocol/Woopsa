@@ -1,4 +1,4 @@
-name: Create Woopsa Nuget Package Preview
+name: Create Nuget Package Preview
   
 on:
   workflow_dispatch:
