@@ -1,4 +1,4 @@
-name: Deploy Woopsa Nuget Package (Full)
+name: Deploy Nuget Package (Full)
   
 on:
   workflow_dispatch:
