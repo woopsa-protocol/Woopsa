@@ -1,4 +1,4 @@
-name: Launch unit tests Woopsa
+name: Launch unit tests
 
 on:
   workflow_dispatch:
