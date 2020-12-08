@@ -4,6 +4,7 @@ using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -12,19 +13,19 @@ namespace Woopsa
         public static WoopsaJsonData CreateFromText(string jsonText)
         {
             object deserializedData = JsonSerializer.Deserialize<object>(jsonText);
-            return new WoopsaJsonData(deserializedData, jsonText);
+            return new WoopsaJsonData(deserializedData);
         }
         public static WoopsaJsonData CreateFromDeserializedData(object deserializedJson)
         {
-            return new WoopsaJsonData(deserializedJson, null);
+            return new WoopsaJsonData(deserializedJson);
         }
 
-        private WoopsaJsonData(object deserializedData, string serializedData)
+        private WoopsaJsonData(object deserializedData)
         {
-            _data = deserializedData;
-            _serializedData = serializedData;
-            _asDictionary = JsonSerializer.ToDictionnary(_data);
-            _asArray = JsonSerializer.ToArray(_data);
+            if (deserializedData is JsonElement jsonElement)
+                _jsonElement = jsonElement;
+            else
+                throw new NotSupportedException("Error must be JsonElement");
         }
 
         public WoopsaJsonData this[string key]
@@ -43,10 +44,9 @@ namespace Woopsa
         {
             if (IsDictionary)
             {
-                object dictionnaryEntry;
-                if (_asDictionary.TryGetValue(key, out dictionnaryEntry))
+                if (_jsonElement.TryGetProperty(key, out var dictionnaryEntry))
                 {
-                    value = CreateFromDeserializedData(_asDictionary[key]);
+                    value = CreateFromDeserializedData(dictionnaryEntry);
                     return true;
                 }
             }
@@ -56,21 +56,10 @@ namespace Woopsa
             return false;
         }
 
-        public IEnumerable<string> Keys
-        {
-            get
-            {
-                if (IsDictionary)
-                    return _asDictionary.Keys;
-                else
-                    return new string[0];
-            }
-        }
-
         public bool ContainsKey(string key)
         {
             if (IsDictionary)
-                return _asDictionary.ContainsKey(key);
+                return _jsonElement.TryGetProperty(key, out _);
             else
                 return false;
         }
@@ -91,7 +80,7 @@ namespace Woopsa
         {
             if (IsArray)
             {
-                result = CreateFromDeserializedData(_asArray[index]);
+                result = CreateFromDeserializedData(_jsonElement[index]);
                 return true;
             }
             else
@@ -106,46 +95,49 @@ namespace Woopsa
             get
             {
                 if (IsArray)
-                    return _asArray.Length;
+                    return _jsonElement.GetArrayLength();
                 else
                     throw new InvalidOperationException("Length is only available on WoopsaJsonData of type Array.");
             }
         }
 
-        public bool IsArray { get { return _asArray != null; } }
+        public bool IsArray => _jsonElement.ValueKind == JsonValueKind.Array;
 
-        public bool IsDictionary { get { return _asDictionary != null; } }
+        public bool IsDictionary => _jsonElement.ValueKind == JsonValueKind.Object;
 
-        public bool IsSimple { get { return (_asArray == null) && (_asDictionary == null); } }
+        public bool IsSimple => !IsArray && !IsDictionary;
 
         public string AsText
         {
             get
             {
-                if (_serializedData == null)
-                {
-                    if (IsSimple)
-                        _serializedData = WoopsaFormat.ToStringWoopsa(_data);
-                    else
-                    {
-                        _serializedData = JsonSerializer.Serialize(_data);
-                    }
-                }
-                return _serializedData;
+                //if (_serializedData == null)
+                //{
+                //    if (IsSimple)
+                //        _serializedData = WoopsaFormat.ToStringWoopsa(_data);
+                //    else
+                //    {
+                //        _serializedData = JsonSerializer.Serialize(_data);
+                //    }
+                //}
+                //return _serializedData;
+                if (_jsonElement.ValueKind == JsonValueKind.String)
+                    return _jsonElement.GetString();
+                return _jsonElement.GetRawText();
             }
+
         }
+
 
         public override string ToString()
         {
             return AsText;
         }
 
-        internal object InternalObject { get { return _data; } }
+        internal JsonElement InternalObject => _jsonElement;
 
-        private readonly object _data;
-        private Dictionary<string, object> _asDictionary;
-        private object[] _asArray;
-        private string _serializedData;
+
+        private readonly JsonElement _jsonElement;
 
         #region Static methods for type casting
         public static implicit operator bool (WoopsaJsonData value)
@@ -158,17 +150,17 @@ namespace Woopsa
             return value.ToSByte();
         }
 
-        public static implicit operator Int16(WoopsaJsonData value)
+        public static implicit operator short(WoopsaJsonData value)
         {
             return value.ToInt16();
         }
 
-        public static implicit operator Int32(WoopsaJsonData value)
+        public static implicit operator int(WoopsaJsonData value)
         {
             return value.ToInt32();
         }
 
-        public static implicit operator Int64(WoopsaJsonData value)
+        public static implicit operator long(WoopsaJsonData value)
         {
             return value.ToInt64();
         }
@@ -178,7 +170,7 @@ namespace Woopsa
             return value.ToByte();
         }
 
-        public static implicit operator UInt16(WoopsaJsonData value)
+        public static implicit operator ushort(WoopsaJsonData value)
         {
             return value.ToUInt16();
         }
@@ -215,71 +207,71 @@ namespace Woopsa
         public static bool ToBool(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return WoopsaFormat.ToBool(WoopsaFormat.ToStringWoopsa(data.InternalObject));
+                return data.InternalObject.GetBoolean();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("bool", data.InternalObject.GetType().ToString()));
         }
 
-        public static SByte ToSByte(this WoopsaJsonData data)
+        public static sbyte ToSByte(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToSByte(data.InternalObject);
+                return data.InternalObject.GetSByte();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("SByte", data.InternalObject.GetType().ToString()));
         }
 
-        public static Int16 ToInt16(this WoopsaJsonData data)
+        public static short ToInt16(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToInt16(data.InternalObject);
+                return data.InternalObject.GetInt16();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("Int16", data.InternalObject.GetType().ToString()));
         }
 
-        public static Int32 ToInt32(this WoopsaJsonData data)
+        public static int ToInt32(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToInt32(data.InternalObject);
+                return data.InternalObject.GetInt32();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("Int32", data.InternalObject.GetType().ToString()));
         }
 
-        public static Int64 ToInt64(this WoopsaJsonData data)
+        public static long ToInt64(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToInt64(data.InternalObject);
+                return data.InternalObject.GetInt64();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("Int64", data.InternalObject.GetType().ToString()));
         }
 
-        public static Byte ToByte(this WoopsaJsonData data)
+        public static byte ToByte(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToByte(data.InternalObject);
+                return data.InternalObject.GetByte();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("Byte", data.InternalObject.GetType().ToString()));
         }
 
-        public static UInt16 ToUInt16(this WoopsaJsonData data)
+        public static ushort ToUInt16(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToUInt16(data.InternalObject);
+                return data.InternalObject.GetUInt16();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("UInt16", data.InternalObject.GetType().ToString()));
         }
 
-        public static UInt32 ToUInt32(this WoopsaJsonData data)
+        public static uint ToUInt32(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToUInt32(data.InternalObject);
+                return data.InternalObject.GetUInt32();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("UInt32", data.InternalObject.GetType().ToString()));
         }
 
-        public static UInt64 ToUInt64(this WoopsaJsonData data)
+        public static ulong ToUInt64(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToUInt64(data.InternalObject);
+                return data.InternalObject.GetUInt64();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("UInt64", data.InternalObject.GetType().ToString()));
         }
@@ -287,7 +279,7 @@ namespace Woopsa
         public static float ToFloat(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return (float)Convert.ToDouble(data.InternalObject);
+                return (float)data.InternalObject.GetDouble();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("float", data.InternalObject.GetType().ToString()));
         }
@@ -295,14 +287,14 @@ namespace Woopsa
         public static double ToDouble(this WoopsaJsonData data)
         {
             if (data.IsSimple)
-                return Convert.ToDouble(data.InternalObject);
+                return data.InternalObject.GetDouble();
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("double", data.InternalObject.GetType().ToString()));
         }
 
         public static string Serialize(this WoopsaJsonData data)
         {
-            return JsonSerializer.Serialize(data.InternalObject);
+            return data.InternalObject.GetRawText();
         }
     }
 }
