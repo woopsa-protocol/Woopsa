@@ -7,6 +7,7 @@ using System.Threading.Tasks;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace WoopsaTest
 {
@@ -41,7 +42,7 @@ namespace WoopsaTest
 
                     Stopwatch watch = new Stopwatch();
                     WoopsaValue lastNotifications;
-                    WoopsaJsonData jsonData;
+                    JsonElement jsonData;
                     int lastNotificationId;
                     watch.Start();
                     do
@@ -52,13 +53,13 @@ namespace WoopsaTest
                         if (watch.ElapsedMilliseconds > 1000)
                             Assert.Fail("Timeout without receveiving any notification");
                     }
-                    while (jsonData.Length == 0);
-                    lastNotificationId = jsonData[jsonData.Length - 1]["Id"];
+                    while (jsonData.GetArrayLength() == 0);
+                    lastNotificationId = jsonData[jsonData.GetArrayLength() - 1].GetProperty("Id").GetInt32();
                     Assert.AreEqual(lastNotificationId, 1);
                     // Get again the same notification
                     lastNotifications = dynamicClient.SubscriptionService.WaitNotification(channel, 0);
                     jsonData = lastNotifications.JsonData;
-                    Assert.IsTrue(jsonData.IsArray);
+                    Assert.IsTrue(jsonData.ValueKind == JsonValueKind.Array);
                     Assert.AreEqual(jsonData.Length, 1);
                     Assert.IsTrue(jsonData[0].IsDictionary);
                     lastNotificationId = jsonData[jsonData.Length - 1]["Id"];

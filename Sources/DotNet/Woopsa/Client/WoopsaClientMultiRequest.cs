@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -152,22 +153,22 @@ namespace Woopsa
             _clientRequestsById[clientRequest.Request.Id] = clientRequest;
             _clientRequests.Add(clientRequest);
         }
-        internal void DispatchResults(WoopsaJsonData jsonData)
+        internal void DispatchResults(JsonElement jsonData)
         {
-            if (jsonData.IsArray)
-                for (int i = 0; i < jsonData.Length; i++)
+            if (jsonData.ValueKind == JsonValueKind.Array)
+                for (int i = 0; i < jsonData.GetArrayLength(); i++)
                 {
-                    WoopsaJsonData item = jsonData[i];
-                    int id = item[WoopsaFormat.KeyId];
+                    JsonElement item = jsonData[i];
+                    int id = item.GetProperty(WoopsaFormat.KeyId).GetInt32();
                     WoopsaClientRequest request;
                     if (_clientRequestsById.TryGetValue(id, out request))
                     {
-                        WoopsaJsonData result = item[WoopsaFormat.KeyResult];
-                        if (result.ContainsKey(WoopsaFormat.KeyError))
+                        JsonElement result = item.GetProperty(WoopsaFormat.KeyResult);
+                        if (result.TryGetProperty(WoopsaFormat.KeyError, out _))
                         {
                             request.Result = new WoopsaClientRequestResult()
                             {
-                                Error = WoopsaFormat.DeserializeError(result.AsText),
+                                Error = WoopsaFormat.DeserializeError(result.GetString()),
                                 ResultType = WoopsaClientRequestResultType.Error
                             };
                         }
@@ -175,7 +176,7 @@ namespace Woopsa
                         {
                             request.Result = new WoopsaClientRequestResult()
                             {
-                                Meta = WoopsaFormat.DeserializeMeta(result.AsText),
+                                Meta = WoopsaFormat.DeserializeMeta(result.GetString()),
                                 ResultType = WoopsaClientRequestResultType.Meta
                             };
                         }
@@ -183,7 +184,7 @@ namespace Woopsa
                         {
                             request.Result = new WoopsaClientRequestResult()
                             {
-                                Value = WoopsaFormat.DeserializeWoopsaValue(result.AsText),
+                                Value = WoopsaFormat.DeserializeWoopsaValue(result.GetString()),
                                 ResultType = WoopsaClientRequestResultType.Value
                             };
                         }

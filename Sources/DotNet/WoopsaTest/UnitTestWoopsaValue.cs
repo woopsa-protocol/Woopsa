@@ -83,10 +83,10 @@ namespace WoopsaTest
 			Assert.AreEqual(v.Type, WoopsaValueType.ResourceUrl);
 			v = WoopsaValue.WoopsaJsonData("{\"Name\":\"Switzerland\" , \"Year\":1291}");
             Assert.IsNotNull(v.JsonData);
-            Assert.AreEqual(v.JsonData.GetProperty("Name").GetString(), "Switzerland");
-            Assert.AreEqual(v.JsonData.GetProperty("Year").GetInt16(), 1291);
-            Assert.AreEqual(v.JsonData.GetProperty("Year").GetInt32(), 1291);
-            Assert.AreEqual(v.JsonData.GetProperty("Year").GetInt64(), 1291);
+            Assert.AreEqual(v.JsonData["Name"].ToString(), "Switzerland");
+            Assert.AreEqual(v.JsonData["Year"].ToInt16(), 1291);
+            Assert.AreEqual(v.JsonData["Year"].ToInt32(), 1291);
+            Assert.AreEqual(v.JsonData["Year"].ToInt64(), 1291);
             Assert.AreEqual(v.Type, WoopsaValueType.JsonData);
 		}
 
