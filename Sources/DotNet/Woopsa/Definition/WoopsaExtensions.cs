@@ -341,7 +341,7 @@ namespace Woopsa
             if (woopsaServerUrl == null) // it is a local path
                 return woopsaItemPath;
             else
-                throw new WoopsaException($"{value.AsText} is not a local woopsa link");
+                throw new WoopsaException(String.Format("{0} is not a local woopsa link", value.AsText));
         }
 
         #endregion IWoopsaValue
