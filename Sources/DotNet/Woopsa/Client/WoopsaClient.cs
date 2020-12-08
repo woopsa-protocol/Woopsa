@@ -33,24 +33,24 @@ namespace Woopsa
 
         #region Public Properties
 
-        public WoopsaClientProtocol ClientProtocol { get; private set; }
+        public WoopsaClientProtocol ClientProtocol { get; }
 
-        public string Url { get; private set; }
-        public string AuthorityUrl { get; private set; }
+        public string Url { get; }
+        public string AuthorityUrl { get; }
 
         public string Username
         {
-            get { return ClientProtocol.Username; }
-            set { ClientProtocol.Username = value; }
+            get => ClientProtocol.Username;
+            set => ClientProtocol.Username = value;
         }
 
         public string Password
         {
-            get { return ClientProtocol.Password; }
-            set { ClientProtocol.Password = value; }
+            get => ClientProtocol.Password;
+            set => ClientProtocol.Password = value;
         }
 
-        public WoopsaClientSubscriptionChannel SubscriptionChannel { get; private set; }
+        public WoopsaClientSubscriptionChannel SubscriptionChannel { get; }
 
         #endregion
 
@@ -62,10 +62,8 @@ namespace Woopsa
             return new WoopsaBoundClientObject(this, _container, name ?? meta.Name, null);
         }
 
-        public WoopsaUnboundClientObject CreateUnboundRoot(string name)
-        {
-            return new WoopsaUnboundClientObject(this, _container, name, null);
-        }
+        public WoopsaUnboundClientObject CreateUnboundRoot(string name) =>
+            new WoopsaUnboundClientObject(this, _container, name, null);
 
         public void ExecuteMultiRequest(WoopsaClientMultiRequest multiRequest)
         {
@@ -100,15 +98,10 @@ namespace Woopsa
                 SubscriptionChannel.Terminate();
                 ClientProtocol.Terminate();
                 if (SubscriptionChannel != null)
-                {
                     SubscriptionChannel.Dispose();
-                    SubscriptionChannel = null;
-                }
+
                 if (ClientProtocol != null)
-                {
                     ClientProtocol.Dispose();
-                    ClientProtocol = null;
-                }
             }
         }
 

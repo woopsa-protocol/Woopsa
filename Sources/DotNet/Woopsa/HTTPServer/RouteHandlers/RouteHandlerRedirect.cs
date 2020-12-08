@@ -1,5 +1,4 @@
-﻿
-namespace Woopsa
+﻿namespace Woopsa
 {
     public enum WoopsaRedirectionType
     {
@@ -15,10 +14,7 @@ namespace Woopsa
         }
 
         #region IHTTPRouteHandler
-        public bool AcceptSubroutes
-        {
-            get { return true; }
-        }
+        public bool AcceptSubroutes => true;
 
         public void HandleRequest(HTTPRequest request, HTTPResponse response)
         {

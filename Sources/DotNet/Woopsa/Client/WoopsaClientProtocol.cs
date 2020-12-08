@@ -17,9 +17,9 @@ namespace Woopsa
             PostData = postData;
         }
 
-        public string Path { get; private set; }
+        public string Path { get; }
 
-        public NameValueCollection PostData { get; private set; }
+        public NameValueCollection PostData { get; }
     }
 
     public class WoopsaClientProtocol : IDisposable
@@ -43,7 +43,7 @@ namespace Woopsa
 
         #region Public Properties
 
-        public string Url { get; private set; }
+        public string Url { get; }
 
         public string Username
         {

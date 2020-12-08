@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.Linq;
 using System.Collections.Specialized;
-using System.Globalization;
 using System.Threading;
 
 namespace Woopsa
@@ -27,7 +26,7 @@ namespace Woopsa
         /// returns the executing woopsa server in which we are executing, if any.
         /// return null if the current context is not a Woopsa request.
         /// </summary>
-        public static WoopsaServer CurrentWoopsaServer { get { return _currentWoopsaServer; } }
+        public static WoopsaServer CurrentWoopsaServer => _currentWoopsaServer;
 
         /// <summary>
         /// Creates an instance of the Woopsa server without using the Reflector. You
@@ -125,9 +124,9 @@ namespace Woopsa
         {
         }
 
-        public WebServer WebServer { get; private set; }
+        public WebServer WebServer { get; }
 
-        public string RoutePrefix { get { return _routePrefix; } }
+        public string RoutePrefix => _routePrefix;
 
         /// <summary>
         /// The authenticator in use by Woopsa. Set to null if no authenticator is used. 
@@ -260,11 +259,9 @@ namespace Woopsa
                     _subscriptionService.Dispose();
                     _subscriptionService = null;
                 }
+
                 if (_isWebServerEmbedded)
-                {
                     WebServer.Dispose();
-                    WebServer = null;
-                }
             }
         }
 
@@ -602,18 +599,18 @@ namespace Woopsa
             IsSuccess = isSuccess;
         }
 
-        public WoopsaVerb Verb { get; private set; }
+        public WoopsaVerb Verb { get; }
 
-        public string Path { get; private set; }
+        public string Path { get; }
 
-        public WoopsaValue[] Arguments { get; private set; }
+        public WoopsaValue[] Arguments { get; }
 
         /// <summary>
         /// Result is valid only when IsSuccess is true. Otherwise, it contains the error message.
         /// </summary>
-        public string Result { get; private set; }
+        public string Result { get; }
 
-        public bool IsSuccess { get; private set; }
+        public bool IsSuccess { get; }
 
     }
 }

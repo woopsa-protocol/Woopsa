@@ -22,8 +22,7 @@ namespace Woopsa
 
             lock (_dictionary)
             {
-                MemoryStream resource = null;
-                if (_dictionary.TryGetValue(request.Subroute, out resource))
+                if (_dictionary.TryGetValue(request.Subroute, out MemoryStream resource))
                 {
                     resource.Position = 0;
                     response.WriteStream(resource);
@@ -54,10 +53,7 @@ namespace Woopsa
                 _dictionary.Remove(key);
         }
 
-        public bool AcceptSubroutes
-        {
-            get { return true; }
-        }
+        public bool AcceptSubroutes => true;
 
         private IDictionary<string, MemoryStream> _dictionary;
     }

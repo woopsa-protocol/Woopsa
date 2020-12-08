@@ -110,6 +110,6 @@ namespace Woopsa
             Exception = exception;
         }
 
-        public Exception Exception { get; private set; }
+        public Exception Exception { get; }
     }
 }

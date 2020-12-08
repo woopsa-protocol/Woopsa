@@ -17,9 +17,9 @@ namespace Woopsa
 
     public class RoutingErrorEventArgs : EventArgs
     {
-        public string Error { get; private set; }
-        public HTTPRequest Request { get; private set; }
-        public RoutingErrorType Type { get; private set; }
+        public string Error { get;  }
+        public HTTPRequest Request { get; }
+        public RoutingErrorType Type { get;  }
 
         public RoutingErrorEventArgs(RoutingErrorType type, string error, HTTPRequest request)
         {

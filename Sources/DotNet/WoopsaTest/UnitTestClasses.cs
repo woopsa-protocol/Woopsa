@@ -28,7 +28,7 @@ namespace WoopsaTest
             Votes += count;
         }
 
-        public string CurrentUserName { get { return BaseAuthenticator.CurrentUserName; } }
+        public string CurrentUserName => BaseAuthenticator.CurrentUserName;
     }
 
     public interface InterfaceA

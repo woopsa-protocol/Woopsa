@@ -124,7 +124,7 @@ namespace WoopsaTest
             public double B { get; set; }
             public string S { get; set; }
 
-            public double Sum { get { return A + B; } }
+            public double Sum => A + B;
 
             public void Set(double a, double b)
             {

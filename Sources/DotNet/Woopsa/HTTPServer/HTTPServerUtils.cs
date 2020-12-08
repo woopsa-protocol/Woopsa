@@ -1,10 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -615,18 +612,12 @@ namespace Woopsa
         public static string GetMIMEType(string extension)
         {
             if (extension == null)
-            {
                 throw new ArgumentNullException("extension");
-            }
 
             if (!extension.StartsWith("."))
-            {
                 extension = "." + extension;
-            }
 
-            string mime;
-
-            return _mappings.TryGetValue(extension, out mime) ? mime : "application/octet-stream";
+            return _mappings.TryGetValue(extension, out string mime) ? mime : "application/octet-stream";
         }
     }
 }

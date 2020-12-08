@@ -1,10 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-
-namespace Woopsa
+﻿namespace Woopsa
 {
     public interface IHTTPRouteHandler
     {
@@ -18,27 +12,14 @@ namespace Woopsa
     {
         public RouteHandlerDelegate(HandleRequestDelegate requestDelegate, bool acceptSubroutes = false, bool acceptWebsockets = false)
         {
-            _delegate = requestDelegate;
-            _acceptSubroutes = acceptSubroutes;
+            Delegate = requestDelegate;
+            AcceptSubroutes = acceptSubroutes;
         }
 
-        private HandleRequestDelegate _delegate;
-        public HandleRequestDelegate Delegate
-        {
-            set { _delegate = value; }
-            get { return _delegate; }
-        }
+        public HandleRequestDelegate Delegate { get; set; }
 
-        public void HandleRequest(HTTPRequest request, HTTPResponse response)
-        {
-            _delegate(request, response);
-        }
+        public void HandleRequest(HTTPRequest request, HTTPResponse response) => Delegate(request, response);
 
-
-        public bool AcceptSubroutes
-        {
-            get { return _acceptSubroutes; }
-        }
-        private bool _acceptSubroutes = false;
+        public bool AcceptSubroutes { get; } = false;
     }
 }

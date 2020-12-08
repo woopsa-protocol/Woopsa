@@ -1,7 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
 
 namespace Woopsa
 {
@@ -13,7 +11,7 @@ namespace Woopsa
             _clientRequestsById = new Dictionary<int, Woopsa.WoopsaClientRequest>();
         }
 
-        public IEnumerable<WoopsaClientRequest> ClientRequests { get { return _clientRequests; } }
+        public IEnumerable<WoopsaClientRequest> ClientRequests => _clientRequests;
 
         public IEnumerable<ClientRequest> Requests
         {
@@ -120,12 +118,11 @@ namespace Woopsa
             _clientRequestsById.Clear();
         }
 
-        public int Count { get { return _clientRequests.Count; } }
+        public int Count => _clientRequests.Count;
 
         public WoopsaClientRequest RequestById(int Id)
         {
-            WoopsaClientRequest result;
-            _clientRequestsById.TryGetValue(Id, out result);
+            _clientRequestsById.TryGetValue(Id, out WoopsaClientRequest result);
             return result;
         }
 
@@ -142,10 +139,7 @@ namespace Woopsa
             }
         }
 
-        private int GetNextRequestId()
-        {
-            return _clientRequests.Count + 1;
-        }
+        private int GetNextRequestId() => _clientRequests.Count + 1;
 
         private void Add(WoopsaClientRequest clientRequest)
         {
@@ -159,8 +153,8 @@ namespace Woopsa
                 {
                     WoopsaJsonData item = jsonData[i];
                     int id = item[WoopsaFormat.KeyId];
-                    WoopsaClientRequest request;
-                    if (_clientRequestsById.TryGetValue(id, out request))
+
+                    if (_clientRequestsById.TryGetValue(id, out WoopsaClientRequest request))
                     {
                         WoopsaJsonData result = item[WoopsaFormat.KeyResult];
                         if (result.ContainsKey(WoopsaFormat.KeyError))

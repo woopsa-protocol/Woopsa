@@ -3,13 +3,11 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Reflection;
-using System.Text;
 
 namespace Woopsa
 {
     public static class WoopsaReflection
     {
-
         public static TypeDescription ReflectType(
             Type targetType,
             WoopsaConverters customValueTypeConverters = null)
@@ -35,10 +33,11 @@ namespace Woopsa
             foreach (var propertyInfo in properties)
             {
                 WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(propertyInfo);
-                WoopsaValueType woopsaPropertyType;
-                WoopsaConverter converter;
+
                 bool isValidWoopsaProperty = false;
-                isValidWoopsaProperty = InferWoopsaType(customValueTypeConverters, propertyInfo.PropertyType, out woopsaPropertyType, out converter);
+                isValidWoopsaProperty = InferWoopsaType(customValueTypeConverters, propertyInfo.PropertyType,
+                    out WoopsaValueType woopsaPropertyType,
+                    out WoopsaConverter converter);
                 if (attribute != null)
                 {
                     woopsaPropertyType = attribute.ValueType;
@@ -78,11 +77,9 @@ namespace Woopsa
             }
             foreach (var methodInfo in methods)
             {
-                WoopsaConverter converter;
                 WoopsaValueTypeAttribute attribute = GetCustomAttribute<WoopsaValueTypeAttribute>(methodInfo);
-                WoopsaValueType woopsaReturnType;
-                bool isValidWoopsaMethod = false;
-                isValidWoopsaMethod = InferWoopsaType(customValueTypeConverters, methodInfo.ReturnType, out woopsaReturnType, out converter);
+                bool isValidWoopsaMethod = InferWoopsaType(customValueTypeConverters, methodInfo.ReturnType,
+                                                out WoopsaValueType woopsaReturnType, out WoopsaConverter converter);
                 if (attribute != null)
                 {
                     woopsaReturnType = attribute.ValueType;
@@ -95,9 +92,8 @@ namespace Woopsa
                     int parameterIndex = 0;
                     foreach (var parameter in methodInfo.GetParameters())
                     {
-                        WoopsaConverter argumentConverter;
-                        WoopsaValueType argumentType;
-                        if (InferWoopsaType(customValueTypeConverters, parameter.ParameterType, out argumentType, out argumentConverter))
+                        if (InferWoopsaType(customValueTypeConverters, parameter.ParameterType,
+                            out WoopsaValueType argumentType, out WoopsaConverter argumentConverter))
                         {
                             string parameterName;
                             parameterName = parameter.Name;
@@ -150,18 +146,12 @@ namespace Woopsa
             }
         }
 
-        public static bool IsWoopsaValueType(WoopsaConverters customValueTypeConverters, Type type)
-        {
-            WoopsaValueType woopsaValueType;
-            WoopsaConverter converter;
-            return InferWoopsaType(customValueTypeConverters, type, 
-                out woopsaValueType, out converter);
-        }
+        public static bool IsWoopsaValueType(WoopsaConverters customValueTypeConverters, Type type) => 
+            InferWoopsaType(customValueTypeConverters, type,
+                out WoopsaValueType woopsaValueType, out WoopsaConverter converter);
 
-        public static T GetCustomAttribute<T>(MemberInfo element) where T : Attribute
-        {
-            return element.GetCustomAttributes(true).OfType<T>().FirstOrDefault();
-        }
+        public static T GetCustomAttribute<T>(MemberInfo element) where T : Attribute =>
+            element.GetCustomAttributes(true).OfType<T>().FirstOrDefault();
     }
 
     public abstract class Description
@@ -177,37 +167,19 @@ namespace Woopsa
             _itemsByName = new Dictionary<string, T>();
         }
 
-        public T this[int index]
-        {
-            get { return _items[index]; }
-        }
+        public T this[int index] => _items[index];
 
-        public bool Contains(string name)
-        {
-            return _itemsByName.ContainsKey(name);
-        }
+        public bool Contains(string name) => _itemsByName.ContainsKey(name);
 
-        public T this[string name]
-        {
-            get { return _itemsByName[name]; }
-        }
+        public T this[string name] => _itemsByName[name];
 
-        public bool TryGetValue(string name, out T value)
-        {
-            return _itemsByName.TryGetValue(name, out value);
-        }
+        public bool TryGetValue(string name, out T value) => _itemsByName.TryGetValue(name, out value);
 
-        public int Count { get { return _items.Count; } }
+        public int Count => _items.Count;
 
-        IEnumerator<T> IEnumerable<T>.GetEnumerator()
-        {
-            return _items.GetEnumerator();
-        }
+        IEnumerator<T> IEnumerable<T>.GetEnumerator() => _items.GetEnumerator();
 
-        IEnumerator IEnumerable.GetEnumerator()
-        {
-            return _items.GetEnumerator();
-        }
+        IEnumerator IEnumerable.GetEnumerator() => _items.GetEnumerator();
 
         internal void Add(T item)
         {
@@ -226,8 +198,8 @@ namespace Woopsa
             PropertyInfo = propertyInfo;
         }
 
-        public override string Name { get { return PropertyInfo.Name; } }
-        public PropertyInfo PropertyInfo { get; private set; }
+        public override string Name => PropertyInfo.Name;
+        public PropertyInfo PropertyInfo { get; }
     }
 
     public class PropertyDescription : Description
@@ -241,11 +213,11 @@ namespace Woopsa
             Converter = converter;
         }
 
-        public override string Name { get { return PropertyInfo.Name; } }
-        public WoopsaValueType WoopsaType { get; private set; }
-        public PropertyInfo PropertyInfo { get; private set; }
-        public bool IsReadOnly { get; private set; }
-        public WoopsaConverter Converter { get; private set; }
+        public override string Name => PropertyInfo.Name;
+        public WoopsaValueType WoopsaType { get; }
+        public PropertyInfo PropertyInfo { get; }
+        public bool IsReadOnly { get; }
+        public WoopsaConverter Converter { get; }
     }
 
     public class ArgumentDescription : Description
@@ -258,7 +230,7 @@ namespace Woopsa
             Converter = converter;
         }
 
-        public override string Name { get { return ArgumentInfo.Name; } }
+        public override string Name => ArgumentInfo.Name;
         public WoopsaMethodArgumentInfo ArgumentInfo { get; private set; }
         public Type Type { get; private set; }
         public WoopsaConverter Converter { get; private set; }
@@ -277,11 +249,11 @@ namespace Woopsa
             Converter = converter;
         }
 
-        public override string Name { get { return MethodInfo.Name; } }
-        public ArgumentDescriptions Arguments { get; private set; }
-        public WoopsaValueType WoopsaReturnType { get; private set; }
-        public WoopsaConverter Converter { get; private set; }
-        public MethodInfo MethodInfo { get; private set; }
+        public override string Name => MethodInfo.Name;
+        public ArgumentDescriptions Arguments { get; }
+        public WoopsaValueType WoopsaReturnType { get; }
+        public WoopsaConverter Converter { get; }
+        public MethodInfo MethodInfo { get; }
         public IEnumerable<WoopsaMethodArgumentInfo> WoopsaArguments
         {
             get
@@ -308,10 +280,10 @@ namespace Woopsa
             Methods = new MethodDescriptions();
         }
 
-        public Type Type { get; private set; }
-        public ItemDescriptions Items { get; private set; }
-        public PropertyDescriptions Properties { get; private set; }
-        public MethodDescriptions Methods { get; private set; }
+        public Type Type { get; }
+        public ItemDescriptions Items { get; }
+        public PropertyDescriptions Properties { get; }
+        public MethodDescriptions Methods { get; }
     }
 
     public class TypeDescriptions
@@ -326,8 +298,7 @@ namespace Woopsa
         {
             if (type != null)
             {
-                TypeDescription result;
-                if (!_typeDescriptions.TryGetValue(type, out result))
+                if (!_typeDescriptions.TryGetValue(type, out TypeDescription result))
                 {
                     result = WoopsaReflection.ReflectType(type, CustomTypeConverters);
                     _typeDescriptions[type] = result;
@@ -338,7 +309,7 @@ namespace Woopsa
                 return null;
         }
 
-        public WoopsaConverters CustomTypeConverters { get; private set; }
+        public WoopsaConverters CustomTypeConverters { get; }
         private Dictionary<Type, TypeDescription> _typeDescriptions;
     }
 
@@ -354,12 +325,7 @@ namespace Woopsa
 
     public class WoopsaConverterDefault : WoopsaConverter
     {
-        static WoopsaConverterDefault()
-        {
-            Default = new Woopsa.WoopsaConverterDefault();
-        }
-
-        public static WoopsaConverterDefault Default { get; private set; }
+        public static WoopsaConverterDefault Default { get; } = new WoopsaConverterDefault();
 
         public override object GetDefaultValue(Type type)
         {
@@ -369,36 +335,20 @@ namespace Woopsa
             else
                 return null;
         }
-        public override object FromWoopsaValue(IWoopsaValue value, Type targetType)
-        {
-            return value.ToBaseType(targetType);
-        }
+        public override object FromWoopsaValue(IWoopsaValue value, Type targetType) =>
+            value.ToBaseType(targetType);
 
         public override WoopsaValue ToWoopsaValue(object value, WoopsaValueType woopsaValueType,
-            DateTime? timeStamp)
-        {
-            return WoopsaValue.ToWoopsaValue(value, woopsaValueType, timeStamp);
-        }
+            DateTime? timeStamp) => WoopsaValue.ToWoopsaValue(value, woopsaValueType, timeStamp);
     }
 
     public class WoopsaConverters
     {
-        public WoopsaConverters()
-        {
-            _converterDescriptions = new Dictionary<Type, WoopsaConverterDescription>();
-        }
-
-        public bool IsWoopsaValueType(Type type)
-        {
-            WoopsaValueType woopsaValueType;
-            WoopsaConverter converter;
-            return InferWoopsaType(type, out woopsaValueType, out converter);
-        }
+        public bool IsWoopsaValueType(Type type) => InferWoopsaType(type, out _, out _);
 
         public virtual bool InferWoopsaType(Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
         {
-            WoopsaConverterDescription converterDescription;
-            if (_converterDescriptions.TryGetValue(type, out converterDescription))
+            if (_converterDescriptions.TryGetValue(type, out WoopsaConverterDescription converterDescription))
             {
                 woopsaValueType = converterDescription.WoopsaValueType;
                 converter = converterDescription.Converter;
@@ -420,7 +370,7 @@ namespace Woopsa
             };
         }
 
-        private Dictionary<Type, WoopsaConverterDescription> _converterDescriptions;
+        private Dictionary<Type, WoopsaConverterDescription> _converterDescriptions => new Dictionary<Type, WoopsaConverterDescription>();
 
         private class WoopsaConverterDescription
         {

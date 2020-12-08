@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Threading;
@@ -52,14 +51,14 @@ namespace Woopsa
         /// <summary>
         /// The auto-generated Id for this Subscription Channel
         /// </summary>
-        public int Id { get; private set; }
+        public int Id { get; }
 
         /// <summary>
         /// The maximum size of the queue of arriving notifications.
         /// This means that if events come faster than they can be sent,
         /// old events will be "forgotten"
         /// </summary>
-        public int NotificationQueueSize { get; private set; }
+        public int NotificationQueueSize { get; }
 
         /// <summary>
         /// This event is triggered before Channel accesses the WoopsaObject model.
@@ -74,10 +73,7 @@ namespace Woopsa
         /// </summary>
         public event EventHandler AfterWoopsaModelAccess;
 
-        public bool ClientTimedOut
-        {
-            get { return _watchClientActivity.Elapsed > WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTime; }
-        }
+        public bool ClientTimedOut => _watchClientActivity.Elapsed > WoopsaSubscriptionServiceConst.SubscriptionChannelLifeTime;
 
         public int RegisterSubscription(WoopsaContainer root, bool isServerSide,
             string woopsaPropertyPath, TimeSpan monitorInterval, TimeSpan publishInterval)
@@ -92,9 +88,9 @@ namespace Woopsa
             }
             if (isServerSide)
             {
-                WoopsaBaseClientObject subclient;
-                string relativePath;
-                if (FindWoopsaClientAlongPath(root, woopsaPropertyPath, out subclient, out relativePath))
+                if (FindWoopsaClientAlongPath(root, woopsaPropertyPath, 
+                    out WoopsaBaseClientObject subclient, 
+                    out string relativePath))
                     // subscribe directly instead of polling
                     newSubscription = new WoopsaSubscriptionServiceSubscriptionServerSubClient(
                         this, root, subscriptionId, woopsaPropertyPath, monitorInterval, publishInterval,
@@ -117,13 +113,11 @@ namespace Woopsa
         {
             foreach (var notification in notifications)
             {
-                bool itemDiscarded;
-
                 _lastNotificationId++;
                 if (_lastNotificationId >= WoopsaSubscriptionServiceConst.MaximumNotificationId)
                     _lastNotificationId = WoopsaSubscriptionServiceConst.MinimumNotificationId;
                 notification.Id = _lastNotificationId;
-                _pendingNotifications.Enqueue(subscription, notification, out itemDiscarded);
+                _pendingNotifications.Enqueue(subscription, notification, out bool itemDiscarded);
                 if (itemDiscarded)
                     _notificationsLost = true;
             }
@@ -271,7 +265,7 @@ namespace Woopsa
             }
         }
 
-        internal WoopsaSubscriptionServiceImplementation ServiceImplementation { get; private set; }
+        internal WoopsaSubscriptionServiceImplementation ServiceImplementation { get; }
 
         // Instance
 
@@ -299,7 +293,7 @@ namespace Woopsa
             MaxQueueSize = maxQueueSize;
         }
 
-        public int MaxQueueSize { get; private set; }
+        public int MaxQueueSize { get; }
 
         public int Count
         {
@@ -413,6 +407,6 @@ namespace Woopsa
             Notification = notification;
         }
 
-        public WoopsaServerNotification Notification { get; private set; }
+        public WoopsaServerNotification Notification { get; }
     }
 }

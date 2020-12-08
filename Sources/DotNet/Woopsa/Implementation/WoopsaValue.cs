@@ -15,10 +15,8 @@ namespace Woopsa
                 _jsonData = Woopsa.WoopsaJsonData.CreateFromText(text);
         }
 
-        internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null)
-        {
-            return new WoopsaValue(text, type, timestamp);
-        }
+        internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null) =>
+            new WoopsaValue(text, type, timestamp);
 
         public static WoopsaValue CreateChecked(string text, WoopsaValueType type, DateTime? timestamp = null)
         {
@@ -28,13 +26,13 @@ namespace Woopsa
                 switch (type)
                 {
                     case WoopsaValueType.Integer:
-                        Int64.Parse(text, CultureInfo.InvariantCulture);
+                        long.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.Real:
-                        Double.Parse(text, CultureInfo.InvariantCulture);
+                        double.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.Logical:
-                        Boolean.Parse(text);
+                        bool.Parse(text);
                         text = text.ToLower(); // .NET and JSON serialize booleans differently (.NET uses a capital first letter) :/
                         break;
                     case WoopsaValueType.Text:
@@ -45,7 +43,7 @@ namespace Woopsa
                         DateTime.Parse(text, CultureInfo.InvariantCulture);
                         break;
                     case WoopsaValueType.TimeSpan:
-                        Double.Parse(text, CultureInfo.InvariantCulture);
+                        double.Parse(text, CultureInfo.InvariantCulture);
                         break;
                 }
             }
@@ -121,7 +119,7 @@ namespace Woopsa
         {
         }
 
-        public WoopsaValue(Int64 value, DateTime? timestamp = null)
+        public WoopsaValue(long value, DateTime? timestamp = null)
             : this(WoopsaFormat.ToStringWoopsa(value), WoopsaValueType.Integer, timestamp)
         {
         }
@@ -157,10 +155,10 @@ namespace Woopsa
                 return true;
             else if (obj is bool && _type == WoopsaValueType.Logical)
                 return ((bool)obj) == (bool)this;
-            else if (obj is sbyte || obj is Int16 || obj is Int32 || obj is Int64)
-                return Convert.ToInt64(obj) == (Int64)this;
-            else if (obj is Byte || obj is UInt16 || obj is UInt32 || obj is UInt64)
-                return Convert.ToUInt64(obj) == (UInt64)this;
+            else if (obj is sbyte || obj is short || obj is int || obj is long)
+                return Convert.ToInt64(obj) == (long)this;
+            else if (obj is byte || obj is ushort || obj is uint || obj is ulong)
+                return Convert.ToUInt64(obj) == (ulong)this;
             else if (obj is float || obj is double || obj is decimal)
                 return Convert.ToDouble(obj) == (double)this;
             else if (obj is DateTime)
@@ -172,20 +170,11 @@ namespace Woopsa
             return base.Equals(obj);
         }
 
-        public override int GetHashCode()
-        {
-            return base.GetHashCode();
-        }
+        public override int GetHashCode() => base.GetHashCode(); // Note : Avoid a warning due to the override of equals
 
-        public override string ToString()
-        {
-            return AsText;
-        }
+        public override string ToString() => AsText;
 
-        public static WoopsaValue Null
-        {
-            get { return _null; }
-        }
+        public static WoopsaValue Null => _null;
 
         #region IWoopsaValue
 
@@ -200,16 +189,10 @@ namespace Woopsa
             }
         }
 
-        public WoopsaValueType Type
-        {
-            get { return _type; }
-        }
+        public WoopsaValueType Type => _type;
 
 
-        public DateTime? TimeStamp
-        {
-            get { return _timestamp; }
-        }
+        public DateTime? TimeStamp => _timestamp;
 
         #endregion IWoopsaValue
 
@@ -224,112 +207,50 @@ namespace Woopsa
             }
         }
 
-        public static implicit operator bool (WoopsaValue value)
-        {
-            return value.ToBool();
-        }
+        public static implicit operator bool(WoopsaValue value) => value.ToBool();
 
-        public static implicit operator sbyte (WoopsaValue value)
-        {
-            return value.ToSByte();
-        }
+        public static implicit operator sbyte(WoopsaValue value) => value.ToSByte();
 
-        public static implicit operator Int16(WoopsaValue value)
-        {
-            return value.ToInt16();
-        }
+        public static implicit operator short(WoopsaValue value) => value.ToInt16();
 
-        public static implicit operator Int32(WoopsaValue value)
-        {
-            return value.ToInt32();
-        }
+        public static implicit operator int(WoopsaValue value) => value.ToInt32();
 
-        public static implicit operator Int64(WoopsaValue value)
-        {
-            return value.ToInt64();
-        }
+        public static implicit operator long(WoopsaValue value) => value.ToInt64();
 
-        public static implicit operator byte (WoopsaValue value)
-        {
-            return value.ToByte();
-        }
+        public static implicit operator byte(WoopsaValue value) => value.ToByte();
 
-        public static implicit operator UInt16(WoopsaValue value)
-        {
-            return value.ToUInt16();
-        }
+        public static implicit operator ushort(WoopsaValue value) => value.ToUInt16();
 
-        public static implicit operator UInt32(WoopsaValue value)
-        {
-            return value.ToUInt32();
-        }
+        public static implicit operator uint(WoopsaValue value) => value.ToUInt32();
 
-        public static implicit operator UInt64(WoopsaValue value)
-        {
-            return value.ToUInt64();
-        }
+        public static implicit operator ulong(WoopsaValue value) => value.ToUInt64();
 
-        public static implicit operator float (WoopsaValue value)
-        {
-            return value.ToFloat();
-        }
+        public static implicit operator float(WoopsaValue value) => value.ToFloat();
 
-        public static implicit operator double (WoopsaValue value)
-        {
-            return value.ToDouble();
-        }
+        public static implicit operator double(WoopsaValue value) => value.ToDouble();
 
-        public static implicit operator DateTime(WoopsaValue value)
-        {
-            return value.ToDateTime();
-        }
+        public static implicit operator DateTime(WoopsaValue value) => value.ToDateTime();
 
-        public static implicit operator TimeSpan(WoopsaValue value)
-        {
-            return value.ToTimeSpan();
-        }
+        public static implicit operator TimeSpan(WoopsaValue value) => value.ToTimeSpan();
 
-        public static implicit operator string (WoopsaValue value)
-        {
-            return value._text;
-        }
+        public static implicit operator string(WoopsaValue value) => value._text;
 
-        public static implicit operator WoopsaValue(bool value)
-        {
-            return new WoopsaValue(value);
-        }
+        public static implicit operator WoopsaValue(bool value) => new WoopsaValue(value);
 
-        public static implicit operator WoopsaValue(Int64 value)
-        {
-            return new WoopsaValue(value);
-        }
+        public static implicit operator WoopsaValue(Int64 value) => new WoopsaValue(value);
 
-        public static implicit operator WoopsaValue(double value)
-        {
-            return new WoopsaValue(value);
-        }
+        public static implicit operator WoopsaValue(double value) => new WoopsaValue(value);
 
-        public static implicit operator WoopsaValue(DateTime value)
-        {
-            return new WoopsaValue(value);
-        }
+        public static implicit operator WoopsaValue(DateTime value) => new WoopsaValue(value);
 
-        public static implicit operator WoopsaValue(TimeSpan value)
-        {
-            return new WoopsaValue(value);
-        }
+        public static implicit operator WoopsaValue(TimeSpan value) => new WoopsaValue(value);
 
-        public static implicit operator WoopsaValue(string value)
-        {
-            return new WoopsaValue(value);
-        }
+        public static implicit operator WoopsaValue(string value) => new WoopsaValue(value);
 
         #region Woopsa extended types		
 
-        public static string FormatRelativeWoopsaLink(string woopsaItemPath)
-        {
-            return WoopsaUtils.RemoveInitialSeparator(woopsaItemPath);
-        }
+        public static string FormatRelativeWoopsaLink(string woopsaItemPath) =>
+            WoopsaUtils.RemoveInitialSeparator(woopsaItemPath);
 
         public static string FormatAbsoluteWoopsaLink(string woopsaServerUrl, string woopsaItemPath)
         {
@@ -343,25 +264,17 @@ namespace Woopsa
             return sb.ToString();
         }
 
-        public static WoopsaValue WoopsaAbsoluteLink(string woopsaServerUrl, string woopsaItemPath)
-        {
-            return new WoopsaValue(FormatAbsoluteWoopsaLink(woopsaServerUrl, woopsaItemPath), WoopsaValueType.WoopsaLink, null);
-        }
+        public static WoopsaValue WoopsaAbsoluteLink(string woopsaServerUrl, string woopsaItemPath) =>
+            new WoopsaValue(FormatAbsoluteWoopsaLink(woopsaServerUrl, woopsaItemPath), WoopsaValueType.WoopsaLink, null);
 
-        public static WoopsaValue WoopsaRelativeLink(string woopsaItemPath)
-        {
-            return new WoopsaValue(FormatRelativeWoopsaLink(woopsaItemPath), WoopsaValueType.WoopsaLink, null);
-        }
+        public static WoopsaValue WoopsaRelativeLink(string woopsaItemPath) =>
+            new WoopsaValue(FormatRelativeWoopsaLink(woopsaItemPath), WoopsaValueType.WoopsaLink, null);
 
-        public static WoopsaValue WoopsaResourceUrl(string resourceUrl)
-        {
-            return new WoopsaValue(resourceUrl, WoopsaValueType.ResourceUrl, null);
-        }
+        public static WoopsaValue WoopsaResourceUrl(string resourceUrl) =>
+            new WoopsaValue(resourceUrl, WoopsaValueType.ResourceUrl, null);
 
-        public static WoopsaValue WoopsaJsonData(string jsonData)
-        {
-            return new WoopsaValue(jsonData, WoopsaValueType.JsonData, null);
-        }
+        public static WoopsaValue WoopsaJsonData(string jsonData) =>
+            new WoopsaValue(jsonData, WoopsaValueType.JsonData, null);
 
         #endregion Woopsa extended types
 

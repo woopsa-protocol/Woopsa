@@ -20,7 +20,7 @@ namespace Woopsa
             Visible = visible;
         }
 
-        public bool Visible { get; private set; }
+        public bool Visible { get; }
     }
 
     [AttributeUsage(AttributeTargets.Method | AttributeTargets.Property)]
@@ -31,7 +31,7 @@ namespace Woopsa
             ValueType = valueType;
         }
 
-        public WoopsaValueType ValueType { get; private set; }
+        public WoopsaValueType ValueType { get; }
     }
 
     [Flags]
@@ -79,7 +79,7 @@ namespace Woopsa
             Visibility = visibility;
         }
 
-        public WoopsaVisibility Visibility { get; private set; }
+        public WoopsaVisibility Visibility { get; }
     }
 
     [Flags]
@@ -96,7 +96,7 @@ namespace Woopsa
             Member = member;
         }
 
-        public MemberInfo Member { get; private set; }
+        public MemberInfo Member { get; }
 
         public bool IsVisible { get; set; }
     }
@@ -227,15 +227,15 @@ namespace Woopsa
                 return _targetObject;
             }
         }
-        public Func<object> TargetObjectGetter { get; private set; }
-        public WoopsaObjectAdapterOptions Options { get; private set; }
-        public TypeDescriptions TypeDescriptions { get; private set; }
+        public Func<object> TargetObjectGetter { get; }
+        public WoopsaObjectAdapterOptions Options { get; }
+        public TypeDescriptions TypeDescriptions { get; }
 
         /// <summary>
         /// Visibility for the WoopsaObjectAdapter and its inner WoopsaObjectAdapters.
         /// Applies if the TargetObject is not decorated with the WoopsaVisilibityAttribute
         /// </summary>
-        public WoopsaVisibility DefaultVisibility { get; private set; }
+        public WoopsaVisibility DefaultVisibility { get; }
 
         /// <summary>
         /// Visibility for this WoopsaObjectAdapter
@@ -402,8 +402,7 @@ namespace Woopsa
                         foreach (var item in enumerable)
                             if (item != null)
                             {
-                                WoopsaObjectAdapter itemAdapter;
-                                if (_enumerableItems.TryGetValue(item, out itemAdapter))
+                                if (_enumerableItems.TryGetValue(item, out WoopsaObjectAdapter itemAdapter))
                                     itemAdapter.EnumerableItemIndex = index;
                                 index++;
                             }
@@ -615,7 +614,7 @@ namespace Woopsa
             };
         }
 
-        protected Type DeclaredExposedType { get; private set; }
+        protected Type DeclaredExposedType { get; }
 
         protected long EnumerableItemId { get; private set; }
 
@@ -661,8 +660,7 @@ namespace Woopsa
 
         private void DeleteEnumerableItem(object item)
         {
-            WoopsaObjectAdapter enumerableItemAdapter;
-            if (_enumerableItems.TryGetValue(item, out enumerableItemAdapter))
+            if (_enumerableItems.TryGetValue(item, out WoopsaObjectAdapter enumerableItemAdapter))
             {
                 enumerableItemAdapter.Dispose();
                 _enumerableItems.Remove(item);

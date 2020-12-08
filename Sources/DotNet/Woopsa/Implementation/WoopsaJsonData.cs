@@ -1,9 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Globalization;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 using System.Text.Json;
 
 namespace Woopsa
@@ -32,8 +29,7 @@ namespace Woopsa
         {
             get
             {
-                WoopsaJsonData result;
-                if (TryGetDictionaryKey(key, out result))
+                if (TryGetDictionaryKey(key, out WoopsaJsonData result))
                     return result;
                 else
                     throw new InvalidOperationException("String indexer is only available on WoopsaJsonData of type Object.");
@@ -68,8 +64,7 @@ namespace Woopsa
         {
             get
             {
-                WoopsaJsonData result;
-                if (TryGetArrayIndex(index, out result))
+                if (TryGetArrayIndex(index, out WoopsaJsonData result))
                     return result;
                 else
                     throw new InvalidOperationException("Integer indexer is only available on WoopsaJsonData of type Array.");
@@ -111,31 +106,29 @@ namespace Woopsa
         {
             get
             {
-                //if (_serializedData == null)
-                //{
-                //    if (IsSimple)
-                //        _serializedData = WoopsaFormat.ToStringWoopsa(_data);
-                //    else
-                //    {
-                //        _serializedData = JsonSerializer.Serialize(_data);
-                //    }
-                //}
-                //return _serializedData;
                 if (_jsonElement.ValueKind == JsonValueKind.String)
                     return _jsonElement.GetString();
                 return _jsonElement.GetRawText();
             }
-
         }
-
 
         public override string ToString()
         {
             return AsText;
         }
 
-        internal JsonElement InternalObject => _jsonElement;
+        public IEnumerable<string> Keys
+        {
+            get
+            {
+                if (IsDictionary)
+                    return _jsonElement.EnumerateObject().Select(p => p.Name);
+                else
+                    return new string[0];
+            }
+        }
 
+        internal JsonElement InternalObject => _jsonElement;
 
         private readonly JsonElement _jsonElement;
 

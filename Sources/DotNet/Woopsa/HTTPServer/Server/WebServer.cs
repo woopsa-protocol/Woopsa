@@ -39,7 +39,7 @@ namespace Woopsa
         /// returns the current web server in which we are executing.
         /// return null if the current context is not a thread of the webserver.
         /// </summary>
-        public static WebServer CurrentWebServer { get { return _currentWebServer; } }
+        public static WebServer CurrentWebServer => _currentWebServer;
 
 
         /// <summary>
@@ -103,7 +103,7 @@ namespace Woopsa
         /// <summary>
         /// The RouteSolver allows a user to configure routes on the web server. This member is created internally and as such is read-only.
         /// </summary>
-        public RouteSolver Routes { get; private set; }
+        public RouteSolver Routes { get; }
 
         /// <summary>
         /// This event is raised whenever an error occurs inside the web server. In most cases, the error can be ignored, but odd behavior might occur when there are multiple matching routes, for example.
@@ -123,16 +123,16 @@ namespace Woopsa
         /// <summary>
         /// Whether this server is using a thread pool to handle requests
         /// </summary>
-        public bool MultiThreaded { get { return _threadPool != null; } }
+        public bool MultiThreaded => _threadPool != null;
 
         /// <summary>
         /// Which TCP port the WebServer is currently listening on
         /// </summary>
-        public int Port { get; private set; }
+        public int Port { get; }
 
-        public bool Aborted { get { return _aborted; } }
+        public bool Aborted => _aborted;
 
-        public List<PreRouteProcessor> PreRouteProcessors { get; private set; }
+        public List<PreRouteProcessor> PreRouteProcessors { get; }
         #endregion
 
         #region Private Members
@@ -624,8 +624,8 @@ namespace Woopsa
         [Serializable]
         private class HandlingException : Exception
         {
-            public HTTPStatusCode Status { get; private set; }
-            public string ErrorMessage { get; private set; }
+            public HTTPStatusCode Status { get; }
+            public string ErrorMessage { get; }
             public HandlingException(HTTPStatusCode status, string errorMessage)
             {
                 Status = status;
@@ -642,8 +642,8 @@ namespace Woopsa
             Request = request;
             Response = response;
         }
-        public HTTPRequest Request { get; private set; }
-        public HTTPResponse Response { get; private set; }
+        public HTTPRequest Request { get; }
+        public HTTPResponse Response { get; }
     }
 
     public class WebServerStreamEventArgs : WebServerEventArgs
@@ -654,7 +654,7 @@ namespace Woopsa
             Stream = stream;
         }
 
-        public Stream Stream { get; private set; }
+        public Stream Stream { get; }
     }
 
     public class LogEventArgs : WebServerEventArgs

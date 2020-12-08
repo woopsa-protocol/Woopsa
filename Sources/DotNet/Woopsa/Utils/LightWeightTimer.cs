@@ -16,17 +16,13 @@ namespace Woopsa
             _thread.IsBackground = true;
         }
 
-        public void Start()
-        {
-            _thread.Start();
-        }
+        public void Start() => _thread.Start();
 
         public LightWeightTimer AllocateTimer(TimeSpan interval)
         {
             lock (_timeClasses)
             {
-                LightWeightTimerTimeClass timeClass;
-                if (!_timeClassesByTimeSpan.TryGetValue(interval, out timeClass))
+                if (!_timeClassesByTimeSpan.TryGetValue(interval, out LightWeightTimerTimeClass timeClass))
                 {
                     timeClass = new LightWeightTimerTimeClass(this, interval);
                     _timeClasses.Add(timeClass);
@@ -49,12 +45,9 @@ namespace Woopsa
             }
         }
 
-        public void Terminate()
-        {
-            _terminated = true;
-        }
+        public void Terminate() => Terminated = true;
 
-        public bool Terminated { get { return _terminated; } }
+        public bool Terminated { get; private set; }
 
         public void Dispose()
         {
@@ -68,7 +61,7 @@ namespace Woopsa
         {
             if (Started != null)
                 Started(this, new EventArgs());
-            while (!_terminated)
+            while (!Terminated)
             {
                 try
                 {
@@ -101,8 +94,6 @@ namespace Woopsa
         private Thread _thread;
         List<LightWeightTimerTimeClass> _timeClasses;
         Dictionary<TimeSpan, LightWeightTimerTimeClass> _timeClassesByTimeSpan;
-        private bool _terminated;
-
     }
 
     internal class LightWeightTimerTimeClass
@@ -116,9 +107,9 @@ namespace Woopsa
             Interval = timeClassInterval;
         }
 
-        public TimeSpan Interval { get; private set; }
+        public TimeSpan Interval { get; }
 
-        public int Count { get { return _timers.Count; } }
+        public int Count => _timers.Count;
 
         internal void Execute()
         {
@@ -186,10 +177,10 @@ namespace Woopsa
         /// </summary>
         public bool IsEnabled { get; set; }
 
-        public TimeSpan Interval { get { return TimeClass.Interval; } }
-        internal LightWeightTimerTimeClass TimeClass { get; private set; }
+        public TimeSpan Interval => TimeClass.Interval;
+        internal LightWeightTimerTimeClass TimeClass { get; }
 
-        public LightWeightTimerScheduler Scheduler { get; private set; }
+        public LightWeightTimerScheduler Scheduler { get; }
 
         public event EventHandler<EventArgs> Elapsed;
 

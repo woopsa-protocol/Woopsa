@@ -18,7 +18,7 @@ namespace WoopsaDemoServer
     [WoopsaVisibilityAttribute(WoopsaVisibility.DefaultIsVisible)]
     public class WeatherStation
     {
-        public double Temperature { get; private set; }
+        public double Temperature { get; }
 
         public bool IsRaining { get; set; }
 
@@ -28,11 +28,11 @@ namespace WoopsaDemoServer
 
         public string City { get; set; }
 
-        public DateTime Time { get { return DateTime.Now; } }
+        public DateTime Time => DateTime.Now;
 
         public TimeSpan TimeSinceLastRain { get; set; }
 
-        public Thermostat Thermostat { get; private set; }
+        public Thermostat Thermostat { get; }
 
         public WeatherStation()
         {

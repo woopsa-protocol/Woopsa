@@ -1,10 +1,5 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
+﻿using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -22,9 +17,9 @@ namespace Woopsa
         #region ctor
         internal HTTPRequest(HTTPMethod method, string fullURL)
         {
-            _fullURL = fullURL;
-            _baseURL = _fullURL;
-            _method = method;
+            FullURL = fullURL;
+            BaseURL = FullURL;
+            Method = method;
             _headers = new Dictionary<string, string>();
         }
         #endregion
@@ -50,14 +45,14 @@ namespace Woopsa
         /// the query parameters (values preceded by the ? sign in a URL) as well as the
         /// Subroute when Subrouting is allowed by a <see cref="WebServer.IHTTPRouteHandler"/>
         /// </summary>
-        public string FullURL { get { return _fullURL; } internal set { _fullURL = value; } }
+        public string FullURL { get; internal set; }
 
         /// <summary>
         /// Provides the Base URL that was sent by the client. This URL is thus stripped
         /// of the query parameters (values preceded by the ? sign in a URL) but still contains
         /// the entire Subroute when Subrouting is allowed by a <see cref="WebServer.IHTTPRouteHandler"/>
         /// </summary>
-        public string BaseURL { get { return _baseURL; } internal set { _baseURL = value; } }
+        public string BaseURL { get; internal set; }
 
         /// <summary>
         /// When Subrouting is allowed by a <see cref="WebServer.IHTTPRouteHandler"/>, this
@@ -65,12 +60,12 @@ namespace Woopsa
         /// Subroutes on the <c>/public</c> url, and a request is made for <c>/public/files/hello_world.html</c>, then 
         /// this property will thus be <c>/files/hello_world.html</c>
         /// </summary>
-        public string Subroute { get { return _subroute; } internal set { _subroute = value; } }
+        public string Subroute { get; internal set; }
 
         /// <summary>
         /// Provides the HTTP Method that was requested by the client (GET, POST, PUT, etc.)
         /// </summary>
-        public HTTPMethod Method { get { return _method; } internal set { _method = value; } }
+        public HTTPMethod Method { get; internal set; }
 
         /// <summary>
         /// Provides the HTTP Method that was requested by the client, as a string (GET, POST, PUT, etc.)
@@ -79,7 +74,7 @@ namespace Woopsa
         {
             get
             {
-                switch (_method)
+                switch (Method)
                 {
                     case HTTPMethod.GET:
                         return "GET";
@@ -96,27 +91,19 @@ namespace Woopsa
         /// Provides all the variables that were sent by the client in the Query String, which is
         /// part of the URL (this is the part of the URL that follows the question mark (?) sign)
         /// </summary>
-        public NameValueCollection Query { get { return _query; } internal set { _query = value; } }
+        public NameValueCollection Query { get; internal set; }
 
         /// <summary>
         /// Provides all the variables that were sent by the client in the POST request. Note:
         /// only POST requests encoded with <c>xwwww-form-urlencoded</c> method are supported. File uploads,
         /// which are generally encoded with <c>multipart/form-data</c>, are not supported.
         /// </summary>
-        public NameValueCollection Body { get { return _body; } internal set { _body = value; } }
+        public NameValueCollection Body { get; internal set; }
         #endregion
 
         #region Private/Protected/Internal Members
         private ReadOnlyHeaderDictionary _readOnlyHeaders = null;
-
-        private string _fullURL;
-        private string _baseURL;
-        private string _subroute;
-        private HTTPMethod _method;
         internal Dictionary<string, string> _headers;
-
-        private NameValueCollection _query;
-        private NameValueCollection _body;
         #endregion
     }
 
@@ -127,16 +114,10 @@ namespace Woopsa
             _headers = headers;
         }
 
-        public string this[string key]
-        {
-            get { return _headers[key.ToLower()]; }
-        }
-        
-        public bool ContainsKey(string key)
-        {
-            return _headers.ContainsKey(key.ToLower());
-        }
+        public string this[string key] => _headers[key.ToLower()];
 
-        private Dictionary<string, string> _headers;
+        public bool ContainsKey(string key) => _headers.ContainsKey(key.ToLower());
+
+        private readonly Dictionary<string, string> _headers;
     }
 }
