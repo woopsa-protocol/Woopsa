@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text.Json;
 
 namespace Woopsa
 {
@@ -123,7 +122,7 @@ namespace Woopsa
                     return true;
         }
 
-        public JsonElement WaitNotification(int subscriptionChannel, int lastNotificationId)
+        public WoopsaJsonData WaitNotification(int subscriptionChannel, int lastNotificationId)
         {
             int channelId = subscriptionChannel;
             int notificationId = lastNotificationId;
@@ -136,7 +135,7 @@ namespace Woopsa
             if (channel != null)
             {
                 IWoopsaNotifications notifications = channel.WaitNotification(WoopsaSubscriptionServiceConst.WaitNotificationTimeout, notificationId);
-                return WoopsaUtils.JsonElementFrom(notifications.Serialize());
+                return WoopsaJsonData.CreateFromText(notifications.Serialize());
             }
             else
                 throw new WoopsaInvalidSubscriptionChannelException(string.Format("Tried to call WaitNotification on channel with id={0} that does not exist", channelId));

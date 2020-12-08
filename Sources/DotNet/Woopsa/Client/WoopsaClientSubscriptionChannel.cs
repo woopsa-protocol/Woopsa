@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Net;
-using System.Text.Json;
 using System.Threading;
 
 namespace Woopsa
@@ -356,22 +355,22 @@ namespace Woopsa
 
         private int RetrieveNotification(out WoopsaClientNotifications notificationsResult, int lastNotificationId)
         {
-            JsonElement results = WaitNotification(_subscriptionOpenChannel.Value, lastNotificationId);
+            WoopsaJsonData results = WaitNotification(_subscriptionOpenChannel.Value, lastNotificationId);
 
             var notificationsList = new WoopsaClientNotifications();
 
             int count = 0;
-            for (int i = 0; i < results.GetArrayLength(); i++)
+            for (int i = 0; i < results.Length; i++)
             {
-                JsonElement notification = results[i];
-                var notificationValue = notification.GetProperty("Value");
-                var notificationSubscriptionId = notification.GetProperty("SubscriptionId");
-                var notificationId = notification.GetProperty("Id");
-                WoopsaValueType type = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), notificationValue.GetProperty("Type").GetString());
-                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue.GetProperty("Value").GetRawText(), 
-                    type, DateTime.Parse(notificationValue.GetProperty("TimeStamp").GetString(), CultureInfo.InvariantCulture));
-                WoopsaClientNotification newNotification = new WoopsaClientNotification(value, notificationSubscriptionId.GetInt32());
-                newNotification.Id = notificationId.GetInt32();
+                WoopsaJsonData notification = results[i];
+                var notificationValue = notification["Value"];
+                var notificationSubscriptionId = notification["SubscriptionId"];
+                var notificationId = notification["Id"];
+                WoopsaValueType type = (WoopsaValueType)Enum.Parse(typeof(WoopsaValueType), notificationValue["Type"]);
+                WoopsaValue value = WoopsaValue.CreateChecked(notificationValue["Value"], 
+                    type, DateTime.Parse(notificationValue["TimeStamp"].AsText, CultureInfo.InvariantCulture));
+                WoopsaClientNotification newNotification = new WoopsaClientNotification(value, notificationSubscriptionId);
+                newNotification.Id = notificationId;
                 notificationsList.Add(newNotification);
                 count++;
             }
@@ -465,7 +464,7 @@ namespace Woopsa
                 return _localSubscriptionService.CreateSubscriptionChannel(notificationQueueSize);
         }
 
-        private JsonElement WaitNotification(int subscriptionChannel, int lastNotificationId)
+        private WoopsaJsonData WaitNotification(int subscriptionChannel, int lastNotificationId)
         {
             if (_localSubscriptionService == null)
                 return _remoteMethodWaitNotification.Invoke(subscriptionChannel, lastNotificationId).JsonData;

@@ -1,19 +1,33 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netstandard2.0</TargetFramework>
-    <LangVersion>8.0</LangVersion>
+    <Authors>Objectis SA</Authors>
+    <TargetFrameworks>net45;netcoreapp2.2</TargetFrameworks>
     <IsPackable>false</IsPackable>
+    <PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
+    <PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
+    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
+    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
+    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
+    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
+    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
+    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
+    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
   </PropertyGroup>
 
   <ItemGroup>
     <None Remove="Images\SubImages\woopsa-logo.png" />
     <None Remove="Images\woopsa-logo.png" />
   </ItemGroup>
-
+    
+        
   <ItemGroup>
     <EmbeddedResource Include="Images\SubImages\woopsa-logo.png" />
     <EmbeddedResource Include="Images\woopsa-logo.png" />
   </ItemGroup>
-
+  
+ 
 </Project>
