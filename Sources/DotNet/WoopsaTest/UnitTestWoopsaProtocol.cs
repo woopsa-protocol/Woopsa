@@ -103,7 +103,6 @@ namespace WoopsaTest
                     }
                     TimeSpan duration = watch.Elapsed;
                     Assert.IsTrue(duration < TimeSpan.FromMilliseconds(200), $"Duration takes ${duration.Milliseconds}ms, instead of 200ms");
-                    Debug.WriteLine($"Duration: {duration.TotalMilliseconds} ms");
                 }
             }
         }
