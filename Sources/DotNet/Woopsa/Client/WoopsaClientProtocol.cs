@@ -1,11 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
+using System.IO;
 using System.Net;
-using System.Net.Http;
-using System.Threading;
-using System.Threading.Tasks;
+using System.Net.Cache;
+using System.Text;
+using System.Web;
 
 namespace Woopsa
 {
@@ -17,9 +17,9 @@ namespace Woopsa
             PostData = postData;
         }
 
-        public string Path { get; }
+        public string Path { get; private set; }
 
-        public NameValueCollection PostData { get; }
+        public NameValueCollection PostData { get; private set; }
     }
 
     public class WoopsaClientProtocol : IDisposable
@@ -28,12 +28,7 @@ namespace Woopsa
 
         public WoopsaClientProtocol(string url)
         {
-            Uri uri = new Uri(url);
-            ServicePoint servicePoint = ServicePointManager.FindServicePoint(uri);
-           servicePoint.Expect100Continue = false;
-            servicePoint.UseNagleAlgorithm = false;
-            _credentialsChanged = true;
-
+            _pendingRequests = new List<WebRequest>();
             if (!url.EndsWith(WoopsaConst.WoopsaPathSeparator.ToString()))
                 url = url + WoopsaConst.WoopsaPathSeparator;
             Url = url;
@@ -43,37 +38,9 @@ namespace Woopsa
 
         #region Public Properties
 
-        public string Url { get; }
-
-        public string Username
-        {
-            get => _userName;
-            set
-            {
-                if (_userName != value)
-                {
-                    _userName = value;
-                    _credentialsChanged = true;
-                }
-            }
-        }
-
-        private string _userName;
-
-        public string Password
-        {
-            get => _password;
-            set
-            {
-                if (_password != value)
-                {
-                    _password = value;
-                    _credentialsChanged = true;
-                }
-            }
-        }
-
-        private string _password;
+        public string Url { get; private set; }
+        public string Username { get; set; }
+        public string Password { get; set; }
 
         #endregion
 
@@ -108,7 +75,7 @@ namespace Woopsa
         public void Terminate()
         {
             _terminating = true;
-            CancelPendingRequests();
+            AbortPendingRequests();
         }
         #endregion
 
@@ -174,55 +141,75 @@ namespace Woopsa
             }
         }
 
-        private HttpClient CurrentHttpClient
-        {
-            get
-            {
-                HttpClient result = _httpClient;
-                if (_credentialsChanged)
-                    lock (_httpClientLocker)
-                    {
-                        var previousHttpClient = _httpClient;
-                        _httpClient?.CancelPendingRequests();
-                        var httpClientHandler = new HttpClientHandler();
-
-                        _credentialsChanged = false;
-                        if (Username != null)
-                            httpClientHandler.Credentials = new NetworkCredential(Username, Password);
-                        _httpClient = new HttpClient(httpClientHandler, true);
-                        previousHttpClient?.Dispose();
-                        result = _httpClient;
-                    }
-                return result;
-            }
-        }
-
-        private static IEnumerable<KeyValuePair<string, string>> ToPairs(NameValueCollection collection)
-        {
-            return collection.AllKeys.Select(key => new KeyValuePair<string, string>(key, collection[key]));
-        }
-
-        private async Task<string> RequestAsync(string path, NameValueCollection postData, TimeSpan timeout)
+        private string Request(string path, NameValueCollection postData, TimeSpan timeout)
         {
             if (!_terminating)
             {
-                HttpClient client = CurrentHttpClient;
-                var cancellationTokenSource = new CancellationTokenSource();
-                cancellationTokenSource.CancelAfter(timeout);
-                HttpResponseMessage response = null;
+                var request = (HttpWebRequest)WebRequest.Create(Url + path);
+                request.CachePolicy = _cachePolicy;
+
+                // TODO : affiner l'optimisation de performance
+                request.ServicePoint.UseNagleAlgorithm = false;
+                request.ServicePoint.Expect100Continue = false;
+
+                HttpWebResponse response = null;
+
+                lock (_pendingRequests)
+                    _pendingRequests.Add(request);
                 try
                 {
                     try
                     {
-                        var requestUrl = Url + path;
-                        if (postData == null)
-                            response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead, cancellationTokenSource.Token);
-                        else
+                        if (Username != null)
+                            request.Credentials = new NetworkCredential(Username, Password);
+
+                        request.Timeout = (int)timeout.TotalMilliseconds;
+
+                        if (postData != null)
                         {
-                            HttpContent content = new FormUrlEncodedContent(ToPairs(postData));
-                            response = await client.PostAsync(requestUrl, content, cancellationTokenSource.Token);
+                            request.Method = "POST";
+                            request.ContentType = "application/x-www-form-urlencoded; charset=UTF-8";
                         }
+                        else
+                            request.Method = "GET";
+
+                        request.Accept = "*/*";
+
+                        if (postData != null)
+                        {
+                            StringBuilder stringBuilder = new StringBuilder();
+                            for (var i = 0; i < postData.Count; i++)
+                            {
+                                string key = postData.AllKeys[i];
+                                stringBuilder.AppendFormat(i == postData.Count - 1 ? "{0}={1}" : "{0}={1}&",
+                                    HttpUtility.UrlEncode(key), HttpUtility.UrlEncode(postData[key]));
+                            }
+                            using (var writer = new StreamWriter(request.GetRequestStream()))
+                                writer.Write(stringBuilder.ToString());
+                        }
+
+                        response = (HttpWebResponse)request.GetResponse();
                         SetLastCommunicationSuccessful(true);
+                    }
+                    catch (WebException exception)
+                    {
+                        if (response != null)
+                        {
+                            ((IDisposable)response).Dispose();
+                            response = null;
+                        }
+                        // This could be an HTTP error, in which case
+                        // we actually have a response (with the HTTP 
+                        // status and error)
+                        response = (HttpWebResponse)exception.Response;
+                        if (response == null)
+                        {
+                            SetLastCommunicationSuccessful(false);
+                            // Sometimes, we can make the request, but the server dies
+                            // before we get a reply - in that case the Response
+                            // is null, so we re-throw the exception
+                            throw;
+                        }
                     }
                     catch (Exception)
                     {
@@ -230,44 +217,50 @@ namespace Woopsa
                         throw;
                     }
 
-                    var resultString = await response.Content.ReadAsStringAsync();
+                    string resultString;
+                    using (var stream = response.GetResponseStream())
+                    using (var reader = new StreamReader(stream))
+                    {
+                        resultString = reader.ReadToEnd();
+                    }
+
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        if (response.Content.Headers.ContentType.MediaType == MIMETypes.Application.JSON)
+                        if (response.ContentType == MIMETypes.Application.JSON)
                         {
                             var exception = WoopsaFormat.DeserializeError(resultString);
                             throw exception;
                         }
 
-                        throw new WoopsaException(response.ReasonPhrase);
+                        throw new WoopsaException(response.StatusDescription);
                     }
 
                     return resultString;
                 }
                 finally
                 {
-                    response?.Dispose();
+                    lock (_pendingRequests)
+                        _pendingRequests.Remove(request);
+                    // Note : HTTPWebResponse does not implement IDisposable in all .Net versions
+                    if (response != null)
+                    {
+                        ((IDisposable)response).Dispose();
+                        response = null;
+                    }
                 }
             }
             else
                 throw new ObjectDisposedException(GetType().Name);
         }
 
-        private string Request(string path, NameValueCollection postData, TimeSpan timeout)
+        private void AbortPendingRequests()
         {
-            try
-            {
-                return RequestAsync(path, postData, timeout).Result;
-            }
-            catch (AggregateException e)
-            {
-                if (e.InnerExceptions.Count == 1)
-                    throw e.InnerException;
-                else
-                    throw;
-            }
+            WebRequest[] pendingRequests;
+            lock (_pendingRequests)
+                pendingRequests = _pendingRequests.ToArray();
+            foreach (var item in pendingRequests)
+                item.Abort();
         }
-        private void CancelPendingRequests() => _httpClient.CancelPendingRequests();
 
         #endregion
 
@@ -276,10 +269,7 @@ namespace Woopsa
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
-            {
                 Terminate();
-                _httpClient?.Dispose();
-            }
         }
 
         public void Dispose()
@@ -292,14 +282,16 @@ namespace Woopsa
 
         #region Private Members
 
-        private HttpClient _httpClient;
-        private object _httpClientLocker = new object();
-        private bool _credentialsChanged;
-
         private readonly TimeSpan _defaultRequestTimeout = TimeSpan.FromSeconds(10);
 
+        private List<WebRequest> _pendingRequests;
         private bool _terminating;
 
+        static private HttpRequestCachePolicy _cachePolicy = new HttpRequestCachePolicy(HttpRequestCacheLevel.NoCacheNoStore);
+
+        #endregion
+
+        #region Private Nested Classes
 
         #endregion
     }
