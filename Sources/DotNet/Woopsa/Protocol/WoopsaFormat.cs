@@ -1,10 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
 using System.Text.Json;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -482,38 +480,6 @@ namespace Woopsa
             public string Type { get; set; }
             public string TimeStamp { get; set; }
         }
-
-#if NETSTANDARD2_0
-        private class WoopsaReadResultConverter : Newtonsoft.Json.JsonConverter
-        {
-            public override bool CanConvert(Type objectType)
-            {
-                return (objectType == typeof(WoopsaReadResult));
-            }
-
-            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-            {
-                Newtonsoft.Json.Linq.JObject jo = Newtonsoft.Json.Linq.JObject.Load(reader);   
-        
-                WoopsaReadResult woopsaReadResult = new WoopsaReadResult(); 
-                woopsaReadResult.Value = jo["Value"];
-                woopsaReadResult.Type = (string)jo["Type"];
-                woopsaReadResult.TimeStamp = (string)jo["TimeStamp"];
-        
-                return woopsaReadResult;
-            }
-
-            public override bool CanWrite
-            {
-                get { return false; }
-            }
-
-            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-            {
-                throw new NotImplementedException();
-            }
-        }
-#endif
 
         public const string KeyValue = "Value";
         public const string KeyType = "Type";
