@@ -11,6 +11,8 @@ namespace WoopsaTest
     {
         public int Votes { get; set; }
 
+        public string StringValue { get; set; }
+
         public void IncrementVotes(int count)
         {
             Votes += count;

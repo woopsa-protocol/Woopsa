@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Globalization;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Woopsa
@@ -451,13 +452,9 @@ namespace Woopsa
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
-#if NETSTANDARD2_0
             if (jsonText == WoopsaConst.WoopsaNull)
                 return WoopsaValue.Null;
-            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, new WoopsaReadResultConverter());
-#else
-            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
-#endif
+            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, WoopsaUtils.ObjectToInferredTypesConverterOptions); // new WoopsaReadResultConverter());
 
             if (result != null)
             {

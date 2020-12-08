@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using System.IO;
 using System.Collections.Specialized;
 using System.Diagnostics;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -33,7 +34,7 @@ namespace Woopsa
         {
             using (new WoopsaServerModelAccessFreeSection(_server))
             {
-                ServerRequest[] requestsList = JsonSerializer.Deserialize<ServerRequest[]>(requestsArgument.AsText);
+                ServerRequest[] requestsList = JsonSerializer.Deserialize<ServerRequest[]>(requestsArgument.AsText, WoopsaUtils.ObjectToInferredTypesConverterOptions);
                 List<MultipleRequestResponse> responses = new List<MultipleRequestResponse>();
                 foreach (var request in requestsList)
                 {

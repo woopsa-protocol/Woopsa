@@ -2,7 +2,7 @@
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
+	<TargetFrameworks>netcoreapp2.0</TargetFrameworks>
     <Authors>Objectis SA</Authors>
 	<IsPackable>false</IsPackable>
 	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
