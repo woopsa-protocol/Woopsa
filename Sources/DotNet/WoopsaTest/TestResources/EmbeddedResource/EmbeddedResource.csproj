@@ -16,7 +16,4 @@
     <EmbeddedResource Include="Images\woopsa-logo.png" />
   </ItemGroup>
 
-  <ItemGroup>
-    <Folder Include="Properties\" />
-  </ItemGroup>
 </Project>
