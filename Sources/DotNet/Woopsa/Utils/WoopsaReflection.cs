@@ -348,7 +348,7 @@ namespace Woopsa
 
         public virtual bool InferWoopsaType(Type type, out WoopsaValueType woopsaValueType, out WoopsaConverter converter)
         {
-            if (_converterDescriptions.TryGetValue(type, out WoopsaConverterDescription converterDescription))
+            if (ConverterDescriptions.TryGetValue(type, out WoopsaConverterDescription converterDescription))
             {
                 woopsaValueType = converterDescription.WoopsaValueType;
                 converter = converterDescription.Converter;
@@ -363,14 +363,14 @@ namespace Woopsa
 
         public void RegisterConverter(Type type, WoopsaConverter converter, WoopsaValueType woopsaValueType)
         {
-            _converterDescriptions[type] = new WoopsaConverterDescription()
+            ConverterDescriptions[type] = new WoopsaConverterDescription()
             {
                 Converter = converter,
                 WoopsaValueType = woopsaValueType
             };
         }
 
-        private Dictionary<Type, WoopsaConverterDescription> _converterDescriptions => new Dictionary<Type, WoopsaConverterDescription>();
+        private Dictionary<Type, WoopsaConverterDescription> ConverterDescriptions { get; } = new Dictionary<Type, WoopsaConverterDescription>();
 
         private class WoopsaConverterDescription
         {
