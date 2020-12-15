@@ -184,6 +184,7 @@ namespace WoopsaTest
                     WoopsaClientProperty propertyString = root.Properties.ByName("StringValue") as WoopsaClientProperty;
                     WoopsaClientSubscription subscription2 = propertyString.Subscribe((sender, e) => 
                     {
+                        var t = client.ClientProtocol.Read("Votes");
                         newStringValue = e.Notification.Value;
                         isStringValueChanged = true; 
                     },
