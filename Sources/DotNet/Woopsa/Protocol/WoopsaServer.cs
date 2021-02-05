@@ -350,22 +350,26 @@ namespace Woopsa
             }
             catch (WoopsaNotFoundException e)
             {
-                response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage().Replace(Environment.NewLine, " "), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
             catch (WoopsaInvalidOperationException e)
             {
-                response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage().Replace(Environment.NewLine, " "), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
             catch (WoopsaException e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage().Replace(Environment.NewLine, " "), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage().Replace(Environment.NewLine, " "), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
         }
