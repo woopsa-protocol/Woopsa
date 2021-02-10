@@ -350,22 +350,26 @@ namespace Woopsa
             }
             catch (WoopsaNotFoundException e)
             {
-                response.WriteError(HTTPStatusCode.NotFound, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.NotFound, RemoveNotAllowedChar(e.GetFullMessage()), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
             catch (WoopsaInvalidOperationException e)
             {
-                response.WriteError(HTTPStatusCode.BadRequest, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.BadRequest, RemoveNotAllowedChar(e.GetFullMessage()), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
             catch (WoopsaException e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, RemoveNotAllowedChar(e.GetFullMessage()), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
             catch (Exception e)
             {
-                response.WriteError(HTTPStatusCode.InternalServerError, e.GetFullMessage(), e.Serialize(), MIMETypes.Application.JSON);
+                response.WriteError(HTTPStatusCode.InternalServerError, RemoveNotAllowedChar(e.GetFullMessage()), 
+                    e.Serialize(), MIMETypes.Application.JSON);
                 OnHandledException(e);
             }
         }
@@ -530,6 +534,8 @@ namespace Woopsa
         {
             return _root.ByPath(searchPath);
         }
+        private string RemoveNotAllowedChar(string text) =>
+            text.Replace("\r\n", " ").Replace('\n', ' ').Replace('\r', ' ');
 
         #endregion
 
