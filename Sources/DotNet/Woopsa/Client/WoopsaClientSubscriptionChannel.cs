@@ -48,8 +48,8 @@ namespace Woopsa
                 WoopsaSubscriptionServiceConst.DefaultPublishInterval);
         }
 
-        public const int MaxSubscriptionsPerMultiRequest = 100;
-        public const int MaxUnsubscriptionsPerMultiRequest = 500;
+        public const int MaxSubscriptionsPerMultiRequest = 50;
+        public const int MaxUnsubscriptionsPerMultiRequest = 250;
 
         public bool Terminated => _terminated;
 
