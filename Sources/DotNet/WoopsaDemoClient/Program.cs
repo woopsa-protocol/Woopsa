@@ -9,179 +9,100 @@ namespace WoopsaDemoClient
 {
     class Program
     {
-        public class TestObjectServer
-        {
-            public int Votes { get; set; }
-
-            public string StringValue { get; set; }
-
-            public void IncrementVotes(int count)
-            {
-                Votes += count;
-            }
-        }
-
-        public class TestObjectServer2
-        {
-
-            public string Text { get; set; }
-
-            public object Value { get; set; }
-        }
-
-        public const int TestingPort = 9999;
-
-        public static string Prefix1 = "woopsa1";
-        public static string Prefix2 = "woopsa2";
-
-        public static string TestingUrl1 => $"http://localhost:{TestingPort}/{Prefix1}";
-        public static string TestingUrl2 => $"http://localhost:{TestingPort}/{Prefix2}";
-
         static void Main(string[] args)
         {
-            TestObjectServer objectServer = new TestObjectServer();
-            using (WebServer server = new WebServer(objectServer, Prefix1, TestingPort))
-            {
-                TestObjectServer2 objectServer2 = new TestObjectServer2();
+            Console.WriteLine(" *** Welcome to the Woopsa Demo Client! *** ");
+            Console.WriteLine(" Note: read the source code to understand what's happening behind the scenes!");
+            Console.WriteLine("");
 
-                server.AddEndPoint(new EndpointWoopsa(objectServer2, Prefix2));
-                Thread.Sleep(10000000);
+            string serverUrl;
+
+            if (File.Exists("url.config"))
+            {
+                serverUrl = File.ReadAllText("url.config");
+                Console.WriteLine("Using url.config");
+            }
+            else
+            {
+                Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
+                serverUrl = Console.ReadLine();
+                if (serverUrl == "")
+                    serverUrl = "http://localhost/woopsa";
+
             }
 
-            //bool isValueChanged = false;
-            //TestObjectServer objectServer = new TestObjectServer();
-            //using (WoopsaClient client = new WoopsaClient(TestingUrl))
-            //{
-            //    WoopsaUnboundClientObject root = client.CreateUnboundRoot("");
-            //    WoopsaClientSubscription subscription = root.Subscribe(nameof(TestObjectServer.Votes),
-            //        (sender, e) => 
-            //        { 
-            //            isValueChanged = true; 
-            //        },
-            //        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+            WoopsaClient client = new WoopsaClient(serverUrl);
 
-            //    using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
-            //    {
-            //        objectServer.Votes = 2;
-            //        Stopwatch watch = new Stopwatch();
-            //        watch.Start();
-            //        while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
-            //            Thread.Sleep(10);
-            //        if (isValueChanged)
-            //            Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
-            //        else
-            //            Console.WriteLine("No notification received");
-            //    }
+            Console.WriteLine("Woopsa client created on URL: {0}", serverUrl);
 
-            //    isValueChanged = false;
-            //    using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
-            //    {
-            //        objectServer.Votes = 3;
-            //        Stopwatch watch = new Stopwatch();
-            //        watch.Start();
-            //        while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(2)))
-            //            Thread.Sleep(10);
-            //        if (isValueChanged)
-            //            Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
-            //        else
-            //            Console.WriteLine("No notification received");
-            //    }
-            //    subscription.Unsubscribe();
+            WoopsaBoundClientObject root = client.CreateBoundRoot();
+            ExploreItem(root);
 
-            //    //Console.WriteLine(" *** Welcome to the Woopsa Demo Client! *** ");
-            //    //Console.WriteLine(" Note: read the source code to understand what's happening behind the scenes!");
-            //    //Console.WriteLine("");
+            // Leave the DOS window open
+            Console.WriteLine("Press any key to exit...");
+            Console.ReadLine();
+            client.Dispose();
+        }
 
-            //    //string serverUrl;
-
-            //    //if (File.Exists("url.config"))
-            //    //{
-            //    //    serverUrl = File.ReadAllText("url.config");
-            //    //    Console.WriteLine("Using url.config");
-            //    //}
-            //    //else
-            //    //{
-            //    //    Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
-            //    //    serverUrl = Console.ReadLine(); 
-            //    //    if (serverUrl == "")
-            //    //        serverUrl = "http://localhost/woopsa";
-
-            //    //}
-
-            //    //WoopsaClient client = new WoopsaClient(serverUrl);
-
-            //    //Console.WriteLine("Woopsa client created on URL: {0}", serverUrl);
-
-            //    //WoopsaBoundClientObject root = client.CreateBoundRoot();
-            //    //ExploreItem(root);
-
-            //    //// Leave the DOS window open
-            //    //Console.WriteLine("Press any key to exit...");
-            //    //Console.ReadLine();
-            //    //client.Dispose();
-            //}
-
-
-            static void ExploreItem(IWoopsaObject obj, int indent = 0)
+        static void ExploreItem(IWoopsaObject obj, int indent = 0)
+        {
+            // Display all properties and their values
+            string indentString = "";
+            for (int i = 0; i < indent; i++)
+                indentString += "  ";
+            Console.WriteLine(indentString + "{0}", obj.Name);
+            Console.WriteLine(indentString + "Properties and their values:");
+            foreach (WoopsaClientProperty property in obj.Properties)
             {
-                // Display all properties and their values
-                string indentString = "";
-                for (int i = 0; i < indent; i++)
-                    indentString += "  ";
-                Console.WriteLine(indentString + "{0}", obj.Name);
-                Console.WriteLine(indentString + "Properties and their values:");
-                foreach (WoopsaClientProperty property in obj.Properties)
+                Console.WriteLine(indentString + " * {0} : {1} = {2}", property.Name, property.Type, property.Value);
+                if (property.Name == "Altitude")
                 {
-                    Console.WriteLine(indentString + " * {0} : {1} = {2}", property.Name, property.Type, property.Value);
-                    if (property.Name == "Altitude")
-                    {
-                        // Create a subscription for example's sake
-                        Console.WriteLine(indentString + "  => Creating a subscription");
-                        property.Subscribe(property_Change);
+                    // Create a subscription for example's sake
+                    Console.WriteLine(indentString + "  => Creating a subscription");
+                    property.Subscribe(property_Change);
 
-                        // Actually change the value
-                        Console.WriteLine(indentString + "  => Changing value to 1");
-                        property.Value = new WoopsaValue(1);
-                    }
+                    // Actually change the value
+                    Console.WriteLine(indentString + "  => Changing value to 1");
+                    property.Value = new WoopsaValue(1);
+                }
+            }
+
+            // Display methods and their arguments
+            Console.WriteLine(indentString + "Methods and their arguments:");
+            foreach (WoopsaMethod method in obj.Methods)
+            {
+                // Display the method
+                Console.WriteLine(indentString + " * {0} : {1}", method.Name, method.ReturnType);
+                foreach (WoopsaMethodArgumentInfo argumentInfo in method.ArgumentInfos)
+                {
+                    Console.WriteLine(indentString + "  * {0} : {1}", argumentInfo.Name, argumentInfo.Type);
                 }
 
-                // Display methods and their arguments
-                Console.WriteLine(indentString + "Methods and their arguments:");
-                foreach (WoopsaMethod method in obj.Methods)
+                // As an example, if we find a SayHello method (like in the demo server),
+                // we call it. That way you can see how to call methods using the standard
+                // client!
+                if (method.Name == "GetWeatherAtDate")
                 {
-                    // Display the method
-                    Console.WriteLine(indentString + " * {0} : {1}", method.Name, method.ReturnType);
-                    foreach (WoopsaMethodArgumentInfo argumentInfo in method.ArgumentInfos)
-                    {
-                        Console.WriteLine(indentString + "  * {0} : {1}", argumentInfo.Name, argumentInfo.Type);
-                    }
-
-                    // As an example, if we find a SayHello method (like in the demo server),
-                    // we call it. That way you can see how to call methods using the standard
-                    // client!
-                    if (method.Name == "GetWeatherAtDate")
-                    {
-                        Console.WriteLine(indentString + "  => GetWeatherAtDate found! Calling it now...");
-                        Console.WriteLine(indentString + "  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
+                    Console.WriteLine(indentString + "  => GetWeatherAtDate found! Calling it now...");
+                    Console.WriteLine(indentString + "  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
                         {
                             new WoopsaValue(DateTime.Now)
                         })
-                        );
-                    }
-                }
-
-                Console.WriteLine(indentString + "Items:");
-                foreach (WoopsaBoundClientObject item in obj.Items)
-                {
-                    ExploreItem(item, indent + 1);
+                    );
                 }
             }
 
-            static void property_Change(object sender, WoopsaNotificationEventArgs e)
+            Console.WriteLine(indentString + "Items:");
+            foreach (WoopsaBoundClientObject item in obj.Items)
             {
-                // TODO : type de sender incorrect
-                Console.WriteLine("Property {0} has changed, new value = {1}", (sender as WoopsaClientProperty).Name, e.Notification.Value);
+                ExploreItem(item, indent + 1);
             }
+        }
+
+        static void property_Change(object sender, WoopsaNotificationEventArgs e)
+        {
+            // TODO : type de sender incorrect
+            Console.WriteLine("Property {0} has changed, new value = {1}", (sender as WoopsaClientProperty).Name, e.Notification.Value);
         }
     }
 }
