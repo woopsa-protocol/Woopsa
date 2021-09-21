@@ -1,9 +1,17 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
 
     <IsPackable>false</IsPackable>
+
+    <Configurations>Debug;Release;Release_Unity_UWP</Configurations>
+
+    <Nullable>annotations</Nullable>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release_Unity_UWP|AnyCPU'">
+    <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -19,6 +27,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\WoopsaServer\WoopsaServer.csproj" />
     <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
     <ProjectReference Include="TestResources\EmbeddedResource\EmbeddedResource.csproj" />
     <ProjectReference Include="TestResources\Woopsa.EmbeddedResource\Woopsa.EmbeddedResource.csproj" />

@@ -21,8 +21,9 @@ namespace WoopsaTest
             WoopsaObject serverRoot = new WoopsaObject(null, "");
             TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer(serverRoot, TestingPort))
+            using (WebServer server = new WebServer(serverRoot, port: TestingPort))
             {
+                server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     ExecuteMultiRequestTestSerie(client, objectServer);
@@ -36,8 +37,9 @@ namespace WoopsaTest
             WoopsaObject serverRoot = new WoopsaObject(null, "");
             TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer((IWoopsaContainer)serverRoot, TestingPort))
+            using (WebServer server = new WebServer((IWoopsaContainer)serverRoot, port: TestingPort))
             {
+                server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     ExecuteMultiRequestTestSerie(client, objectServer);

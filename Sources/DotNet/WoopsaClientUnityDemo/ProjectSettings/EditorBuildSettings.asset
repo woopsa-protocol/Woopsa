@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1045 &1
+EditorBuildSettings:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Scenes:
+  - enabled: 1
+    path: Assets/Scenes/TestWoopsaClientHololens.unity
+    guid: a28ff251ec608094f86e695948fe0c75
+  m_configObjects:
+    Unity.XR.WindowsMR.Settings: {fileID: 11400000, guid: ae8a72c706be4674880505c8702e0724,
+      type: 2}
+    com.unity.xr.management.loader_settings: {fileID: 11400000, guid: 3a92e5c519c0b3a4c83e9d1e56733772,
+      type: 2}
+    com.unity.xr.openxr.settings4: {fileID: 11400000, guid: e14607c23c2a43a4a972d059c53a09c7,
+      type: 2}

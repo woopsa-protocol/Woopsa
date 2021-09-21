@@ -6,6 +6,8 @@ namespace Woopsa
 {
     public class WoopsaValue : IWoopsaValue
     {
+        #region Constructors
+
         private WoopsaValue(string text, WoopsaValueType type, DateTime? timestamp)
         {
             _text = text;
@@ -15,8 +17,30 @@ namespace Woopsa
                 _jsonData = Woopsa.WoopsaJsonData.CreateFromText(text);
         }
 
-        internal static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null) =>
-            new WoopsaValue(text, type, timestamp);
+        #endregion
+
+        #region Static Properties
+
+        public static WoopsaValue Null => _null;
+
+        #endregion
+
+        #region Public Properties
+
+        public WoopsaJsonData JsonData
+        {
+            get
+            {
+                if (_jsonData == null)
+                    throw new InvalidOperationException("JsonData is only available on WoopsaValue of type JsonData");
+                else
+                    return _jsonData;
+            }
+        }
+
+        #endregion
+
+        #region Static Methods
 
         public static WoopsaValue CreateChecked(string text, WoopsaValueType type, DateTime? timestamp = null)
         {
@@ -102,10 +126,21 @@ namespace Woopsa
                 return ToWoopsaValue(deserializedJson, type, timeStamp);
         }
 
+        public static WoopsaValue CreateUnchecked(string text, WoopsaValueType type, DateTime? timestamp = null) =>
+            new WoopsaValue(text, type, timestamp);
+
+        #endregion
+
+        #region Private Methods
+
         private WoopsaValue(string text, WoopsaValueType type)
             : this(text, type, null)
         {
         }
+
+        #endregion
+
+        #region Public Methods
 
         public WoopsaValue(WoopsaJsonData jsonData, DateTime? timestamp = null)
         {
@@ -174,7 +209,7 @@ namespace Woopsa
 
         public override string ToString() => AsText;
 
-        public static WoopsaValue Null => _null;
+        #endregion
 
         #region IWoopsaValue
 
@@ -196,16 +231,7 @@ namespace Woopsa
 
         #endregion IWoopsaValue
 
-        public WoopsaJsonData JsonData
-        {
-            get
-            {
-                if (_jsonData == null)
-                    throw new InvalidOperationException("JsonData is only available on WoopsaValue of type JsonData");
-                else
-                    return _jsonData;
-            }
-        }
+        #region Implicit opertaors
 
         public static implicit operator bool(WoopsaValue value) => value.ToBool();
 
@@ -247,6 +273,8 @@ namespace Woopsa
 
         public static implicit operator WoopsaValue(string value) => new WoopsaValue(value);
 
+        #endregion
+
         #region Woopsa extended types		
 
         public static string FormatRelativeWoopsaLink(string woopsaItemPath) =>
@@ -278,12 +306,19 @@ namespace Woopsa
 
         #endregion Woopsa extended types
 
+        #region Fields / Attributes
+
         private string _text;
         private WoopsaValueType _type;
         private DateTime? _timestamp;
         private WoopsaJsonData _jsonData = null;
 
+        #endregion
+
+        #region Private static fields
+
         private static readonly WoopsaValue _null = new WoopsaValue(string.Empty, WoopsaValueType.Null);
 
+        #endregion
     }
 }

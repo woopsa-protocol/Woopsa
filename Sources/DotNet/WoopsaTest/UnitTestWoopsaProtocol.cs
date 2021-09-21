@@ -4,6 +4,9 @@ using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Collections.Specialized;
+using System.Threading.Tasks;
+using System.Collections.Generic;
+using Microsoft.AspNetCore.Hosting;
 
 namespace WoopsaTest
 {
@@ -13,7 +16,9 @@ namespace WoopsaTest
         #region Consts
 
         public const int TestingPort = 9999;
+        public const int TestingPortSsl = 443;
         public static string TestingUrl => $"http://localhost:{TestingPort}/woopsa";
+        public static string TestingUrlSsl => $"https://localhost:{TestingPortSsl}/woopsa";
 
         #endregion
 
@@ -23,8 +28,9 @@ namespace WoopsaTest
             WoopsaRoot serverRoot = new WoopsaRoot();
             TestObjectServer objectServer = new TestObjectServer();
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WoopsaServer server = new WoopsaServer(serverRoot, TestingPort))
+            using (WebServer server = new WebServer(serverRoot, port: TestingPort))
             {
+                server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
@@ -38,8 +44,9 @@ namespace WoopsaTest
         public void TestWoopsaProtocol()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port:TestingPort))
             {
+                server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
@@ -69,8 +76,9 @@ namespace WoopsaTest
             {
                 WoopsaUnboundClientObject root = client.CreateUnboundRoot("root");
                 WoopsaProperty propertyVote = root.GetProperty("Votes", WoopsaValueType.Integer, false);
-                using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+                using (WebServer server = new WebServer(objectServer, port: TestingPort))
                 {
+                    server.Start();
                     propertyVote.Value = new WoopsaValue(123);
                     Assert.AreEqual(objectServer.Votes, 123);
                     var result = propertyVote.Value;
@@ -83,8 +91,9 @@ namespace WoopsaTest
         public void TestWoopsaProtocolPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port: TestingPort))
             {
+                server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
@@ -108,12 +117,136 @@ namespace WoopsaTest
             }
         }
 
+        private void PropertyChanged(object sender, WoopsaNotificationEventArgs woopsaNotificationEventArgs)
+        {
+            value = woopsaNotificationEventArgs.Notification.Value;
+        }
+        string value;
+
+        //[TestMethod, TestCategory("Performance")]
+        //public void TestWoopsaProtocolAsyncPerformance()
+        //{
+        //    TestObjectServer objectServer = new TestObjectServer();
+        //    using (WebServer server = new WebServer(objectServer, port: TestingPort, enableSsl: false))
+        //    {
+        //        server.Start();
+        //        using (WoopsaClient client = new WoopsaClient(TestingUrl))
+        //        {
+        //            client.SubscriptionChannel.Subscribe("StringValue", PropertyChanged);
+
+        //            Stopwatch watch = new Stopwatch();
+        //            watch.Start();
+
+        //            for (int i = 0; i < 100; i++)
+        //            {
+        //                objectServer.StringValue = i.ToString();
+        //                Assert.AreEqual(objectServer.StringValue, i.ToString());
+        //                while (objectServer.StringValue != value)
+        //                {
+        //                    Thread.Sleep(1);
+        //                }
+        //            }
+        //            TimeSpan duration = watch.Elapsed;
+        //            Assert.IsTrue(duration < TimeSpan.FromSeconds(20), $"Duration takes ${duration.Seconds}s.{duration.Milliseconds}, instead of 200ms");
+        //            Console.WriteLine($"Duration takes ${duration.Seconds}s.{duration.Milliseconds}");
+        //        }
+        //    }
+        //}
+
+        //[TestMethod, TestCategory("Performance")]
+        //public async Task TestWoopsaProtocolInvocationAsyncPerformance()
+        //{
+        //    const int numberOfTestBefore = 100;
+        //    const int numberOfTasks = 1000;
+        //    const int numberOfThreads = 20;
+        //    TestObjectServer objectServer = new TestObjectServer();
+        //    using (WebServer server = new WebServer(objectServer, port: TestingPort, enableSsl: false))
+        //    {
+        //        server.Start();
+        //        using (WoopsaClient client = new WoopsaClient(TestingUrl))
+        //        {
+        //            async Task TestAsync()
+        //            {
+        //                Task<WoopsaValue>[] tasks = new Task<WoopsaValue>[numberOfTasks];
+        //                for (int j = 0; j < tasks.Length; j++)
+        //                {
+        //                    NameValueCollection arguments = new NameValueCollection();
+        //                    arguments.Add("count", new WoopsaValue(1));
+
+        //                    Task<WoopsaValue> valueTask = client.ClientProtocol.InvokeAsync(nameof(TestObjectServer.IncrementVotes), arguments);
+        //                    tasks[j] = valueTask;
+        //                }
+
+        //                for (int j = 0; j < tasks.Length; j++)
+        //                {
+        //                    await tasks[j];
+        //                }
+        //            }
+
+        //            void Test()
+        //            {
+        //                for (int j = 0; j < numberOfTasks; j++)
+        //                {
+        //                    NameValueCollection arguments = new NameValueCollection();
+        //                    arguments.Add("count", new WoopsaValue(1));
+        //                    WoopsaValue value = client.ClientProtocol.Invoke(nameof(TestObjectServer.IncrementVotes), arguments);
+        //                }
+        //            }
+
+        //            objectServer.StringValue = "Test";
+        //            // Start up of the server (as it is slower for the first few calls)
+        //            for (int i = 0; i < numberOfTestBefore; i++)
+        //            {
+        //                await TestAsync();
+        //            }
+
+        //            // Synchronous calls
+        //            Stopwatch watchSync = new Stopwatch();
+        //            watchSync.Start();
+        //            Thread[] threadsSync = new Thread[numberOfThreads];
+        //            for (int i = 0; i < threadsSync.Length; i++)
+        //            {
+        //                threadsSync[i] = new Thread(() =>
+        //                {
+        //                    Test();
+        //                });
+        //                threadsSync[i].Start();
+        //            }
+        //            for (int i = 0; i < threadsSync.Length; i++)
+        //                threadsSync[i].Join(TimeSpan.FromDays(1));
+        //            TimeSpan durationSync = watchSync.Elapsed;
+        //            Console.WriteLine($"Duration takes ${durationSync.Seconds}s.{durationSync.Milliseconds} for synchronous calls");
+
+        //            // Asynchronous calls
+        //            Stopwatch watchAsync = new Stopwatch();
+        //            watchAsync.Start();
+        //            Thread[] threadsAsync = new Thread[numberOfThreads];
+        //            for (int i = 0; i < threadsAsync.Length; i++)
+        //            {
+        //                threadsAsync[i] = new Thread(() =>
+        //                {
+        //                    TestAsync().Wait();
+        //                });
+        //                threadsAsync[i].Start();
+        //            }
+        //            for (int i = 0; i < threadsAsync.Length; i++)
+        //                threadsAsync[i].Join(TimeSpan.FromDays(1));
+        //            TimeSpan durationAsync = watchAsync.Elapsed;
+        //            Console.WriteLine($"Duration takes ${durationAsync.Seconds}s.{durationAsync.Milliseconds} for asynchronous calls");
+
+        //            Assert.IsTrue(true);
+        //        }
+        //    }
+        //}
+
+
         [TestMethod, TestCategory("Performance")]
         public void TestWoopsaServerPerformance()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port: TestingPort))
             {
+                server.Start();
                 using (dynamic dynamicClient = new WoopsaDynamicClient(TestingUrl))
                 {
                     Stopwatch watch = new Stopwatch();
@@ -145,27 +278,24 @@ namespace WoopsaTest
         public void TestWoopsaServerAuthentication()
         {
             TestObjectServerAuthentification objectServer = new TestObjectServerAuthentification();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port: TestingPort))
             {
-                server.Authenticator = new SimpleAuthenticator("TestRealm",
-                    (sender, e) => { e.IsAuthenticated = e.Username=="woopsa"; });
-
+                server.Start();
+                server.Authenticator = new SimpleAuthenticator("TestRealm", (sender, e) =>
+                {
+                    e.IsAuthenticated = e.Username == "woopsa";
+                });
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
-                    const string TestUserName ="woopsa";
+                    const string TestUserName = "woopsa";
                     client.Username = TestUserName;
-                    WoopsaBoundClientObject root = client.CreateBoundRoot();
-                    WoopsaProperty propertyVotes = root.Properties.ByName("Votes");
-                    propertyVotes.Value = 5;
+                    client.ClientProtocol.Write("Votes", 5.ToString());
                     Assert.AreEqual(objectServer.Votes, 5);
-                    Assert.AreEqual((int)propertyVotes.Value, 5);
-                    WoopsaProperty propertyCurrentUserName = root.Properties.ByName(nameof(TestObjectServerAuthentification.CurrentUserName));
-                    Assert.AreEqual(propertyCurrentUserName.Value, TestUserName);
                     client.Username = "invalid";
                     bool authenticationCheckOk;
                     try
                     {
-                        propertyVotes.Value = 5;
+                        client.ClientProtocol.Write("Votes", 5.ToString());
                         authenticationCheckOk = false;
                     }
                     catch

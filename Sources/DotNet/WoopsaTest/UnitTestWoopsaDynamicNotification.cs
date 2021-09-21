@@ -28,8 +28,9 @@ namespace WoopsaTest
         public void TestWoopsaDynamicNotification()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port: TestingPort))
             {
+                server.Start();
                 // Solution with dynamic client
                 using (dynamic dynamicClient = new WoopsaDynamicClient(TestingUrl))
                 {
@@ -95,8 +96,9 @@ namespace WoopsaTest
         public void TestWoopsaDynamicNotificationUnexistingProperty()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port: TestingPort))
             {
+                server.Start();
                 // Solution with dynamic client
                 using (dynamic dynamicClient = new WoopsaDynamicClient(TestingUrl))
                 {

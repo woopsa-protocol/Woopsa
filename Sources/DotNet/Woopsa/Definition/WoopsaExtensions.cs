@@ -483,6 +483,14 @@ namespace Woopsa
         public static IWoopsaElement ByNameOrNull(this IWoopsaContainer woopsaContainer, string name)
         {
             IWoopsaElement result;
+            if (name == WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannelAsync)
+            {
+                name = WoopsaSubscriptionServiceConst.WoopsaCreateSubscriptionChannel;
+            }
+            else if (name == WoopsaSubscriptionServiceConst.WoopsaWaitNotificationAsync)
+            {
+                name = WoopsaSubscriptionServiceConst.WoopsaWaitNotification;
+            }
             // For performance optimization, use directly the methods of classes WoopsaObject and WoopsaContainer 
             // Complexity : O(1)
             if (woopsaContainer is WoopsaObject)

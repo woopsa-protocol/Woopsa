@@ -24,8 +24,9 @@ namespace WoopsaTest
         public void TestWoopsaWaitNotification()
         {
             TestObjectServer objectServer = new TestObjectServer();
-            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            using (WebServer server = new WebServer(objectServer, port: TestingPort))
             {
+                server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
                     WoopsaBoundClientObject root = client.CreateBoundRoot();

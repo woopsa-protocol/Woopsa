@@ -1,17 +1,22 @@
 ﻿using System;
+using System.Linq;
+using System.Threading.Tasks;
 
 namespace Woopsa
 {
     public class WoopsaClient : IDisposable
     {
-        #region Constructors
+        #region Constants
 
         const int DefaultNotificationQueueSize = 1000;
 
+        #endregion
+
+        #region Constructors
+
         public WoopsaClient(string url) : this(url, null) { }
 
-        public WoopsaClient(string url, WoopsaContainer container,
-            int notificationQueueSize = DefaultNotificationQueueSize)
+        public WoopsaClient(string url, WoopsaContainer container, int notificationQueueSize = DefaultNotificationQueueSize)
         {
             Uri uri = new Uri(url);
             AuthorityUrl = uri.GetLeftPart(UriPartial.Authority);
@@ -20,6 +25,15 @@ namespace Woopsa
             WoopsaUnboundClientObject unboundRoot = CreateUnboundRoot("");
             SubscriptionChannel = new WoopsaClientSubscriptionChannel(this,
                 unboundRoot, notificationQueueSize);
+
+            //_remoteMethodMultiRequestAsync = unboundRoot.GetAsynchronousMethod(
+            //    WoopsaMultiRequestConst.WoopsaMultiRequestMethodNameAsync,
+            //    WoopsaValueType.JsonData,
+            //    new WoopsaMethodArgumentInfo[]
+            //    {
+            //        new WoopsaMethodArgumentInfo(WoopsaMultiRequestConst.WoopsaMultiRequestArgumentName, WoopsaValueType.JsonData)
+            //    });
+
             _remoteMethodMultiRequest = unboundRoot.GetMethod(
                 WoopsaMultiRequestConst.WoopsaMultiRequestMethodName,
                 WoopsaValueType.JsonData,
@@ -67,13 +81,18 @@ namespace Woopsa
 
         public void ExecuteMultiRequest(WoopsaClientMultiRequest multiRequest)
         {
+            ExecuteMultiRequestAsync(multiRequest).Wait();
+        }
+
+        public async Task ExecuteMultiRequestAsync(WoopsaClientMultiRequest multiRequest)
+        {
             if (multiRequest.Count > 0)
             {
                 multiRequest.Reset();
                 if (!_disableRemoteMultiRequest)
                     try
                     {
-                        WoopsaValue results = _remoteMethodMultiRequest.Invoke(
+                        WoopsaValue results = await _remoteMethodMultiRequest.InvokeAsync(
                             WoopsaValue.WoopsaJsonData(multiRequest.Requests.Serialize()));
                         multiRequest.DispatchResults(results.JsonData);
                     }
@@ -82,12 +101,11 @@ namespace Woopsa
                         _disableRemoteMultiRequest = true;
                     }
                 if (_disableRemoteMultiRequest)
-                    ExecuteMultiRequestLocally(multiRequest);
+                    await ExecuteMultiRequestLocallyAsync(multiRequest);
             }
         }
 
         #endregion
-
 
         #region IDisposable
 
@@ -115,8 +133,9 @@ namespace Woopsa
 
         #region Private Members
 
-        private void ExecuteMultiRequestLocally(WoopsaClientMultiRequest multiRequest)
+        private async Task ExecuteMultiRequestLocallyAsync(WoopsaClientMultiRequest multiRequest)
         {
+            Console.WriteLine(multiRequest.ClientRequests.Count());
             // Execute multi request locally
             foreach (var item in multiRequest.ClientRequests)
             {
@@ -128,26 +147,26 @@ namespace Woopsa
                             item.Result = new WoopsaClientRequestResult()
                             {
                                 ResultType = WoopsaClientRequestResultType.Meta,
-                                Meta = ClientProtocol.Meta(item.Request.Path)
+                                Meta = await ClientProtocol.MetaAsync()
                             };
                             break;
                         case WoopsaFormat.VerbInvoke:
                             item.Result = new WoopsaClientRequestResult()
                             {
                                 ResultType = WoopsaClientRequestResultType.Value,
-                                Value = ClientProtocol.Invoke(item.Request.Path,                                
-                                    item.Request.Arguments.ToNameValueCollection()) 
+                                Value = await ClientProtocol.InvokeAsync(item.Request.Path,
+                                    item.Request.Arguments.ToNameValueCollection())
                             };
                             break;
                         case WoopsaFormat.VerbRead:
                             item.Result = new WoopsaClientRequestResult()
                             {
                                 ResultType = WoopsaClientRequestResultType.Value,
-                                Value = ClientProtocol.Read(item.Request.Path)
+                                Value = await ClientProtocol.ReadAsync(item.Request.Path)
                             };
                             break;
                         case WoopsaFormat.VerbWrite:
-                            ClientProtocol.Write(item.Request.Path, item.Request.Value);
+                            await ClientProtocol.WriteAsync(item.Request.Path, item.Request.Value);
                             item.Result = new WoopsaClientRequestResult()
                             {
                                 ResultType = WoopsaClientRequestResultType.Value,
