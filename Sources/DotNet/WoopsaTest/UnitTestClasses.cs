@@ -13,9 +13,14 @@ namespace WoopsaTest
 
         public string StringValue { get; set; }
 
+        private object _locker = new object();
+
         public void IncrementVotes(int count)
         {
-            Votes += count;
+            lock (_locker)
+            {
+                Votes += count;
+            }
         }
     }
 
@@ -30,6 +35,30 @@ namespace WoopsaTest
 
         public string CurrentUserName => BaseAuthenticator.CurrentUserName;
     }
+
+    public class TestObjectServer2
+    {
+        public Guid Id { get; set; }
+
+        public int Votes { get; set; }
+
+        public void IncrementVotes(int count)
+        {
+            Votes += count;
+        }
+    }
+
+    //public class TestObjectServerAuthentification
+    //{
+    //    public int Votes { get; set; }
+
+    //    public void IncrementVotes(int count)
+    //    {
+    //        Votes += count;
+    //    }
+
+    //    public string CurrentUserName => BaseAuthenticator.CurrentUserName;
+    //}
 
     public interface InterfaceA
     {

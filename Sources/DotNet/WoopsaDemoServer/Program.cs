@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Collections.Specialized;
 using System.Net.Sockets;
+using System.Threading;
 using Woopsa;
 
 namespace WoopsaDemoServer
@@ -66,42 +68,43 @@ namespace WoopsaDemoServer
             {
                 WeatherStation root = new WeatherStation();
                 bool done = false;
-                using (WoopsaServer woopsaServer = new WoopsaServer(root, 80))
+                int port = 80;
+                string routePrefix = "woopsa";
+                using WebServer woopsaServer = new WebServer(root, port: 80);
+                woopsaServer.Start();
+
+                Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", port, routePrefix);
+                Console.WriteLine("Some examples of what you can do directly from your browser:");
+                Console.WriteLine(" * View the object hierarchy of the root object:");
+                Console.WriteLine("   http://localhost:{0}{1}meta/", port, routePrefix);
+                Console.WriteLine(" * Read the value of a property:");
+                Console.WriteLine("   http://localhost:{0}{1}read/Temperature", port, routePrefix);
+
+
+                Console.WriteLine();
+                Console.WriteLine("Commands : QUIT, AUTH, NOAUTH");
+                do
                 {
-
-                    Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-                    Console.WriteLine("Some examples of what you can do directly from your browser:");
-                    Console.WriteLine(" * View the object hierarchy of the root object:");
-                    Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-                    Console.WriteLine(" * Read the value of a property:");
-                    Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.WebServer.Port, woopsaServer.RoutePrefix);
-
-
-                    Console.WriteLine();
-                    Console.WriteLine("Commands : QUIT, AUTH, NOAUTH");
-                    do
+                    Console.Write(">");
+                    switch (Console.ReadLine().ToUpper())
                     {
-                        Console.Write(">");
-                        switch (Console.ReadLine().ToUpper())
-                        {
-                            case "QUIT":
-                                done = true;
-                                break;
-                            case "AUTH":
-                                woopsaServer.Authenticator = new SimpleAuthenticator(
-                                    "WoopsaDemoServer",
-                                    (sender, e) => { e.IsAuthenticated = e.Username == "woopsa"; });
-                                break;
-                            case "NOAUTH":
-                                woopsaServer.Authenticator = null;
-                                break;
-                            default:
-                                Console.WriteLine("Invalid command");
-                                break;
-                        }
+                        case "QUIT":
+                            done = true;
+                            break;
+                        case "AUTH":
+                            woopsaServer.Authenticator = new SimpleAuthenticator(
+                                "WoopsaDemoServer",
+                                (sender, e) => { e.IsAuthenticated = e.Username == "woopsa"; });
+                            break;
+                        case "NOAUTH":
+                            woopsaServer.Authenticator = null;
+                            break;
+                        default:
+                            Console.WriteLine("Invalid command");
+                            break;
                     }
-                    while (!done);
                 }
+                while (!done);
             }
             catch (SocketException e)
             {

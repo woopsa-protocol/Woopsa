@@ -1,42 +1,15 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Linq;
+using System.Text;
 using System.Text.Json;
-using System.Text.Json.Serialization;
 
 namespace Woopsa
 {
     static public class WoopsaUtils
     {
-        public static bool IsContextWoopsaThread
-        {
-            get
-            {
-                return
-                    IsContextWebServerThread ||
-                    IsContextWoopsaClientSubscriptionThread ||
-                    IsContextWoopsaSubscriptionServiceImplementation;
-            }
-        }
-        internal static bool IsContextWebServerThread => WebServer.CurrentWebServer != null;
-        internal static bool IsContextWoopsaClientSubscriptionThread => WoopsaClientSubscriptionChannel.CurrentChannel != null;
-
-        internal static bool IsContextWoopsaSubscriptionServiceImplementation => WoopsaSubscriptionServiceImplementation.CurrentService != null;
-
-        public static bool IsContextWoopsaTerminatingThread
-        {
-            get
-            {
-                if (WebServer.CurrentWebServer != null)
-                    return WebServer.CurrentWebServer.Aborted;
-                else if (WoopsaClientSubscriptionChannel.CurrentChannel != null)
-                    return WoopsaClientSubscriptionChannel.CurrentChannel.Terminated;
-                else if (WoopsaSubscriptionServiceImplementation.CurrentService != null)
-                    return WoopsaSubscriptionServiceImplementation.CurrentService.Terminated;
-                else
-                    return false;
-            }
-        }
+        #region Public Static Methods
 
         public static string CombinePath(string basePath, string relativePath)
         {
@@ -45,11 +18,35 @@ namespace Woopsa
                 RemoveInitialSeparator(relativePath);
         }
 
+        public static string CombineUrl(string baseUrl, params string[] relativeUrls)
+        {
+            string url = baseUrl;
+            foreach (var item in relativeUrls)
+                url = CombineSingleUrl(url, item);
+            return url;
+        }
+
+        public static string RemoveInitialAndFinalSeparator(string path)
+        {
+            return RemoveFinalSeparator(RemoveInitialSeparator(path));
+        }
+
         public static string RemoveInitialSeparator(string path)
         {
             if (path.Length >= 1)
                 if (path[0] == WoopsaConst.WoopsaPathSeparator)
                     return path.Substring(1);
+                else
+                    return path;
+            else
+                return path;
+        }
+
+        public static string RemoveFinalSeparator(string path)
+        {
+            if (path.Length >= 1)
+                if (path.Last() == WoopsaConst.WoopsaPathSeparator)
+                    return path.Remove(path.Length - 1);
                 else
                     return path;
             else
@@ -65,14 +62,17 @@ namespace Woopsa
             return result;
         }
 
-        public static TimeSpan Multiply(this TimeSpan timeSpan, int n) => TimeSpan.FromTicks(timeSpan.Ticks * n);
+        public static TimeSpan Multiply(this TimeSpan timeSpan, int n)
+        {
+            return TimeSpan.FromTicks(timeSpan.Ticks * n);
+        }
 
         /// <summary>
         /// Used to generate incremental numbers identifiers, user for example to uniquely
         /// identify in an ordered way the subscriptions.
         /// </summary>
         /// <returns></returns>
-        public static ulong NextIncrementalObjectId()
+        public static UInt64 NextIncrementalObjectId()
         {
             lock (_instanceIndexLock)
             {
@@ -81,11 +81,33 @@ namespace Woopsa
             }
         }
 
-        private static ulong _instanceIndex;
+        #endregion
+
+        #region Private Static fields / Attributes
+
+        private static UInt64 _instanceIndex;
         private static object _instanceIndexLock = new object();
 
+        public static JsonSerializerOptions ObjectToInferredTypesConverterOptions = new JsonSerializerOptions
+        {
+            Converters = { new ObjectToInferredTypesConverter() }
+        };
+
+        #endregion
+
+        #region Private Static Methods
+
+        private static string CombineSingleUrl(string baseUrl, string relativeUrl)
+        {
+            if (String.IsNullOrEmpty(baseUrl)) return relativeUrl;
+            if (String.IsNullOrEmpty(relativeUrl)) return baseUrl;
+            return baseUrl.TrimEnd('/') + "/" + relativeUrl.TrimStart('/');
+        }
+
+        #endregion
 
         #region Exceptions utilities
+
         public static Exception RootException(this Exception e)
         {
             Exception ex = e;
@@ -106,39 +128,7 @@ namespace Woopsa
             }
             return eMessage;
         }
+
         #endregion
-
-        public static JsonSerializerOptions ObjectToInferredTypesConverterOptions = new JsonSerializerOptions
-        {
-            Converters = { new ObjectToInferredTypesConverter() }
-        };
-    }
-
-    public class ObjectToInferredTypesConverter
-         : JsonConverter<object>
-    {
-        public override object Read(
-            ref Utf8JsonReader reader,
-            Type typeToConvert,
-            JsonSerializerOptions options) => reader.TokenType switch
-            {
-                JsonTokenType.True => true,
-                JsonTokenType.False => false,
-                JsonTokenType.Number when reader.TryGetInt64(out long l) => l,
-                JsonTokenType.Number => reader.GetDouble(),
-                JsonTokenType.String when reader.TryGetDateTime(out DateTime datetime) => datetime,
-                JsonTokenType.String => reader.GetString(),
-                _ => DefaultContent(ref reader)
-            };
-        private JsonElement DefaultContent(ref Utf8JsonReader reader)
-        {
-            using var document = JsonDocument.ParseValue(ref reader);
-            return document.RootElement.Clone();
-        }
-        public override void Write(
-            Utf8JsonWriter writer,
-            object objectToWrite,
-            JsonSerializerOptions options) =>
-            throw new InvalidOperationException("Should not get here.");
     }
 }

@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
+using System.Threading;
 using Woopsa;
 
 namespace WoopsaDemoClient
@@ -23,14 +25,14 @@ namespace WoopsaDemoClient
             else
             {
                 Console.Write("Please enter the Woopsa server URL or leave blank for default (http://localhost/woopsa): ");
-                serverUrl = Console.ReadLine(); 
+                serverUrl = Console.ReadLine();
                 if (serverUrl == "")
                     serverUrl = "http://localhost/woopsa";
-            
+
             }
 
             WoopsaClient client = new WoopsaClient(serverUrl);
-            
+
             Console.WriteLine("Woopsa client created on URL: {0}", serverUrl);
 
             WoopsaBoundClientObject root = client.CreateBoundRoot();
@@ -83,9 +85,9 @@ namespace WoopsaDemoClient
                 {
                     Console.WriteLine(indentString + "  => GetWeatherAtDate found! Calling it now...");
                     Console.WriteLine(indentString + "  => Result = {0}", method.Invoke(new List<IWoopsaValue>()
-						{
-							new WoopsaValue(DateTime.Now)
-						})
+                        {
+                            new WoopsaValue(DateTime.Now)
+                        })
                     );
                 }
             }
@@ -93,7 +95,7 @@ namespace WoopsaDemoClient
             Console.WriteLine(indentString + "Items:");
             foreach (WoopsaBoundClientObject item in obj.Items)
             {
-                ExploreItem(item, indent+1);
+                ExploreItem(item, indent + 1);
             }
         }
 

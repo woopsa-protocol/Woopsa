@@ -1,17 +1,19 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <TargetFramework>net5.0</TargetFramework>
     <IsPackable>false</IsPackable>
+    <Configurations>Debug;Release;Release_Unity_UWP</Configurations>
   </PropertyGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
+    <Folder Include="Properties\" />
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Properties\" />
+    <ProjectReference Include="..\WoopsaServer\WoopsaServer.csproj" />
+    <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
   </ItemGroup>
 
 </Project>
