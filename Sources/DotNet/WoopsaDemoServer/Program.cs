@@ -68,17 +68,15 @@ namespace WoopsaDemoServer
             {
                 WeatherStation root = new WeatherStation();
                 bool done = false;
-                int port = 80;
-                string routePrefix = "woopsa";
-                using WebServer woopsaServer = new WebServer(root, port: 80);
+                using WebServer woopsaServer = new WebServer(root, 80);
                 woopsaServer.Start();
 
-                Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", port, routePrefix);
+                Console.WriteLine("Woopsa server listening on http://localhost:{0}{1}", woopsaServer.Port, woopsaServer.RoutePrefix);
                 Console.WriteLine("Some examples of what you can do directly from your browser:");
                 Console.WriteLine(" * View the object hierarchy of the root object:");
-                Console.WriteLine("   http://localhost:{0}{1}meta/", port, routePrefix);
+                Console.WriteLine("   http://localhost:{0}{1}meta/", woopsaServer.Port, woopsaServer.RoutePrefix);
                 Console.WriteLine(" * Read the value of a property:");
-                Console.WriteLine("   http://localhost:{0}{1}read/Temperature", port, routePrefix);
+                Console.WriteLine("   http://localhost:{0}{1}read/Temperature", woopsaServer.Port, woopsaServer.RoutePrefix);
 
 
                 Console.WriteLine();

@@ -29,7 +29,7 @@ namespace WoopsaTest
         {
             bool isValueChanged = false;
             TestObjectServer objectServer = new TestObjectServer();
-            using (WebServer server = new WebServer(objectServer, Prefix1, TestingPort))
+            using (WebServer server = new WebServer(objectServer, TestingPort, Prefix1))
             {
                 TestObjectServer2 objectServer2 = new TestObjectServer2();
                 server.AddEndPoint(new EndpointWoopsa(objectServer2, Prefix2));

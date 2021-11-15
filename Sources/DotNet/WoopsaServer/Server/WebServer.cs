@@ -18,19 +18,19 @@ namespace Woopsa
 
         public WebServer(int port = DefaultPort, bool enableSsl = false)
         {
-            _port = port;
-            _urls = $"http{(enableSsl ? "s" : string.Empty)}://::{_port};http{(enableSsl ? "s" : string.Empty)}://0.0.0.0:{_port}";
+            Port = port;
+            _urls = $"http{(enableSsl ? "s" : string.Empty)}://::{port};http{(enableSsl ? "s" : string.Empty)}://0.0.0.0:{port}";
             _endPoints = new List<Endpoint>();
-            BaseAddress = $"http{(enableSsl ? "s" : string.Empty)}://localhost:{_port}";
+            BaseAddress = $"http{(enableSsl ? "s" : string.Empty)}://localhost:{port}";
         }
 
-        public WebServer(object root, string routePrefix = EndpointWoopsa.DefaultServerPrefix, int port = DefaultPort, bool enableSsl = false) :
-            this(CreateAdapter(root), routePrefix, port, enableSsl)
+        public WebServer(object root, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
+            this(CreateAdapter(root), port, routePrefix, enableSsl)
         {
         }
 
-        public WebServer(WoopsaObject root, string routePrefix = EndpointWoopsa.DefaultServerPrefix, int port = DefaultPort, bool enableSsl = false) :
-            this((WoopsaContainer)root, routePrefix, port, enableSsl)
+        public WebServer(WoopsaObject root, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
+            this((WoopsaContainer)root,  port, routePrefix, enableSsl)
         {
             _endPoints.Clear();
             AddEndPoint(new EndpointWoopsa(root, routePrefix));
@@ -53,9 +53,10 @@ namespace Woopsa
         /// "myPrefix" will make the server available on http://server/myPrefix
         /// </param>       
         /// <param name="enableSsl">if true, activate the https protocol and allows secure connections</param>
-        public WebServer(IWoopsaContainer root, string routePrefix = EndpointWoopsa.DefaultServerPrefix, int port = DefaultPort, bool enableSsl = false)
+        public WebServer(IWoopsaContainer root, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false)
             : this(port, enableSsl)
         {
+            RoutePrefix = routePrefix;
             AddEndPoint(new EndpointWoopsa(root, routePrefix));
         }
 
@@ -71,7 +72,6 @@ namespace Woopsa
         #region Fields / Attributes
 
         private IHost _host;
-        private int _port = DefaultPort;
         private readonly string MyAllowSpecificOrigins = "_myAllowSpecificOrigins";
         private readonly List<Endpoint> _endPoints;
         private readonly string _urls;
@@ -111,6 +111,9 @@ namespace Woopsa
             }
         }
 
+        public string RoutePrefix { get; }
+        public int Port { get; }
+
         #endregion
 
         #region Public Methods
@@ -123,7 +126,7 @@ namespace Woopsa
                     "It is not possible to add endpoints on the fly. " +
                     "You have to add all the endpoints before starting the web server or stop it and add, then restart it");
             }
-            endpoint.SetCurrentWebServer(_port, () => _current.Value = this);
+            endpoint.SetCurrentWebServer(Port, () => _current.Value = this);
             _endPoints.Add(endpoint);
         }
 
