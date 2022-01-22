@@ -53,7 +53,7 @@ exports.readProperty = function (property, done){
 
 exports.writeProperty = function (property, value, done){
     if ( typeof property.write === 'undefined' ){
-        throw new exceptions.WoopsaInvalidOperationException("Cannot write to read-only property " + element.getName());
+        throw new exceptions.WoopsaInvalidOperationException("Cannot write to read-only property " + property.getName());
     }else{
         value = woopsaUtils.convertTo(value, property.getType())
         property.write(value, function (writeResult){
