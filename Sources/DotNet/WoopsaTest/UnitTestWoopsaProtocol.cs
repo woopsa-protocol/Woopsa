@@ -1,12 +1,8 @@
 ﻿using System;
 using System.Diagnostics;
-using System.Threading;
 using Microsoft.VisualStudio.TestTools.UnitTesting;
 using Woopsa;
 using System.Collections.Specialized;
-using System.Threading.Tasks;
-using System.Collections.Generic;
-using Microsoft.AspNetCore.Hosting;
 
 namespace WoopsaTest
 {

@@ -51,9 +51,8 @@ namespace Woopsa
                     await context.Response.WriteAsync("Permanent redirection");
                 }
             }
-            catch (System.Exception ex)
+            catch (Exception)
             {
-
                 throw;
             }
         }

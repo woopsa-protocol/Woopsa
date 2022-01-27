@@ -3,10 +3,20 @@
   <PropertyGroup>
     <TargetFramework>net5.0</TargetFramework>
     <Configurations>Debug;Release;Release_Unity_UWP</Configurations>
+    <Description>Woopsa is a protocol that's simple, lightweight, free, open-source, web and object-oriented, publish-subscribe, real-time capable and Industry 4.0 ready. It contributes to the revolution of the Internet of Things</Description>
+    <Authors>Objectis SA</Authors>
+    <PackageId>WoopsaServer</PackageId>
+    <PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
+    <RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
+    <RepositoryType>git</RepositoryType>
+    <PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
+    <PackageLicenseExpression>MIT</PackageLicenseExpression>
+    <NetStandardImplicitPackageVersion Condition=" '$(TargetFramework)' == 'netstandard2.0' ">2.0.0</NetStandardImplicitPackageVersion>
+    <VersionSuffix>$(VersionSuffix)</VersionSuffix>
+    <VersionPrefix>2.0.0</VersionPrefix>
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Blazor.ContextMenu" Version="1.10.0" />
     <PackageReference Include="DotNetZip.NetStandard" Version="1.12.0" />
     <PackageReference Include="Microsoft.AspNetCore.Http" Version="2.2.2" />
     <PackageReference Include="Microsoft.AspNetCore.Http.Abstractions" Version="2.2.0" />

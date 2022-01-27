@@ -294,9 +294,8 @@ namespace Woopsa
                         }
                     }
                 }
-                catch(Exception ex)
+                catch(Exception)
                 {
-                    ;
                 }
             return false;
         }
