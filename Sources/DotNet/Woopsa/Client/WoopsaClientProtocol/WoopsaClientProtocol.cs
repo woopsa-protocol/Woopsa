@@ -268,7 +268,7 @@ namespace Woopsa
                     var resultString = await response.Content.ReadAsStringAsync();
                     if (response.StatusCode != HttpStatusCode.OK)
                     {
-                        if (response.Content.Headers.ContentType.MediaType == MIMETypes.Application.JSON)
+                        if (response.Content.Headers.ContentType != null && response.Content.Headers.ContentType.MediaType == MIMETypes.Application.JSON)
                         {
                             var exception = WoopsaFormat.DeserializeError(resultString);
                             throw exception;

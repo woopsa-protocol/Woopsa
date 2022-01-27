@@ -612,13 +612,14 @@ namespace Woopsa
                 Dictionary<WoopsaClientSubscription, WoopsaClientRequest> requests =
                     new Dictionary<WoopsaClientSubscription, WoopsaClientRequest>();
                 WoopsaClientMultiRequest multiRequest = new WoopsaClientMultiRequest();
-                foreach (var item in subscriptions)
+                try
+                {
+                    foreach (var item in subscriptions)
                     requests[item] = multiRequest.Invoke(RegisterSubscriptionMethodPath,
                         WoopsaSubscriptionServiceConst.RegisterSubscriptionArguments,
                         _subscriptionOpenChannel.Value, item.ServicePath,
                         item.MonitorInterval, item.PublishInterval);
-                try
-                {
+
                     await _subscriptionLock.WaitAsync();
                     try
                     {

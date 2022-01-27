@@ -133,7 +133,14 @@ namespace Woopsa
                     }
                 }
                 if (result != null)
-                    await context.Response.WriteAsync(result);
+                    try
+                    {
+                        await context.Response.WriteAsync(result);
+                    }
+                    catch (ObjectDisposedException e)
+                    {
+                        OnHandledException(e);
+                    }
             }
             catch (WoopsaNotFoundException e)
             {
