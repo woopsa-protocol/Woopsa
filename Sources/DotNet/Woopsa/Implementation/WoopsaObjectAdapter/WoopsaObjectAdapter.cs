@@ -252,7 +252,7 @@ namespace Woopsa
                 PopulateProperties(newTargetObject, exposedType, typeDescription.Properties);
                 PopulateMethods(newTargetObject, exposedType, typeDescription.Methods);
                 PopulateItems(newTargetObject, exposedType, typeDescription.Items);
-                if (typeof(IEnumerable<object>).IsAssignableFrom(exposedType) && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
+                if (typeof(IEnumerable).IsAssignableFrom(exposedType) && Visibility.HasFlag(WoopsaVisibility.IEnumerableObject))
                 {
                     IEnumerable enumerable = (IEnumerable)newTargetObject;
                     PopulateEnumerableItems(enumerable, DeclaredExposedType);

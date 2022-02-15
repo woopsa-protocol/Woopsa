@@ -135,7 +135,6 @@ namespace Woopsa
 
         private async Task ExecuteMultiRequestLocallyAsync(WoopsaClientMultiRequest multiRequest)
         {
-            Console.WriteLine(multiRequest.ClientRequests.Count());
             // Execute multi request locally
             foreach (var item in multiRequest.ClientRequests)
             {

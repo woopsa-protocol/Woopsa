@@ -52,30 +52,17 @@ namespace Woopsa
         #endregion
 
         #region Internal Methods
-
         internal WoopsaClientSubscription Subscribe(string servicePath, string relativePath,
-             EventHandler<WoopsaNotificationEventArgs> handler,
-             TimeSpan monitorInterval, TimeSpan publishInterval)
-        {
-            return SubscribeAsync(servicePath, relativePath, handler, monitorInterval, publishInterval).Result;
-        }
-
-        internal async Task<WoopsaClientSubscription> SubscribeAsync(string servicePath, string relativePath,
              EventHandler<WoopsaNotificationEventArgs> handler,
              TimeSpan monitorInterval, TimeSpan publishInterval)
         {
             WoopsaClientSubscription subscription =
                 new WoopsaClientSubscription(this, servicePath, relativePath, monitorInterval, publishInterval, handler);
-            await _lockSubscriptions.WaitAsync();
-            try
-            {
+
+            lock (_subscriptions)
                 _subscriptions.Add(subscription);
-                SubscriptionsChanged = true;
-            }
-            finally
-            {
-                _lockSubscriptions.Release();
-            }
+            SubscriptionsChanged = true;
+
             EnsureServiceTaskStarted();
             return subscription;
         }
@@ -95,21 +82,6 @@ namespace Woopsa
             EventHandler<WoopsaNotificationEventArgs> handler)
         {
             return Subscribe(path, path, handler,
-                WoopsaSubscriptionServiceConst.DefaultMonitorInterval,
-                WoopsaSubscriptionServiceConst.DefaultPublishInterval);
-        }
-
-        public async Task<WoopsaClientSubscription> SubscribeAsync(string path,
-            EventHandler<WoopsaNotificationEventArgs> handler,
-            TimeSpan monitorInterval, TimeSpan publishInterval)
-        {
-            return await SubscribeAsync(path, path, handler, monitorInterval, publishInterval);
-        }
-
-        public async Task<WoopsaClientSubscription> SubscribeAsync(string path,
-            EventHandler<WoopsaNotificationEventArgs> handler)
-        {
-            return await SubscribeAsync(path, path, handler,
                 WoopsaSubscriptionServiceConst.DefaultMonitorInterval,
                 WoopsaSubscriptionServiceConst.DefaultPublishInterval);
         }
@@ -145,7 +117,6 @@ namespace Woopsa
         private WoopsaMethod _remoteMethodCreateSubscriptionChannel, _remoteMethodWaitNotification;
 
         private int _notificationQueueSize;
-        private SemaphoreSlim _lockSubscriptions = new(1, 1);
         private List<WoopsaClientSubscription> _subscriptions;
 
         private Dictionary<int, WoopsaClientSubscription> _registeredSubscriptions;
@@ -446,7 +417,9 @@ namespace Woopsa
                 if (_terminated)
                     break;
                 newUnsubscriptions = null;
+
                 lock (_subscriptions)
+                {
                     foreach (var item in _subscriptions)
                         if (item.UnsubscriptionRequested)
                         {
@@ -462,6 +435,7 @@ namespace Woopsa
                                     break;
                             }
                         }
+                }
                 if (newUnsubscriptions != null)
                     if (!await UnregisterSubscriptionsAsync(newUnsubscriptions))
                         break;

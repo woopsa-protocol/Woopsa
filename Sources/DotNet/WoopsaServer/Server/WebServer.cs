@@ -7,7 +7,6 @@ using System;
 using System.Collections.Generic;
 using System.Security.Cryptography.X509Certificates;
 using System.Security.Authentication;
-using System.Threading.Tasks;
 using System.Threading;
 
 namespace Woopsa
@@ -25,15 +24,25 @@ namespace Woopsa
         }
 
         public WebServer(object root, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
-            this(CreateAdapter(root), port, routePrefix, enableSsl)
+            this(CreateAdapter(root), out _, port, routePrefix, enableSsl)
         {
         }
 
+        public WebServer(object root, out EndpointWoopsa endPointWoopsa, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
+           this(CreateAdapter(root), out endPointWoopsa, port, routePrefix, enableSsl)
+        {
+        }
         public WebServer(WoopsaObject root, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
-            this((WoopsaContainer)root,  port, routePrefix, enableSsl)
+            this(CreateAdapter(root), out _, port, routePrefix, enableSsl)
+        {
+        }
+
+        public WebServer(WoopsaObject root, out EndpointWoopsa endPointWoopsa, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
+            this((WoopsaContainer)root, port, routePrefix, enableSsl)
         {
             _endPoints.Clear();
-            AddEndPoint(new EndpointWoopsa(root, routePrefix));
+            endPointWoopsa = new EndpointWoopsa(root, routePrefix);
+            AddEndPoint(endPointWoopsa); // TODO from PMR : Dispose ?
         }
 
         /// <summary>

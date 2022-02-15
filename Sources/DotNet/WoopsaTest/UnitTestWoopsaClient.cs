@@ -83,7 +83,7 @@ namespace WoopsaTest
         }
 
         [TestMethod]
-        public async Task TestWoopsaClientSubscriptionChannelAsync()
+        public void TestWoopsaClientSubscriptionChannelAsync()
         {
             TestObjectServer objectServer = new TestObjectServer();
             using (WebServer server = new WebServer(objectServer, port: TestingPort))
@@ -100,42 +100,42 @@ namespace WoopsaTest
                         bool isValueChanged5 = false;
                         bool isValueChanged6 = false;
 
-                        WoopsaClientSubscription subscription = await client.SubscriptionChannel.SubscribeAsync(nameof(TestObjectServer.Votes),
+                        WoopsaClientSubscription subscription = client.SubscriptionChannel.Subscribe(nameof(TestObjectServer.Votes),
                         (sender, e) =>
                         {
                             isValueChanged = true;
                         },
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
 
-                        WoopsaClientSubscription subscription2 = await client.SubscriptionChannel.SubscribeAsync(nameof(TestObjectServer.StringValue),
+                        WoopsaClientSubscription subscription2 = client.SubscriptionChannel.Subscribe(nameof(TestObjectServer.StringValue),
                             (sender, e) =>
                             {
                                 isValueChanged2 = true;
                             },
                             TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
 
-                        WoopsaClientSubscription subscription3 = await client.SubscriptionChannel.SubscribeAsync(nameof(TestObjectServer.Votes),
+                        WoopsaClientSubscription subscription3 = client.SubscriptionChannel.Subscribe(nameof(TestObjectServer.Votes),
                            (sender, e) =>
                            {
                                isValueChanged3 = true;
                            },
                            TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
 
-                        WoopsaClientSubscription subscription4 = await client.SubscriptionChannel.SubscribeAsync(nameof(TestObjectServer.StringValue),
+                        WoopsaClientSubscription subscription4 = client.SubscriptionChannel.Subscribe(nameof(TestObjectServer.StringValue),
                             (sender, e) =>
                             {
                                 isValueChanged4 = true;
                             },
                             TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
 
-                        WoopsaClientSubscription subscription5 = await client.SubscriptionChannel.SubscribeAsync(nameof(TestObjectServer.Votes),
+                        WoopsaClientSubscription subscription5 = client.SubscriptionChannel.Subscribe(nameof(TestObjectServer.Votes),
                            (sender, e) =>
                            {
                                isValueChanged5 = true;
                            },
                            TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
 
-                        WoopsaClientSubscription subscription6 = await client.SubscriptionChannel.SubscribeAsync(nameof(TestObjectServer.StringValue),
+                        WoopsaClientSubscription subscription6 = client.SubscriptionChannel.Subscribe(nameof(TestObjectServer.StringValue),
                             (sender, e) =>
                             {
                                 isValueChanged6 = true;

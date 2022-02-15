@@ -112,7 +112,6 @@ namespace Woopsa
                 (WoopsaVerb, string) woopsaArguments = GetVerbAndWoopsaPath(subRoute, context);
                 WoopsaVerb verb = woopsaArguments.Item1;
                 string woopsaPath = woopsaArguments.Item2;
-                Console.WriteLine(subRoute);
                 string result = null;
                 using (new WoopsaServerModelAccessLockedSection(this))
                 {
