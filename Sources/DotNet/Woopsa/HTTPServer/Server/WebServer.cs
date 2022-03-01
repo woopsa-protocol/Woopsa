@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
+using System.Diagnostics;
 using System.Globalization;
 using System.IO;
 using System.Net;
 using System.Net.Sockets;
 using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Web;
 
@@ -554,7 +556,6 @@ namespace Woopsa
             else
             {
                 baseUrl = Uri.UnescapeDataString(url);
-                queryString = "";
             }
             request.BaseURL = baseUrl;
         }
@@ -574,7 +575,11 @@ namespace Woopsa
                     {
                         throw new HandlingException(HTTPStatusCode.BadRequest, "Bad Request");
                     }
-                    if (request.Headers[HTTPHeader.ContentType].StartsWith(MIMETypes.Application.XWWWFormUrlEncoded))
+
+                    bool xWWWFormUrlEncoded = request.Headers[HTTPHeader.ContentType].StartsWith(MIMETypes.Application.XWWWFormUrlEncoded);
+                    bool jsonEncoded = request.Headers[HTTPHeader.ContentType].StartsWith(MIMETypes.Application.JSON);
+                    NameValueCollection body = null;
+                    if (xWWWFormUrlEncoded || jsonEncoded)
                     {
                         // We might still be receiving client data at this point,
                         // which means that the reader.Read call will not always
@@ -589,13 +594,24 @@ namespace Woopsa
                             if (amountOfCharsRead == 0 && charsRead != contentLength)
                                 throw new HandlingException(HTTPStatusCode.BadRequest, "Wrong Content-Length");
                         }
-                        string bodyAsString = new String(requestBody);
-                        NameValueCollection body = HttpUtility.ParseQueryString(bodyAsString, clientEncoding);
+                        string bodyAsString = new string(requestBody);
+
+                        if (xWWWFormUrlEncoded)
+                        {
+                            body = HttpUtility.ParseQueryString(bodyAsString, clientEncoding);
+                        }
+                        else if (jsonEncoded)
+                        {
+                            body = new NameValueCollection();
+                            var pairs = JsonSerializer.Deserialize<IEnumerable<KeyValuePair<string, string>>>(bodyAsString);
+                            foreach (var pair in pairs)
+                                body.Add(pair.Key, pair.Value);
+                        }
+                        else
+                        {
+                            throw new HandlingException(HTTPStatusCode.NotImplemented, "Not Supported");
+                        }
                         request.Body = body;
-                    }
-                    else
-                    {
-                        throw new HandlingException(HTTPStatusCode.NotImplemented, "Not Supported");
                     }
                 }
             }

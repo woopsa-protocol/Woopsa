@@ -4,6 +4,8 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
+using System.Text.Json;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -220,7 +222,15 @@ namespace Woopsa
                             response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead, cancellationTokenSource.Token);
                         else
                         {
-                            HttpContent content = new FormUrlEncodedContent(ToPairs(postData));
+                            HttpContent content = null;
+                            try
+                            {
+                                content = new FormUrlEncodedContent(ToPairs(postData));
+                            }
+                            catch (UriFormatException)
+                            {
+                                content = new StringContent(JsonSerializer.Serialize(ToPairs(postData)), Encoding.UTF8, MIMETypes.Application.JSON);
+                            }
                             response = await client.PostAsync(requestUrl, content, cancellationTokenSource.Token);
                         }
                         SetLastCommunicationSuccessful(true);
