@@ -1,9 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
-using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.IO;
 
 namespace Woopsa
 {
@@ -58,10 +53,7 @@ namespace Woopsa
             }
         }
 
-        public bool AcceptSubroutes
-        {
-            get { return true; }
-        }
+        public bool AcceptSubroutes => true;
 
         /*
          * This is a very important function!

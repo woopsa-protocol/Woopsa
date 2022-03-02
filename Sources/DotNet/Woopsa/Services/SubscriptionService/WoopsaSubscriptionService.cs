@@ -94,10 +94,10 @@ namespace Woopsa
 
         #endregion
 
-        public WoopsaMethod MethodCreateSubscriptionChannel { get; private set; }
-        public WoopsaMethod MethodRegisterSubscription { get; private set; }
-        public WoopsaMethod MethodUnregisterSubscription { get; private set; }
-        public WoopsaMethod MethodWaitNotification { get; private set; }
+        public WoopsaMethod MethodCreateSubscriptionChannel { get; }
+        public WoopsaMethod MethodRegisterSubscription { get; }
+        public WoopsaMethod MethodUnregisterSubscription { get; }
+        public WoopsaMethod MethodWaitNotification { get; }
 
         #region Private Members
 

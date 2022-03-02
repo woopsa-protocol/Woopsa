@@ -16,6 +16,11 @@ jobs:
       uses: actions/setup-dotnet@v1
       with:
         dotnet-version: 2.2.207      
+
+    - name: Setup .NET Core 3.1
+      uses: actions/setup-dotnet@v1
+      with:
+        dotnet-version: 3.1.404       
       
     - name: Install dependencies
       run: dotnet restore ./Woopsa.sln

@@ -1,9 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Globalization;
-using System.Linq;
 using System.Text;
-using System.Threading.Tasks;
+using System.Text.Json;
 
 namespace Woopsa
 {
@@ -19,8 +18,7 @@ namespace Woopsa
 
         public static bool ToBool(string text)
         {
-            bool result;
-            if (TryParseWoopsa(text, out result))
+            if (TryParseWoopsa(text, out bool result))
                 return result;
             else
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("bool", text));
@@ -45,84 +43,46 @@ namespace Woopsa
             }
         }
 
-        public static bool TryParseWoopsa(string value, out float result)
-        {
-            return float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out float result) =>
+            float.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out double result)
-        {
-            return double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out double result) =>
+            double.TryParse(value, NumberStyles.Float, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out sbyte result)
-        {
-            return sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out sbyte result) =>
+            sbyte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out Int16 result)
-        {
-            return Int16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out short result) =>
+            short.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out Int32 result)
-        {
-            return Int32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out int result) =>
+            int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out Int64 result)
-        {
-            return Int64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out long result) =>
+            long.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out byte result)
-        {
-            return byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out byte result) =>
+            byte.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out UInt16 result)
-        {
-            return UInt16.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out ushort result) =>
+            ushort.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static bool TryParseWoopsa(string value, out UInt32 result)
-        {
-            return UInt32.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
-        public static bool TryParseWoopsa(string value, out UInt64 result)
-        {
-            return UInt64.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
-        }
+        public static bool TryParseWoopsa(string value, out uint result) =>
+            uint.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
+        public static bool TryParseWoopsa(string value, out ulong result) =>
+            ulong.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out result);
 
-        public static string ToStringWoopsa(double value)
-        {
-            return value.ToString(CultureInfo.InvariantCulture);
-        }
+        public static string ToStringWoopsa(double value) => value.ToString(CultureInfo.InvariantCulture);
 
-        public static string ToStringWoopsa(Int64 value)
-        {
-            return value.ToString(CultureInfo.InvariantCulture);
-        }
+        public static string ToStringWoopsa(long value) => value.ToString(CultureInfo.InvariantCulture);
 
-        public static string ToStringWoopsa(bool value)
-        {
-            return value ? WoopsaConst.WoopsaTrue : WoopsaConst.WoopsaFalse;
-        }
+        public static string ToStringWoopsa(bool value) => value ? WoopsaConst.WoopsaTrue : WoopsaConst.WoopsaFalse;
 
-        public static string ToStringWoopsa(int value)
-        {
-            return value.ToString(CultureInfo.InvariantCulture);
-        }
+        public static string ToStringWoopsa(int value) => value.ToString(CultureInfo.InvariantCulture);
 
-        public static string ToStringWoopsa(DateTime dateTime)
-        {
-            return dateTime.ToUniversalTime().ToString("o");
-        }
+        public static string ToStringWoopsa(DateTime dateTime) => dateTime.ToUniversalTime().ToString("o");
 
-        public static string ToStringWoopsa(TimeSpan timeSpan)
-        {
-            return ToStringWoopsa(timeSpan.TotalSeconds);
-        }
+        public static string ToStringWoopsa(TimeSpan timeSpan) => ToStringWoopsa(timeSpan.TotalSeconds);
 
         public static string ToStringWoopsa(object o)
         {
@@ -451,13 +411,9 @@ namespace Woopsa
 
         public static WoopsaValue DeserializeWoopsaValue(string jsonText)
         {
-#if NETSTANDARD2_0
             if (jsonText == WoopsaConst.WoopsaNull)
                 return WoopsaValue.Null;
-            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, new WoopsaReadResultConverter());
-#else
-            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText);
-#endif
+            var result = JsonSerializer.Deserialize<WoopsaReadResult>(jsonText, WoopsaUtils.ObjectToInferredTypesConverterOptions); // new WoopsaReadResultConverter());
 
             if (result != null)
             {
@@ -485,38 +441,6 @@ namespace Woopsa
             public string Type { get; set; }
             public string TimeStamp { get; set; }
         }
-
-#if NETSTANDARD2_0
-        private class WoopsaReadResultConverter : Newtonsoft.Json.JsonConverter
-        {
-            public override bool CanConvert(Type objectType)
-            {
-                return (objectType == typeof(WoopsaReadResult));
-            }
-
-            public override object ReadJson(Newtonsoft.Json.JsonReader reader, Type objectType, object existingValue, Newtonsoft.Json.JsonSerializer serializer)
-            {
-                Newtonsoft.Json.Linq.JObject jo = Newtonsoft.Json.Linq.JObject.Load(reader);   
-        
-                WoopsaReadResult woopsaReadResult = new WoopsaReadResult(); 
-                woopsaReadResult.Value = jo["Value"];
-                woopsaReadResult.Type = (string)jo["Type"];
-                woopsaReadResult.TimeStamp = (string)jo["TimeStamp"];
-        
-                return woopsaReadResult;
-            }
-
-            public override bool CanWrite
-            {
-                get { return false; }
-            }
-
-            public override void WriteJson(Newtonsoft.Json.JsonWriter writer, object value, Newtonsoft.Json.JsonSerializer serializer)
-            {
-                throw new NotImplementedException();
-            }
-        }
-#endif
 
         public const string KeyValue = "Value";
         public const string KeyType = "Type";

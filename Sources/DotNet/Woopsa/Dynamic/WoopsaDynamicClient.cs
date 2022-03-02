@@ -65,11 +65,11 @@ namespace Woopsa
                     var arguments = new IWoopsaValue[argumentInfos.Length];
                     for (int i = 0; i < argumentInfos.Length; i++)
                     {
-                        WoopsaValueType woopsaValueType;
-                        WoopsaConverter woopsaConverter;
                         if (CustomTypeConverters != null)
                         {
-                            CustomTypeConverters.InferWoopsaType(args[i].GetType(), out woopsaValueType, out woopsaConverter);
+                            CustomTypeConverters.InferWoopsaType(args[i].GetType(), 
+                                out WoopsaValueType woopsaValueType, 
+                                out WoopsaConverter woopsaConverter);
                             arguments[i] = woopsaConverter.ToWoopsaValue(args[i], woopsaValueType, null);
                         }
                         else
@@ -115,14 +115,14 @@ namespace Woopsa
 
         public string Username
         {
-            get { return _client.Username; }
-            set { _client.Username = value; }
+            get => _client.Username;
+            set => _client.Username = value;
         }
 
         public string Password
         {
-            get { return _client.Password; }
-            set { _client.Password = value; }
+            get => _client.Password;
+            set => _client.Password = value;
         }
 
         public void Refresh()

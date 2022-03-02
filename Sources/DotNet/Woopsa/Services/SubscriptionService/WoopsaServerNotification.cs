@@ -10,9 +10,9 @@ namespace Woopsa
             SubscriptionId = subscriptionId;
         }
 
-        public IWoopsaValue Value { get; private set; }
+        public IWoopsaValue Value { get; }
 
-        public int SubscriptionId { get; private set; }
+        public int SubscriptionId { get; }
 
         public int Id { get; set; }
     }
@@ -34,10 +34,7 @@ namespace Woopsa
             _notifications.AddRange(notification);
         }
 
-        public IEnumerable<IWoopsaNotification> Notifications
-        {
-            get { return _notifications; }
-        }
+        public IEnumerable<IWoopsaNotification> Notifications => _notifications;
 
         private readonly List<IWoopsaNotification> _notifications;
     }

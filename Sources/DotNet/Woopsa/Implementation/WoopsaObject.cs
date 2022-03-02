@@ -2,8 +2,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -37,25 +35,21 @@ namespace Woopsa
 
         #region IWoopsaElement
 
-        public WoopsaContainer Owner { get; private set; }
+        public WoopsaContainer Owner { get; }
 
-        IWoopsaContainer IWoopsaElement.Owner
-        {
-            get { return Owner; }
-        }
+        IWoopsaContainer IWoopsaElement.Owner => Owner;
 
-        public string Name { get; private set; }
+        public string Name { get; }
 
         #endregion IWoopsaElement
 
-        public bool IsDisposed { get { return _isDisposed; } }
+        public bool IsDisposed => _isDisposed;
 
         #region IDisposable
 
         protected virtual void Dispose(bool disposing)
         {
             _isDisposed = true;
-            Owner = null;
         }
 
         public void Dispose()
@@ -100,10 +94,7 @@ namespace Woopsa
                 return _items;
             }
         }
-        IEnumerable<IWoopsaContainer> IWoopsaContainer.Items
-        {
-            get { return Items; }
-        }
+        IEnumerable<IWoopsaContainer> IWoopsaContainer.Items => Items;
 
         public WoopsaContainer ByNameOrNull(string name)
         {
@@ -201,7 +192,7 @@ namespace Woopsa
 
         #endregion
 
-        internal object Lock { get; private set; }
+        internal object Lock { get; }
 
         #region Private Members
 
@@ -239,7 +230,7 @@ namespace Woopsa
 
         #region IWoopsaProperty
 
-        public bool IsReadOnly { get; private set; }
+        public bool IsReadOnly { get; }
 
         public WoopsaValue Value
         {
@@ -256,7 +247,7 @@ namespace Woopsa
 
         IWoopsaValue IWoopsaProperty.Value
         {
-            get { return Value; }
+            get => Value;
             set
             {
                 CheckDisposed();
@@ -267,7 +258,7 @@ namespace Woopsa
             }
         }
 
-        public WoopsaValueType Type { get; private set; }
+        public WoopsaValueType Type { get; }
 
         #endregion IWoopsaProperty
 
@@ -304,9 +295,9 @@ namespace Woopsa
 
         #region Public Properties
 
-        public string Name { get; private set; }
+        public string Name { get; }
 
-        public WoopsaValueType Type { get; private set; }
+        public WoopsaValueType Type { get; }
 
         #endregion
     }
@@ -347,9 +338,9 @@ namespace Woopsa
             return Invoke(arguments);
         }
 
-        public WoopsaValueType ReturnType { get; private set; }
+        public WoopsaValueType ReturnType { get; }
 
-        public IEnumerable<IWoopsaMethodArgumentInfo> ArgumentInfos { get; private set; }
+        public IEnumerable<IWoopsaMethodArgumentInfo> ArgumentInfos { get; }
 
         #endregion IWoopsaMethod
 
@@ -398,10 +389,7 @@ namespace Woopsa
             }
         }
 
-        IEnumerable<IWoopsaProperty> IWoopsaObject.Properties
-        {
-            get { return Properties; }
-        }
+        IEnumerable<IWoopsaProperty> IWoopsaObject.Properties => Properties;
 
         public IWoopsaElementReadOnlyList<WoopsaMethod> Methods
         {
@@ -415,10 +403,7 @@ namespace Woopsa
             }
         }
 
-        IEnumerable<IWoopsaMethod> IWoopsaObject.Methods
-        {
-            get { return Methods; }
-        }
+        IEnumerable<IWoopsaMethod> IWoopsaObject.Methods => Methods;
 
         #endregion
 

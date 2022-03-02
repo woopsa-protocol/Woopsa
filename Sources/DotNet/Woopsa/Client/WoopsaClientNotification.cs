@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 
 namespace Woopsa
 {
@@ -11,11 +10,11 @@ namespace Woopsa
             SubscriptionId = subscriptionId;
         }
 
-        public WoopsaValue Value { get; private set; }
+        public WoopsaValue Value { get; }
 
-        IWoopsaValue IWoopsaNotification.Value { get { return Value; } }
+        IWoopsaValue IWoopsaNotification.Value => Value;
 
-        public int SubscriptionId { get; private set; }
+        public int SubscriptionId { get; }
 
         public int Id { get; set; }
 
@@ -28,15 +27,9 @@ namespace Woopsa
             _notifications = new List<WoopsaClientNotification>();
         }
 
-        public void Add(WoopsaClientNotification notification)
-        {
-            _notifications.Add(notification);
-        }
+        public void Add(WoopsaClientNotification notification) => _notifications.Add(notification);
 
-        public IEnumerable<IWoopsaNotification> Notifications
-        {
-            get { return _notifications; }
-        }
+        public IEnumerable<IWoopsaNotification> Notifications => _notifications;
 
         private readonly List<WoopsaClientNotification> _notifications;
     }

@@ -38,7 +38,7 @@ namespace Woopsa
 
         public event EventHandler<CanWatchEventArgs> CanWatch;
 
-        public static WoopsaSubscriptionServiceImplementation CurrentService { get { return _currentService; } }
+        public static WoopsaSubscriptionServiceImplementation CurrentService => _currentService;
 
         public void Terminate()
         {
@@ -63,7 +63,6 @@ namespace Woopsa
                 if (TimerScheduler!= null)
                 {
                     TimerScheduler.Dispose();
-                    TimerScheduler = null;
                 }
                 if (_timerCheckChannelTimedOut != null)
                 {
@@ -169,8 +168,8 @@ namespace Woopsa
                 item.Dispose();
             }
         }
-        internal LightWeightTimerScheduler TimerScheduler { get; private set; }
-        public bool Terminated { get { return TimerScheduler.Terminated; } }
+        internal LightWeightTimerScheduler TimerScheduler { get; }
+        public bool Terminated => TimerScheduler.Terminated;
 
         public const bool CanWatchDefaultValue = true;
 
@@ -209,8 +208,8 @@ namespace Woopsa
                 CanWatchDefaultValue;
         }
 
-        public BaseWoopsaSubscriptionServiceSubscription Subscription { get; private set; }
-        public IWoopsaProperty ItemProperty { get;  private set;}
+        public BaseWoopsaSubscriptionServiceSubscription Subscription { get; }
+        public IWoopsaProperty ItemProperty { get; }
         public bool CanWatch { get; set; }
     }
 }

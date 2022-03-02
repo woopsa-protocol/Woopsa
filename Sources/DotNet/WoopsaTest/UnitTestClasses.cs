@@ -11,6 +11,8 @@ namespace WoopsaTest
     {
         public int Votes { get; set; }
 
+        public string StringValue { get; set; }
+
         public void IncrementVotes(int count)
         {
             Votes += count;
@@ -26,7 +28,7 @@ namespace WoopsaTest
             Votes += count;
         }
 
-        public string CurrentUserName { get { return BaseAuthenticator.CurrentUserName; } }
+        public string CurrentUserName => BaseAuthenticator.CurrentUserName;
     }
 
     public interface InterfaceA

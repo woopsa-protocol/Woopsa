@@ -1,8 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Collections.Specialized;
-using System.Linq;
-using System.Text;
+using System.Text.Json;
+using System.Text.Json.Serialization;
 
 namespace Woopsa
 {
@@ -18,19 +18,10 @@ namespace Woopsa
                     IsContextWoopsaSubscriptionServiceImplementation;
             }
         }
-        internal static bool IsContextWebServerThread
-        {
-            get { return WebServer.CurrentWebServer != null; }
-        }
-        internal static bool IsContextWoopsaClientSubscriptionThread
-        {
-            get { return WoopsaClientSubscriptionChannel.CurrentChannel != null; }
-        }
+        internal static bool IsContextWebServerThread => WebServer.CurrentWebServer != null;
+        internal static bool IsContextWoopsaClientSubscriptionThread => WoopsaClientSubscriptionChannel.CurrentChannel != null;
 
-        internal static bool IsContextWoopsaSubscriptionServiceImplementation
-        {
-            get { return WoopsaSubscriptionServiceImplementation.CurrentService != null; }
-        }
+        internal static bool IsContextWoopsaSubscriptionServiceImplementation => WoopsaSubscriptionServiceImplementation.CurrentService != null;
 
         public static bool IsContextWoopsaTerminatingThread
         {
@@ -74,17 +65,14 @@ namespace Woopsa
             return result;
         }
 
-        public static TimeSpan Multiply(this TimeSpan timeSpan, int n)
-        {
-            return TimeSpan.FromTicks(timeSpan.Ticks * n);
-        }
+        public static TimeSpan Multiply(this TimeSpan timeSpan, int n) => TimeSpan.FromTicks(timeSpan.Ticks * n);
 
         /// <summary>
         /// Used to generate incremental numbers identifiers, user for example to uniquely
         /// identify in an ordered way the subscriptions.
         /// </summary>
         /// <returns></returns>
-        public static UInt64 NextIncrementalObjectId()
+        public static ulong NextIncrementalObjectId()
         {
             lock (_instanceIndexLock)
             {
@@ -93,7 +81,7 @@ namespace Woopsa
             }
         }
 
-        private static UInt64 _instanceIndex;
+        private static ulong _instanceIndex;
         private static object _instanceIndexLock = new object();
 
 
@@ -119,5 +107,38 @@ namespace Woopsa
             return eMessage;
         }
         #endregion
+
+        public static JsonSerializerOptions ObjectToInferredTypesConverterOptions = new JsonSerializerOptions
+        {
+            Converters = { new ObjectToInferredTypesConverter() }
+        };
+    }
+
+    public class ObjectToInferredTypesConverter
+         : JsonConverter<object>
+    {
+        public override object Read(
+            ref Utf8JsonReader reader,
+            Type typeToConvert,
+            JsonSerializerOptions options) => reader.TokenType switch
+            {
+                JsonTokenType.True => true,
+                JsonTokenType.False => false,
+                JsonTokenType.Number when reader.TryGetInt64(out long l) => l,
+                JsonTokenType.Number => reader.GetDouble(),
+                JsonTokenType.String when reader.TryGetDateTime(out DateTime datetime) => datetime,
+                JsonTokenType.String => reader.GetString(),
+                _ => DefaultContent(ref reader)
+            };
+        private JsonElement DefaultContent(ref Utf8JsonReader reader)
+        {
+            using var document = JsonDocument.ParseValue(ref reader);
+            return document.RootElement.Clone();
+        }
+        public override void Write(
+            Utf8JsonWriter writer,
+            object objectToWrite,
+            JsonSerializerOptions options) =>
+            throw new InvalidOperationException("Should not get here.");
     }
 }

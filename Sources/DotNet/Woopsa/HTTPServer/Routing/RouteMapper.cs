@@ -20,15 +20,15 @@ namespace Woopsa
         #endregion
 
         #region Public Members
-        public string Route { get { return _route; } }
-        public HTTPMethod Methods { get { return _methods; } }
+        public string Route => _route;
+        public HTTPMethod Methods => _methods;
         #endregion
 
         #region Private/Protected/Internal Members
         private string _route;
         private HTTPMethod _methods;
         private IHTTPRouteHandler _handler;
-        internal bool AcceptSubroutes { get { return _handler.AcceptSubroutes; } }
+        internal bool AcceptSubroutes => _handler.AcceptSubroutes;
 
         private List<PostRouteProcessor> _processors;
 

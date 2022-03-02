@@ -31,6 +31,21 @@ namespace WoopsaTest
         }
 
         [TestMethod]
+        public void TestWoopsaHugeMultiRequest()
+        {
+            WoopsaObject serverRoot = new WoopsaObject(null, "");
+            TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
+            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
+            using (WoopsaServer server = new WoopsaServer(serverRoot, TestingPort))
+            {
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
+                {
+                    ExecuteHugeMultiRequestTestSerie(client, objectServer);
+                }
+            }
+        }
+
+        [TestMethod]
         public void TestWoopsaMultiRequestNoRemoteMultiRequestService()
         {
             WoopsaObject serverRoot = new WoopsaObject(null, "");
@@ -114,6 +129,44 @@ namespace WoopsaTest
 
         }
 
+        private void ExecuteHugeMultiRequestTestSerie(WoopsaClient client, TestObjectMultiRequest objectServer)
+        {
+            WoopsaClientMultiRequest multiRequest = new WoopsaClientMultiRequest();
+            for (int i = 0; i < 200; i++) // ~200 X 15 requests
+            {
+                multiRequest.Write("TestObject/A", 1);
+                multiRequest.Write("TestObject/B", 2);
+                multiRequest.Read("TestObject/Sum");
+                multiRequest.Write("TestObject/C", 4);
+                multiRequest.Meta("TestObject");
+
+                WoopsaMethodArgumentInfo[] argumentInfosSet = new WoopsaMethodArgumentInfo[]
+                {
+                new WoopsaMethodArgumentInfo("a", WoopsaValueType.Real),
+                new WoopsaMethodArgumentInfo("b", WoopsaValueType.Real)
+                };
+                multiRequest.Invoke("TestObject/Set",
+                    argumentInfosSet, 4, 5);
+                multiRequest.Read("TestObject/Sum");
+                multiRequest.Invoke("TestObject/Click",
+                    new Dictionary<string, WoopsaValue>());
+                multiRequest.Read("TestObject/IsClicked");
+                multiRequest.Write("TestObject/IsClicked", false);
+                multiRequest.Read("TestObject/IsClicked");
+
+                WoopsaMethodArgumentInfo[] argumentInfosSetS = new WoopsaMethodArgumentInfo[]
+                {
+                new WoopsaMethodArgumentInfo("value", WoopsaValueType.Text)
+                };
+                multiRequest.Invoke("TestObject/SetS",
+                    argumentInfosSetS, "Hello");
+                multiRequest.Read("TestObject/S");
+                multiRequest.Write("TestObject/S", "ABC");
+                multiRequest.Read("TestObject/S");
+            }
+            client.ExecuteMultiRequest(multiRequest);
+
+        }
         #endregion
 
         #region Inner classes
@@ -124,7 +177,7 @@ namespace WoopsaTest
             public double B { get; set; }
             public string S { get; set; }
 
-            public double Sum { get { return A + B; } }
+            public double Sum => A + B;
 
             public void Set(double a, double b)
             {

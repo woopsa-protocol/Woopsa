@@ -15,7 +15,7 @@ namespace Woopsa
         /// returns the current subscription channel in which we are executing.
         /// return null if the current context is not a thread of the subscription channel.
         /// </summary>
-        public static WoopsaClientSubscriptionChannel CurrentChannel { get { return _currentChannel; } }
+        public static WoopsaClientSubscriptionChannel CurrentChannel => _currentChannel;
 
         public WoopsaClientSubscriptionChannel(WoopsaClient client,
             WoopsaUnboundClientObject woopsaRoot, int notificationQueueSize)
@@ -48,10 +48,10 @@ namespace Woopsa
                 WoopsaSubscriptionServiceConst.DefaultPublishInterval);
         }
 
-        public const int MaxSubscriptionsPerMultiRequest = 100;
-        public const int MaxUnsubscriptionsPerMultiRequest = 500;
+        public const int MaxSubscriptionsPerMultiRequest = 50;
+        public const int MaxUnsubscriptionsPerMultiRequest = 250;
 
-        public bool Terminated { get { return _terminated; } }
+        public bool Terminated => _terminated;
 
         public List<WoopsaClientSubscription> GetFailedSubscriptions()
         {
@@ -730,10 +730,7 @@ namespace Woopsa
         protected virtual void Dispose(bool disposing)
         {
             if (disposing)
-            {
                 Unsubscribe();
-                Handler = null;
-            }
         }
 
         public void Dispose()
@@ -744,17 +741,14 @@ namespace Woopsa
 
         #endregion
 
-        public bool IsSubscribed
-        {
-            get { return SubscriptionId != null && !UnsubscriptionRequested; }
-        }
+        public bool IsSubscribed => SubscriptionId != null && !UnsubscriptionRequested;
 
-        public TimeSpan MonitorInterval { get; private set; }
-        public TimeSpan PublishInterval { get; private set; }
-        public string ServicePath { get; private set; }
-        public string RelativePath { get; private set; }
-        public EventHandler<WoopsaNotificationEventArgs> Handler { get; private set; }
-        public WoopsaClientSubscriptionChannel Channel { get; private set; }
+        public TimeSpan MonitorInterval { get; }
+        public TimeSpan PublishInterval { get;  }
+        public string ServicePath { get; }
+        public string RelativePath { get; }
+        public EventHandler<WoopsaNotificationEventArgs> Handler { get; }
+        public WoopsaClientSubscriptionChannel Channel { get; }
 
         internal int? SubscriptionId { get; set; }
 
@@ -771,8 +765,8 @@ namespace Woopsa
             Subscription = subscription;
         }
 
-        public WoopsaClientNotification Notification { get; private set; }
-        public WoopsaClientSubscription Subscription { get; private set; }
+        public WoopsaClientNotification Notification { get;  }
+        public WoopsaClientSubscription Subscription { get;  }
     }
 
 }

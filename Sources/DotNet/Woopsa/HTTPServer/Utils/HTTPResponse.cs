@@ -3,10 +3,7 @@ using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Reflection;
-using System.Runtime.Serialization;
 using System.Text;
-using System.Threading.Tasks;
-using Woopsa;
 
 namespace Woopsa
 {
@@ -63,8 +60,16 @@ namespace Woopsa
         /// that will be sent to the client. This is the text that immediately follows
         /// the Status Code in an HTTP response, such as "200 OK" or "404 Not Found"
         /// </summary>
-        public string ResponseMessage { get; private set; }
-
+        public string ResponseMessage 
+        { 
+            get => _responseMessage;
+            private set 
+            { 
+                CheckForNotSupportedchar(value);
+                _responseMessage = value;
+            }
+        }
+        private string _responseMessage;
         /// <summary>
         /// Mainly used for debugging, this property returns the length, in bytes,
         /// of the response content that will be sent to the client (excluding headers).
@@ -93,6 +98,7 @@ namespace Woopsa
         /// </param>
         public void SetHeader(string header, string value)
         {
+            CheckForNotSupportedchar(value);
             _headers[header] = value;
         }
 
@@ -218,6 +224,12 @@ namespace Woopsa
         #endregion
 
         #region Private/Protected/Internal Methods
+        private void CheckForNotSupportedchar(string value)
+        {
+            if (value.Contains("\r\n") || value.Contains('\n') || value.Contains('\r'))
+                throw new Exception($"Value {value} contains not supported char such as \\n\\r, \\n or \\r");
+        }
+
         private void SetHeaderIfNotExists(string header, string value)
         {
             if (!_headers.ContainsKey(header))

@@ -1,31 +1,17 @@
-<Project Sdk="Microsoft.NET.Sdk">
+﻿<Project Sdk="Microsoft.NET.Sdk">
 
   <PropertyGroup>
     <OutputType>Exe</OutputType>
-	<TargetFrameworks>net45;netcoreapp2.0</TargetFrameworks>
-    <Authors>Objectis SA</Authors>
-	<IsPackable>false</IsPackable>
-	<PackageLicenseUrl>https://github.com/woopsa-protocol/Woopsa/blob/master/LICENSE.txt</PackageLicenseUrl>
-	<PackageProjectUrl>http://www.woopsa.org/</PackageProjectUrl>
-	<RepositoryUrl>https://github.com/woopsa-protocol/Woopsa</RepositoryUrl>
-	<RepositoryType>git</RepositoryType>
-	<PackageTags>Network Open Protocol C# Mono Json Client Server IoT Industry4.0</PackageTags>
-    <GenerateAssemblyVersionAttribute>false</GenerateAssemblyVersionAttribute>
-    <GenerateAssemblyCompanyAttribute>false</GenerateAssemblyCompanyAttribute>
-    <GenerateAssemblyConfigurationAttribute>false</GenerateAssemblyConfigurationAttribute>
-    <GenerateAssemblyDescriptionAttribute>false</GenerateAssemblyDescriptionAttribute>
-    <GenerateAssemblyFileVersionAttribute>false</GenerateAssemblyFileVersionAttribute>
-    <GenerateAssemblyProductAttribute>false</GenerateAssemblyProductAttribute>
-    <GenerateAssemblyTitleAttribute>false</GenerateAssemblyTitleAttribute>
+    <TargetFramework>netcoreapp3.1</TargetFramework>
+    <IsPackable>false</IsPackable>
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Include="..\AssemblyVersionInfo.cs" Link="Properties\AssemblyVersionInfo.cs" />
+    <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
   </ItemGroup>
 
-
   <ItemGroup>
-    <ProjectReference Include="..\Woopsa\Woopsa.csproj" />
+    <Folder Include="Properties\" />
   </ItemGroup>
 
 </Project>

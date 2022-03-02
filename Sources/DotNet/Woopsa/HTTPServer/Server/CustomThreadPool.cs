@@ -45,12 +45,12 @@ namespace Woopsa
             return _thread.Join(timeout);
         }
 
-        public bool IsIdle { get { return _isIdle; } }
+        public bool IsIdle => _isIdle;
 
         public event EventHandler Idle;
 
-        public ThreadPriority Priority { get; private set; }
-        public string ThreadName { get; private set; }
+        public ThreadPriority Priority { get; }
+        public string ThreadName { get; }
 
         private void OnIdle()
         {
@@ -113,8 +113,8 @@ namespace Woopsa
             Name = name;
         }
 
-        public ThreadPriority Priority { get; private set; }
-        public string Name { get; private set; }
+        public ThreadPriority Priority { get; }
+        public string Name { get; }
 
         public bool StartUserWorkItem(WaitCallback callBack, object parameter, TimeSpan timeout)
         {

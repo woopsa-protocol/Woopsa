@@ -56,10 +56,7 @@ namespace Woopsa
             }
         }
 
-        public bool AcceptSubroutes
-        {
-            get { return true; }
-        }
+        public bool AcceptSubroutes => true;
 
         #endregion IHTTPRouteHandler
 
@@ -138,6 +135,7 @@ namespace Woopsa
             }
             else
                 _assemblyByName.TryGetValue(name, out result);
+
             if (result == null)
             {
                 result = AppDomain.CurrentDomain.GetAssemblies().

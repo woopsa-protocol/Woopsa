@@ -1,8 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Woopsa
 {
@@ -73,11 +70,7 @@ namespace Woopsa
         /// </summary>
         /// <param name="type">The .NET type to test</param>
         /// <returns>true if the type matches a woopsa value type</returns>
-        public static bool IsWoopsaValueType(Type type)
-        {
-            WoopsaValueType woopsaType;
-            return InferWoopsaType(type, out woopsaType);
-        }
+        public static bool IsWoopsaValueType(Type type) => InferWoopsaType(type, out _);
 
         /// <summary>
         /// Determines if the .net type matches a Woopsa reference type (object)
@@ -85,10 +78,7 @@ namespace Woopsa
         /// </summary>
         /// <param name="type">The .NET type to test</param>
         /// <returns>true if the type matches a woopsa reference type</returns>
-        public static bool IsWoopsaReferenceType(Type type)
-        {
-            return !IsWoopsaValueType(type) && !type.IsValueType;
-        }
+        public static bool IsWoopsaReferenceType(Type type) => !IsWoopsaValueType(type) && !type.IsValueType;
 
         public static bool GetGenericEnumerableItemType(Type type, out Type itemsType)
         {

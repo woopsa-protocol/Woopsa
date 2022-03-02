@@ -146,7 +146,5 @@ namespace WoopsaTest
             watch.Stop();
             Assert.AreEqual(watch.Elapsed < TimeSpan.FromMilliseconds(1000), true);
         }
-
-
-    }
+	}
 }

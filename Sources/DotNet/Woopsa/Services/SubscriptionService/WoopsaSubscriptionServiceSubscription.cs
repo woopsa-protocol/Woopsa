@@ -33,32 +33,32 @@ namespace Woopsa
                 throw new WoopsaException("A publish interval of 0 with a non-zero monitor interval is not allowed");
         }
 
-        public WoopsaSubscriptionChannel Channel { get; private set; }
+        public WoopsaSubscriptionChannel Channel { get; }
 
-        public WoopsaContainer Root { get; private set; }
+        public WoopsaContainer Root { get; }
         /// <summary>
         /// The auto-generated Id for this Subscription
         /// </summary>
-        public int SubscriptionId { get; private set; }
+        public int SubscriptionId { get; }
 
         /// <summary>
         /// The Monitoring Interval is the interval at which this
         /// subscription checks the monitored value for changes.
         /// </summary>
-        public TimeSpan MonitorInterval { get; private set; }
+        public TimeSpan MonitorInterval { get; }
 
         /// <summary>
         /// The Publish Interval is the minimum time between each
         /// notification between the server and the client.
         /// </summary>
-        public TimeSpan PublishInterval { get; private set; }
+        public TimeSpan PublishInterval { get; }
 
-        public string PropertyPath { get; private set; }
+        public string PropertyPath { get; }
 
         /// <summary>
         /// A unique number to identifiy internally this object.
         /// </summary>
-        public UInt64 IncrementalObjectId { get; private set; }
+        public ulong IncrementalObjectId { get;  }
         protected void EnqueueNewMonitoredValue(IWoopsaValue newValue)
         {
             if (!newValue.IsSameValue(_oldValue))

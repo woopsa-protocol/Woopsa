@@ -163,27 +163,49 @@ namespace WoopsaTest
         [TestMethod]
         public void TestWoopsaClientSubscriptionToProperty()
         {
-            bool isValueChanged = false;
+            bool isVotesChanged = false;
+            bool isStringValueChanged = false;
             TestObjectServer objectServer = new TestObjectServer();
             using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
             {
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
                 {
+                    int newVotes = 0;
+                    string newStringValue = string.Empty;
                     WoopsaBoundClientObject root = client.CreateBoundRoot();
                     WoopsaClientProperty propertyVotes = root.Properties.ByName("Votes") as WoopsaClientProperty;
-                    WoopsaClientSubscription subscription = propertyVotes.Subscribe((sender, e) => { isValueChanged = true; },
+                    WoopsaClientSubscription subscription = propertyVotes.Subscribe((sender, e) => 
+                    { 
+                        newVotes = e.Notification.Value;
+                        isVotesChanged = true; 
+                    },
                         TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+
+                    WoopsaClientProperty propertyString = root.Properties.ByName("StringValue") as WoopsaClientProperty;
+                    WoopsaClientSubscription subscription2 = propertyString.Subscribe((sender, e) => 
+                    {
+                        var t = client.ClientProtocol.Read("Votes");
+                        newStringValue = e.Notification.Value;
+                        isStringValueChanged = true; 
+                    },
+                        TimeSpan.FromMilliseconds(10), TimeSpan.FromMilliseconds(20));
+
                     objectServer.Votes = 2;
+                    objectServer.StringValue = "Test";
                     Stopwatch watch = new Stopwatch();
                     watch.Start();
-                    while ((!isValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
+                    while ((!isVotesChanged || !isStringValueChanged) && (watch.Elapsed < TimeSpan.FromSeconds(20)))
                         Thread.Sleep(10);
-                    if (isValueChanged)
+                    if (isVotesChanged)
                         Console.WriteLine("Notification after {0} ms", watch.Elapsed.TotalMilliseconds);
                     else
                         Console.WriteLine("No notification received");
                     subscription.Unsubscribe();
-                    Assert.AreEqual(true, isValueChanged);
+                    Assert.AreEqual(true, isVotesChanged);
+                    Assert.AreEqual(true, isStringValueChanged);
+
+                    Assert.AreEqual(2, newVotes);
+                    Assert.AreEqual("Test", newStringValue);
                 }
             }
         }

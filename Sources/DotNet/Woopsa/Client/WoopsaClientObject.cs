@@ -18,8 +18,8 @@ namespace Woopsa
 
         #endregion
 
-        public WoopsaClient Client { get; private set; }
-        public IWoopsaContainer Root { get; private set; }
+        public WoopsaClient Client { get; }
+        public IWoopsaContainer Root { get; }
 
         public WoopsaClientSubscription Subscribe(string relativePath,
             EventHandler<WoopsaNotificationEventArgs> propertyChangedHandler,

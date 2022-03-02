@@ -13,14 +13,14 @@ namespace Woopsa
         /// webserver thread, or null if none. The value is specific to the calling thread, the property
         /// returns a different value in each thread.
         /// </summary>
-        public static string CurrentUserName { get { return _currentUserName; } }
+        public static string CurrentUserName => _currentUserName;
 
         public BaseAuthenticator(string realm)
         {
             Realm = realm;
         }
 
-        public string Realm { get; private set; }
+        public string Realm { get;}
 
         public virtual bool Process(HTTPRequest request, HTTPResponse response)
         {
@@ -70,9 +70,9 @@ namespace Woopsa
             Username = username;
             Password = password;
         }
-        public HTTPRequest Request { get; private set; }
-        public string Username { get; private set; }
-        public string Password { get; private set; }
+        public HTTPRequest Request { get; }
+        public string Username { get; }
+        public string Password { get;  }
 
         public bool IsAuthenticated { get; set; }
     }

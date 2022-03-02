@@ -42,8 +42,7 @@ namespace Woopsa
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                sbyte result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out sbyte result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("sbyte", value.AsText));
@@ -52,12 +51,11 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("sbyte", value.Type.ToString()));
         }
 
-        public static Int16 ToInt16(this IWoopsaValue value)
+        public static short ToInt16(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                Int16 result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out short result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("Int16", value.AsText));
@@ -66,12 +64,11 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("Int16", value.Type.ToString()));
         }
 
-        public static Int32 ToInt32(this IWoopsaValue value)
+        public static int ToInt32(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                Int32 result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out int result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("Int32", value.AsText));
@@ -80,12 +77,11 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("Int32", value.Type.ToString()));
         }
 
-        public static Int64 ToInt64(this IWoopsaValue value)
+        public static long ToInt64(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                Int64 result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out long result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("Int64", value.AsText));
@@ -98,8 +94,7 @@ namespace Woopsa
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                byte result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out byte result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("byte", value.AsText));
@@ -108,12 +103,11 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("byte", value.Type.ToString()));
         }
 
-        public static UInt16 ToUInt16(this IWoopsaValue value)
+        public static ushort ToUInt16(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                UInt16 result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out ushort result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("UInt16", value.AsText));
@@ -122,12 +116,11 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("UInt16", value.Type.ToString()));
         }
 
-        public static UInt32 ToUInt32(this IWoopsaValue value)
+        public static uint ToUInt32(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                UInt32 result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out uint result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("UInt32", value.AsText));
@@ -136,12 +129,11 @@ namespace Woopsa
                 throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastTypeMessage("UInt32", value.Type.ToString()));
         }
 
-        public static UInt64 ToUInt64(this IWoopsaValue value)
+        public static ulong ToUInt64(this IWoopsaValue value)
         {
             if (value.Type == WoopsaValueType.Integer)
             {
-                UInt64 result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out ulong result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("UInt64", value.AsText));
@@ -154,8 +146,7 @@ namespace Woopsa
         {
             if (value.Type == WoopsaValueType.Real)
             {
-                float result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out float result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("float", value.AsText));
@@ -170,8 +161,7 @@ namespace Woopsa
         {
             if (value.Type == WoopsaValueType.Real)
             {
-                double result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out double result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("double", value.AsText));
@@ -186,8 +176,7 @@ namespace Woopsa
         {
             if (value.Type == WoopsaValueType.DateTime)
             {
-                DateTime result;
-                if (DateTime.TryParse(value.AsText, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out result))
+                if (DateTime.TryParse(value.AsText, CultureInfo.InvariantCulture, DateTimeStyles.RoundtripKind, out var result))
                     return result;
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("DateTime", value.AsText));
@@ -200,8 +189,7 @@ namespace Woopsa
         {
             if (value.Type == WoopsaValueType.TimeSpan)
             {
-                double result;
-                if (WoopsaFormat.TryParseWoopsa(value.AsText, out result))
+                if (WoopsaFormat.TryParseWoopsa(value.AsText, out double result))
                     return TimeSpan.FromSeconds(result);
                 else
                     throw new WoopsaException(WoopsaExceptionMessage.WoopsaCastValueMessage("TimeSpan", value.AsText));
@@ -229,17 +217,17 @@ namespace Woopsa
                         return value.ToByte();
                     else if (targetType == typeof(sbyte))
                         return value.ToSByte();
-                    else if (targetType == typeof(Int16))
+                    else if (targetType == typeof(short))
                         return value.ToInt16();
-                    else if (targetType == typeof(UInt16))
+                    else if (targetType == typeof(ushort))
                         return value.ToUInt16();
-                    else if (targetType == typeof(Int32))
+                    else if (targetType == typeof(int))
                         return value.ToInt32();
-                    else if (targetType == typeof(UInt32))
+                    else if (targetType == typeof(uint))
                         return value.ToUInt32();
-                    else if (targetType == typeof(Int64))
+                    else if (targetType == typeof(long))
                         return value.ToInt64();
-                    else if (targetType == typeof(UInt64))
+                    else if (targetType == typeof(ulong))
                         return value.ToUInt64();
                     else if (targetType == typeof(float))
                         return value.ToFloat();
@@ -335,9 +323,7 @@ namespace Woopsa
 
         public static string DecodeWoopsaLocalLink(this IWoopsaValue value)
         {
-            string woopsaServerUrl;
-            string woopsaItemPath;
-            DecodeWoopsaLink(value, out woopsaServerUrl, out woopsaItemPath);
+            DecodeWoopsaLink(value, out string woopsaServerUrl, out string woopsaItemPath);
             if (woopsaServerUrl == null) // it is a local path
                 return woopsaItemPath;
             else
