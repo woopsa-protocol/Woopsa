@@ -4,6 +4,7 @@ using System.Collections.Specialized;
 using System.Linq;
 using System.Net;
 using System.Net.Http;
+using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -203,6 +204,37 @@ namespace Woopsa
             return collection.AllKeys.Select(key => new KeyValuePair<string, string>(key, collection[key]));
         }
 
+        // Note : Replace FormUrlEncodedContent that has uri size limitations
+        private static StringContent FormUrlEncode(NameValueCollection postData)
+        {
+            int limit = 2000;
+            return new StringContent(postData.AllKeys.Aggregate(new StringBuilder(), (sb, nxt) =>
+            {
+                StringBuilder sbInternal = new StringBuilder();
+
+                if (sb.Length > 0)
+                {
+                    sb.Append("&");
+                }
+                string value = postData[nxt];
+                int loops = value.Length / limit;
+
+                for (int i = 0; i <= loops; i++)
+                {
+                    if (i < loops)
+                    {
+                        sbInternal.Append(Uri.EscapeDataString(value.Substring(limit * i, limit)));
+                    }
+                    else
+                    {
+                        sbInternal.Append(Uri.EscapeDataString(value.Substring(limit * i)));
+                    }
+                }
+
+                return sb.Append(nxt + "=" + sbInternal.ToString());
+            }).ToString(), Encoding.UTF8, "application/x-www-form-urlencoded");
+        }
+
         private async Task<string> RequestAsync(string path, NameValueCollection postData, TimeSpan timeout)
         {
             if (!_terminating)
@@ -219,10 +251,8 @@ namespace Woopsa
                         if (postData == null)
                             response = await client.GetAsync(requestUrl, HttpCompletionOption.ResponseHeadersRead, cancellationTokenSource.Token);
                         else
-                        {
-                            HttpContent content = new FormUrlEncodedContent(ToPairs(postData));
-                            response = await client.PostAsync(requestUrl, content, cancellationTokenSource.Token);
-                        }
+                            response = await client.PostAsync(requestUrl, FormUrlEncode(postData), cancellationTokenSource.Token);
+                        
                         SetLastCommunicationSuccessful(true);
                     }
                     catch (Exception)
