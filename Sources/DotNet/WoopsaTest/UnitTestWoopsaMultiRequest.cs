@@ -20,8 +20,8 @@ namespace WoopsaTest
         {
             WoopsaObject serverRoot = new WoopsaObject(null, "");
             TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
-            WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WebServer server = new WebServer(serverRoot, port: TestingPort))
+            new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
+            using (WebServer server = new WebServer(serverRoot, TestingPort))
             {
                 server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
@@ -32,12 +32,28 @@ namespace WoopsaTest
         }
 
         [TestMethod]
-        public void TestWoopsaMultiRequestNoRemoteMultiRequestService()
+        public void TestWoopsaHugeMultiRequest()
         {
             WoopsaObject serverRoot = new WoopsaObject(null, "");
             TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
             WoopsaObjectAdapter adapter = new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
-            using (WebServer server = new WebServer((IWoopsaContainer)serverRoot, port: TestingPort))
+            using (WebServer server = new WebServer(adapter, TestingPort))
+            {
+                server.Start();
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
+                {
+                    ExecuteHugeMultiRequestTestSerie(client, objectServer);
+                }
+            }
+        }
+
+        [TestMethod]
+        public void TestWoopsaMultiRequestNoRemoteMultiRequestService()
+        {
+            WoopsaObject serverRoot = new WoopsaObject(null, "");
+            TestObjectMultiRequest objectServer = new TestObjectMultiRequest();
+            new WoopsaObjectAdapter(serverRoot, "TestObject", objectServer);
+            using (WebServer server = new WebServer((IWoopsaContainer)serverRoot, TestingPort))
             {
                 server.Start();
                 using (WoopsaClient client = new WoopsaClient(TestingUrl))
@@ -116,6 +132,44 @@ namespace WoopsaTest
 
         }
 
+        private void ExecuteHugeMultiRequestTestSerie(WoopsaClient client, TestObjectMultiRequest objectServer)
+        {
+            WoopsaClientMultiRequest multiRequest = new WoopsaClientMultiRequest();
+            for (int i = 0; i < 200; i++) // ~200 X 15 requests
+            {
+                multiRequest.Write("TestObject/A", 1);
+                multiRequest.Write("TestObject/B", 2);
+                multiRequest.Read("TestObject/Sum");
+                multiRequest.Write("TestObject/C", 4);
+                multiRequest.Meta("TestObject");
+
+                WoopsaMethodArgumentInfo[] argumentInfosSet = new WoopsaMethodArgumentInfo[]
+                {
+                new WoopsaMethodArgumentInfo("a", WoopsaValueType.Real),
+                new WoopsaMethodArgumentInfo("b", WoopsaValueType.Real)
+                };
+                multiRequest.Invoke("TestObject/Set",
+                    argumentInfosSet, 4, 5);
+                multiRequest.Read("TestObject/Sum");
+                multiRequest.Invoke("TestObject/Click",
+                    new Dictionary<string, WoopsaValue>());
+                multiRequest.Read("TestObject/IsClicked");
+                multiRequest.Write("TestObject/IsClicked", false);
+                multiRequest.Read("TestObject/IsClicked");
+
+                WoopsaMethodArgumentInfo[] argumentInfosSetS = new WoopsaMethodArgumentInfo[]
+                {
+                new WoopsaMethodArgumentInfo("value", WoopsaValueType.Text)
+                };
+                multiRequest.Invoke("TestObject/SetS",
+                    argumentInfosSetS, "Hello");
+                multiRequest.Read("TestObject/S");
+                multiRequest.Write("TestObject/S", "ABC");
+                multiRequest.Read("TestObject/S");
+            }
+            client.ExecuteMultiRequest(multiRequest);
+
+        }
         #endregion
 
         #region Inner classes
