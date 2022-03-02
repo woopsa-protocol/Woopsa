@@ -33,7 +33,7 @@ namespace Woopsa
         {
         }
         public WebServer(WoopsaObject root, int port = DefaultPort, string routePrefix = EndpointWoopsa.DefaultServerPrefix, bool enableSsl = false) :
-            this(CreateAdapter(root), out _, port, routePrefix, enableSsl)
+            this(root, out _, port, routePrefix, enableSsl)
         {
         }
 
