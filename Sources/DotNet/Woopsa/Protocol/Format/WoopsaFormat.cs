@@ -20,7 +20,7 @@ namespace Woopsa
         public const string KeyType = "Type";
         public const string KeyTimeStamp = "TimeStamp";
         public const string KeyName = "Name";
-        public const string KeyReadOnly = "IsReadOnly";
+        public const string KeyReadOnly = "ReadOnly";
         public const string KeyArgumentInfos = "ArgumentInfos";
         public const string KeyReturnType = "ReturnType";
         public const string KeyProperties = "Properties";
