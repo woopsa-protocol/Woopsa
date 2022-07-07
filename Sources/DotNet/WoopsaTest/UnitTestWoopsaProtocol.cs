@@ -176,5 +176,22 @@ namespace WoopsaTest
                 }
             }
         }
+
+        [TestMethod]
+        public void TestWoopsaWriteReturnedAppliedValue()
+        {
+            TestObjectServer objectServer = new TestObjectServer();
+            const string initialValue = "24";
+            const string updatedValue = "42";
+            using (WoopsaServer server = new WoopsaServer(objectServer, TestingPort))
+            {
+                using (WoopsaClient client = new WoopsaClient(TestingUrl))
+                {
+                    client.ClientProtocol.Write(nameof(objectServer.Votes), initialValue);
+                    var result = client.ClientProtocol.Write(nameof(objectServer.Votes), updatedValue);
+                    Assert.AreEqual(updatedValue, result.AsText);
+                }
+            }
+        }
     }
 }
