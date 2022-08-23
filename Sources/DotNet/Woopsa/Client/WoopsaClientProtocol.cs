@@ -299,7 +299,7 @@ namespace Woopsa
                     throw;
             }
         }
-        private void CancelPendingRequests() => _httpClient.CancelPendingRequests();
+        private void CancelPendingRequests() => _httpClient?.CancelPendingRequests();
 
         #endregion
 
