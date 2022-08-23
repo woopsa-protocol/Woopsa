@@ -19,6 +19,13 @@ namespace WoopsaTest
         #endregion
 
         [TestMethod]
+        public void TestClientSimpleInstanciationAndDispose()
+        {
+            using (WoopsaClient client = new WoopsaClient("http://localhost:10000/woopsa"))
+            { }
+        }
+
+        [TestMethod]
         public void TestWoopsaClientSubscriptionChannel()
         {
             bool isValueChanged = false;
