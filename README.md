@@ -73,6 +73,10 @@ The latest version is part of the git repository. It contains the .NET and JavaS
 ## Getting started
 Our [Getting Started](http://www.woopsa.org/get-started/) tutorial allows you to get started quickly with Woopsa. It's really easy !
 
+## Available third party client tools:
+* [oStudio Live Tuning](https://www.objectis-software.com/support/getting-started-with-livetuning/)  : Navigate the published nodes, watch values and much more. 
+
+
 ## Compatibility
 Woopsa has been tested and works on:
  * .NET Framework 4.0
