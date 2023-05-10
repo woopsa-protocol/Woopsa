@@ -83,7 +83,11 @@ namespace Woopsa
 
         public WoopsaValue Read(string path)
         {
-            return RequestAndDeserialize(WoopsaFormat.VerbRead + path, WoopsaFormat.DeserializeWoopsaValue);
+            return Read(path, _defaultRequestTimeout);
+        }
+        public WoopsaValue Read(string path, TimeSpan timeout)
+        {
+            return RequestAndDeserialize(WoopsaFormat.VerbRead + path, WoopsaFormat.DeserializeWoopsaValue, timeout);
         }
 
         public WoopsaValue Write(string path, string value)
@@ -159,6 +163,11 @@ namespace Woopsa
         private T RequestAndDeserialize<T>(string path, Func<string, T> deserializer, NameValueCollection postData = null)
         {
             return RequestAndDeserialize(path, deserializer, postData, _defaultRequestTimeout);
+        }
+
+        private T RequestAndDeserialize<T>(string path, Func<string, T> deserializer, TimeSpan timeout)
+        {
+            return RequestAndDeserialize(path, deserializer, null, timeout);
         }
 
         private T RequestAndDeserialize<T>(string path, Func<string, T> deserializer, NameValueCollection postData, TimeSpan timeout)
